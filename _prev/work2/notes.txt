@@ -1,0 +1,28 @@
+
+<!-- OUTPUT -->
+<!-- ProductListing.server.js -->
+import x from './someting.js'
+let title = 'Product Listing';
+const handleClick = () => {
+    title = 'Button Clicked';
+    console.log('Button Clicked');
+}
+<!-- ProductListing.client.js -->
+window.smol.productList = window.smol.productList ?? {};
+window.smol.productList.push({
+    initState: {
+        title: 'Product Listing'
+    },
+    methods: {
+        handleClick() {
+            this.state.title = 'Button Clicked';
+            console.log('Button Clicked');
+        }
+    }
+});
+<!-- ProductListing.html -->
+<div>
+    <h1 data-state="smol.productList.state.title">{{title}}</h1>
+    <button onclick="smol.productList.methods.handleClick()">Click Me</button>
+</div>
+<script async src="ProductListing.client.js"></script>
