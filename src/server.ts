@@ -1,24 +1,22 @@
 import express from 'express';
-import MyComponent from "./controller/MyComponent/MyComponent.js";
-import ChildComponent from "./controller/ChildComponent/ChildComponent.js";
-import ComponentWrapper from "./utils/componentWrapper.js";
 import fs from 'fs';
-import { compile, registerComponents } from "./templater.js";
+import MyComponent from "app/controller/MyComponent/MyComponent";
+import ChildComponent from "app/controller/ChildComponent/ChildComponent";
+import ComponentWrapper from "app/utils/componentWrapper";
+import { compile } from "app/smol/templater";
 
 const app = express()
 const port = 3000
 app.use(express.json())
-app.use('/static', express.static('C:/projects/FS-Framework'));
+app.use('/static', express.static('C:/projects/FS-Framework/public'));
 
-const components = {
+export const components: Readonly<any> = {
     MyComponent,
     ChildComponent
 };
 
-registerComponents(components);
-
-app.post('/component', (req, res) => {
-    const { component, method } = req.query;
+app.post('/smol', (req, res) => {
+    const { component, method } = req.query as { component: string, method: string };
 
     if (!components[component]) {
         res.status(400).send(`Component ${component} not found`);
@@ -31,17 +29,16 @@ app.post('/component', (req, res) => {
     }
     const comp = components[component];
     const wrapper = ComponentWrapper(comp);
-    console.log(req.body)
     const instance = wrapper(req.body);
     instance[method]();
     res.send(instance.render());
 });
 
 app.get('/', (req, res) => {
-    const source = fs.readFileSync('C:/projects/FS-Framework/index.html', 'utf8')
+    const source = fs.readFileSync('C:/projects/FS-Framework/public/index.html', 'utf8')
+    console.log('Tes');
     res.send(compile(source, {}, {}, 'root'));
 })
-
 
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`)

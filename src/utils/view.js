@@ -10,7 +10,7 @@ function view(path, data) {
 
     const template = Handlebars.compile(source);
 
-    return template(data);
+    return template (data);
 }
 
 export default view;

@@ -1,5 +1,5 @@
 import fs from "fs";
-import { compile } from "../templater.js";
+import { compile } from "app/smol/templater"
 
 class Component {
     constructor(props) {
