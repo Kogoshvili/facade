@@ -1,9 +1,9 @@
 import express from 'express';
 import fs from 'fs';
-import MyComponent from "app/controller/MyComponent/MyComponent";
-import ChildComponent from "app/controller/ChildComponent/ChildComponent";
-import ComponentWrapper from "app/utils/componentWrapper";
-import { compile } from "app/smol/templater";
+import MyComponent from "app/components/MyComponent/MyComponent";
+import ChildComponent from "app/components/ChildComponent/ChildComponent";
+import makeComponent from "smol/factory";
+import { compile, compileInstance } from "app/smol/templater";
 
 const app = express()
 const port = 3000
@@ -27,16 +27,13 @@ app.post('/smol', (req, res) => {
         res.status(400).send(`Method ${method} not found on component ${component}`);
         return;
     }
-    const comp = components[component];
-    const wrapper = ComponentWrapper(comp);
-    const instance = wrapper(req.body);
+    const instance = makeComponent(components[component], req.body);
     instance[method]();
-    res.send(instance.render());
+    res.send(compileInstance(instance));
 });
 
 app.get('/', (req, res) => {
     const source = fs.readFileSync('C:/projects/FS-Framework/public/index.html', 'utf8')
-    console.log('Tes');
     res.send(compile(source, {}, {}, 'root'));
 })
 

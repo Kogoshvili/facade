@@ -10,9 +10,11 @@
     "baseUrl": ".",
     "outDir": "./dist",
     "paths": {
-      "app/*": ["src/*"]
+      "app/*": ["src/*"],
+      "smol/*": ["src/smol/*"],
     },
-    "target": "ES6",
+    "experimentalDecorators": true,
+    "target": "ES2022",
   },
   "exclude": ["node_modules", "dist", "_prev"]
 }
