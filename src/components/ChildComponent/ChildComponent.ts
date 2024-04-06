@@ -1,15 +1,15 @@
-import { Component } from "app/smol/decorators";
+import { Component } from 'app/smol/decorators'
 
 @Component({
     name: 'ChildComponent',
     view: './ChildComponent.html',
 })
 class ChildComponent {
-    constructor(props: any) {
+    constructor(_props: any) {
     }
 }
 
-export default ChildComponent;
+export default ChildComponent
 
 
 

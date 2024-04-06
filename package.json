@@ -8,14 +8,17 @@
     "build": "npx tsc --project tsconfig.json",
     "start": "node dist/server.js",
     "dev": "tsx watch --inspect-brk src/server.ts",
-    "start:debug": "node --inspect dist/server.js"
+    "eslint": "eslint . --ext .ts --fix"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.5.0",
+    "@typescript-eslint/parser": "^7.5.0",
     "callsites": "^4.1.0",
     "dotenv": "^16.4.5",
+    "eslint": "^8.57.0",
     "express": "^4.19.2",
     "lodash": "^4.17.21",
     "nanoid": "^5.0.6"

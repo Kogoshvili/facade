@@ -1,17 +1,18 @@
-import { Component } from "app/smol/decorators/index";
+import { Component } from 'app/smol/decorators/index'
 
 @Component({
     name: 'MyComponent',
-    view: './MyComponent.html'
+    view: './MyComponent.html',
+    style: './MyComponent.css',
 })
 class MyComponent {
-    value: number = 0;
+    value: number = 0
 
-    constructor(props: any) {
+    constructor(_props: any) {
     }
 
-    onClick(event: Event) {
-        this.value++;
+    onClick(_event: Event) {
+        this.value++
     }
 }
 
