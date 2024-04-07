@@ -37,14 +37,6 @@ function compileBody(componentName, id, parameters) {
 }
 
 function updateDOM(diffJson) {
-    const dd = new exports.DiffDOM({ debug: true, diffcap: 500})
-    // const component = document.querySelector('[smol]')
+    const dd = new exports.DiffDOM()
     dd.apply(document.body, JSON.parse(diffJson))
-}
-
-function updateState(componentName, attributes) {
-    const state = JSON.parse(attributes['smol-state'])
-    const id = attributes['smol'].split('.')[1]
-
-    smol.components[componentName].instances[id].state = state
 }

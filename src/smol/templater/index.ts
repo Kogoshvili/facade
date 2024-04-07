@@ -74,7 +74,7 @@ export function renderPartial(data: Record<string, any>, options?: any) {
 
     // create object that consists of properties of data object excluding numeric keys
     const newData = Object.keys(data).reduce((acc, key) => isNaN(parseInt(key)) ? {...acc, [key]: data[key]} : acc, {})
-    return renderInstance(instance, options.name, newId, newData)
+    return renderInstance(instance, options.name, instance.id, newData)
 }
 
 const getMethods = (instance: any) => fp.flow(

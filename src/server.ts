@@ -3,8 +3,7 @@ import fs from 'fs'
 import session from 'express-session'
 import { DiffDOM, stringToObj } from 'diff-dom'
 import makeComponent from 'smol/factory'
-import { renderInstance, renderTemplate, renderPartial, registerPartials, renderPartialWithInstance } from 'app/smol/templater'
-import Handlebars from 'handlebars'
+import { renderTemplate, registerPartials } from 'app/smol/templater'
 import TodoItem from './components/TodoItem/TodoItem'
 import TodoList from './components/TodoList/TodoList'
 
@@ -80,6 +79,7 @@ app.post('/smol', (req, res) => {
     }
 
     session.renderedHtmlBody = newBody
+    instanceTree = {}
     res.send(response)
 })
 
