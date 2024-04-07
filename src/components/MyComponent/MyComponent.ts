@@ -7,6 +7,7 @@ import { Component } from 'app/smol/decorators/index'
 })
 class MyComponent {
     value: number = 0
+    #products: string[] = ['apple', 'banana', 'cherry']
 
     constructor(_props: any) {
     }

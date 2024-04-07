@@ -3,7 +3,8 @@ import fs from 'fs'
 import MyComponent from 'app/components/MyComponent/MyComponent'
 import ChildComponent from 'app/components/ChildComponent/ChildComponent'
 import makeComponent from 'smol/factory'
-import { compile, compileInstance } from 'app/smol/templater'
+import { renderInstance, renderTemplate, renderPartial, registerPartials, renderPartialWithInstance } from 'app/smol/templater'
+import Handlebars from 'handlebars'
 
 const app = express()
 const port = 3000
@@ -15,27 +16,35 @@ export const components: Readonly<any> = {
     ChildComponent
 }
 
+registerPartials(components)
+
 app.post('/smol', (req, res) => {
-    const { component, method } = req.query as { component: string, method: string }
+    const { component: componentName, method } = req.query as { component: string, method: string }
 
-    if (!components[component]) {
-        res.status(400).send(`Component ${component} not found`)
+    if (!components[componentName]) {
+        res.status(400).send(`Component ${componentName} not found`)
         return
     }
 
-    if (typeof components[component].prototype[method] !== 'function') {
-        res.status(400).send(`Method ${method} not found on component ${component}`)
+    if (typeof components[componentName].prototype[method] !== 'function') {
+        res.status(400).send(`Method ${method} not found on component ${componentName}`)
         return
     }
 
-    const instance = makeComponent(components[component], {}, req.body)
+    const { id, state, children } = req.body
+
+    const instance = makeComponent(components[componentName], {}, state)
     instance[method]()
-    res.send(compileInstance(instance))
+    Handlebars.registerPartial(componentName, renderPartialWithInstance(instance))
+    const rendered = renderInstance(instance, componentName, id, children)
+    Handlebars.registerPartial(componentName, renderPartial)
+
+    res.send(rendered)
 })
 
 app.get('/', (_req, res) => {
     const source = fs.readFileSync('C:/projects/FS-Framework/public/index.html', 'utf8')
-    res.send(compile(source, {}, {}, 'root'))
+    res.send(renderTemplate(source, {}, 'root'))
 })
 
 app.listen(port, () => {

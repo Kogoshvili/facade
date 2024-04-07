@@ -2,52 +2,55 @@ import { nanoid } from 'nanoid'
 import { components } from 'app/server'
 import fp from 'lodash/fp'
 import makeComponent from 'smol/factory'
+import Handlebars from 'handlebars'
 
-function compileInstance(instance: any) {
-    const methodMap = fp.flow(
-        Object.getPrototypeOf,
-        Object.getOwnPropertyNames,
-        getPublicMethods(instance),
-        buildMethodMap(instance)
-    )(instance)
-
-    return compile(instance.render(), {...instance}, methodMap, instance._name)
+interface IVariables {
+    properties?: Record<string, any>
+    methods?: Record<string, string>
+    extras?: Record<string, any>
 }
 
-function compile(template: string, variables: Record<string, string>, methods: Record<string, string>, componentName?: string) {
-    return template.replace(/\{\{(.+?)\}\}/g, (_match: string, key: string) => {
-        if (key.startsWith('>')) return resolveComponent(key, variables)
-        return resolveVariable(key, variables, methods)
-    }).replace(/<(\w+)/, defineComponent(variables, componentName))
+export function renderInstance(instance: any, componentName: string, id?: string, props: Record<string, any> = {}) {
+    const methodMap = getMethods(instance)
+    const variables: IVariables = {properties: {...instance}, methods: methodMap, extras: props}
+    const template = instance.render()
+    return renderTemplate(template, variables, componentName, id)
 }
 
-function resolveComponent(key: string, variables: Record<string, string>): string {
-    const [componentName, ...variableString] = key.replace('>', '').trim().split(' ')
-    const component = components[componentName]
+export function renderTemplate(template: string, variables: IVariables, componentName: string, id?: string) {
+    const rendered = Handlebars.compile(template)({...variables.properties, ...variables.methods, ...variables.extras})
+    return rendered.replace(/<(\w+)/, defineComponent(variables.properties, componentName, id))
+}
 
-    if (!component) {
-        throw new Error('Component ' + componentName + ' not found')
+export const renderPartialWithInstance = (instance: any, id?: string) => (_data: Record<string, any>, options?: any) => {
+    const componentName = options. name
+    return renderInstance(instance, componentName, id)
+}
+
+export function registerPartials(components: Record<string, any>) {
+    for (const [name, _component] of Object.entries(components)) {
+        Handlebars.registerPartial(name, renderPartial)
+    }
+}
+
+export function renderPartial(data: Record<string, any>, options?: any) {
+    const component = components[options.name]
+    const instance = makeComponent(component, {}, options.hash)
+
+    if (data[options.name]) {
+        const { state, id } = data[options.name].pop()
+        return renderInstance(instance, options.name, id, state)
     }
 
-    const componentProps = variableMap(variables)(variableString)
-
-    const instance = makeComponent(component, {}, componentProps)
-
-    const methodMap = fp.flow(
-        Object.getPrototypeOf,
-        Object.getOwnPropertyNames,
-        getPublicMethods(instance),
-        buildMethodMap(instance)
-    )(instance)
-
-    return compile(instance.render(), {...instance}, methodMap, instance._name)
+    return renderInstance(instance, options.name)
 }
 
-const variableMap = (variables: Record<string, string>) => (variableString: string[]) => variableString.reduce((acc, variable: string) => {
-    const [key, value] = variable.split('=')
-    acc[key] = variables[value] || null
-    return acc
-}, {} as Record<string, string | null>)
+const getMethods = (instance: any) => fp.flow(
+    Object.getPrototypeOf,
+    Object.getOwnPropertyNames,
+    getPublicMethods(instance),
+    buildMethodMap(instance)
+)(instance)
 
 const getPublicMethods = (initialize: any) => (methods: string[]) =>
     methods.filter(m => typeof initialize[m] === 'function' && (m !== 'constructor' && m !== 'render'))
@@ -58,15 +61,7 @@ const buildMethodMap = (initialize: any) => (methods: string[]) =>
         [m]: `smol.onClick(event, '${initialize._name}.${m}')`
     }), {} as Record<string, string>)
 
-function resolveVariable(key: string, variables: Record<string, string>, methods: Record<string, string>) {
-    return {...variables, ...methods}[key] ?? ''
+const defineComponent = (variables: Record<string, string> = {}, componentName = 'root', id?: string) => (_match: string, tag: string) => {
+    const state = JSON.stringify(variables)
+    return `<${tag} smol="${componentName}.${id ?? nanoid(10)}" smol-state='${state}'`
 }
-
-function defineComponent(variables: Record<string, string>, componentName = 'root') {
-    return (_match: string, tag: string) => {
-        const state = JSON.stringify(variables)
-        return `<${tag} smol="${componentName}.${nanoid(10)}" smol-state='${state}'`
-    }
-}
-
-export { compile, compileInstance }
