@@ -1,0 +1,77 @@
+persistant state mode where state is stored in localstore
+and then rebuilt
+
+
+
+
+
+
+
+        function buildDOMTree(element, parentTree = window.smog) {
+            if (element.nodeType === Node.ELEMENT_NODE) {
+                const smolAttr = element.getAttribute('smol');
+                if (smolAttr) {
+                    const [key, id] = smolAttr.split('.');
+                    const stateAttr = element.getAttribute('smol-state');
+                    const state = stateAttr ? JSON.parse(stateAttr) : {};
+
+                    // get closest parent with smol attribute
+                    let parent = element.parentElement;
+                    while (parent && !parent.getAttribute('smol')) {
+                        parent = parent.parentElement;
+                    }
+
+                    const parentSmolAttr = parent ? parent.getAttribute('smol') : null;
+                    const [parentKey, parentId] = parentSmolAttr ? parentSmolAttr.split('.') : [null, null];
+
+                    if (!parentTree[key]) {
+                        parentTree[key] = {};
+                    }
+
+                    if (!parentTree[key][id]) {
+                        parentTree[key][id] = {
+                            state: state,
+                            children: {},
+                        };
+                    } else {
+                        // Update the state if the key and id already exist
+                        parentTree[key][id].state = { ...parentTree[key][id].state, ...state };
+                    }
+
+                    if (parentKey && parentId && !parentTree[parentKey]?.[parentId]?.children?.[id]) {
+                        parentTree[parentKey] = parentTree[parentKey] || {};
+                        parentTree[parentKey][parentId] = parentTree[parentKey][parentId] || {};
+                        parentTree[parentKey][parentId].children = parentTree[parentKey][parentId].children || {};
+                        parentTree[parentKey][parentId].children[key] = parentTree[parentKey][parentId].children[key] || {};
+                        parentTree[parentKey][parentId].children[key][id] = parentTree[key][id];
+                    }
+
+                    Array.from(element.childNodes).forEach((child) => buildDOMTree(child, parentTree[key][id].children));
+                }
+            }
+        }
+function getHierarchicalArray(obj: any) {
+    const result: any[] = []
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    function traverse(node: any, parentComponent: any = undefined) {
+        for (const [componentName, componentData] of Object.entries(node)) {
+            const { parents, ...other } = componentData as any
+            const hasParents = parents ? Object.keys(parents).length > 0 : false
+
+            if (!hasParents) {
+                result.unshift({ ...other, component: componentName }) // add to the beginning of the result array
+            } else {
+                for (const parentComponentName in parents) {
+                    parents[parentComponentName].forEach((parentComponentData: any) => {
+                        traverse({ [parentComponentName]: parentComponentData }, parentComponentName)
+                    })
+                }
+                result.unshift({ ...other, component: componentName }) // add to the beginning of the result array after traversing the children
+            }
+        }
+    }
+
+    traverse(obj)
+    return result.reverse()
+}

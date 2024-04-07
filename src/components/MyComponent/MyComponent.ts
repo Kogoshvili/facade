@@ -6,10 +6,10 @@ import { Component } from 'app/smol/decorators/index'
     style: './MyComponent.css',
 })
 class MyComponent {
-    value: number = 0
     #products: string[] = ['apple', 'banana', 'cherry']
 
     constructor(_props: any) {
+        this.value = 0
     }
 
     onClick(_event: Event) {
