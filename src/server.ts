@@ -36,7 +36,7 @@ app.post('/smol', (req, res) => {
     const instance = makeComponent(components[componentName], {}, state)
     instance[method]()
     Handlebars.registerPartial(componentName, renderPartialWithInstance(instance))
-    const rendered = renderInstance(instance, componentName, id, children)
+    const rendered = renderInstance(instance, componentName, id, { children })
     Handlebars.registerPartial(componentName, renderPartial)
 
     res.send(rendered)

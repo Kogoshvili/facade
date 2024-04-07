@@ -19,11 +19,12 @@ export function renderInstance(instance: any, componentName: string, id?: string
 
 export function renderTemplate(template: string, variables: IVariables, componentName: string, id?: string) {
     const rendered = Handlebars.compile(template)({...variables.properties, ...variables.methods, ...variables.extras})
-    return rendered.replace(/<(\w+)/, defineComponent(variables.properties, componentName, id))
+    if (variables.extras?.children) delete variables.extras.children
+    return rendered.replace(/<(\w+)/, defineComponent({...variables.properties, ...variables.extras}, componentName, id))
 }
 
 export const renderPartialWithInstance = (instance: any, id?: string) => (_data: Record<string, any>, options?: any) => {
-    const componentName = options. name
+    const componentName = options.name
     return renderInstance(instance, componentName, id)
 }
 
@@ -37,8 +38,8 @@ export function renderPartial(data: Record<string, any>, options?: any) {
     const component = components[options.name]
     const instance = makeComponent(component, {}, options.hash)
 
-    if (data[options.name]) {
-        const { state, id } = data[options.name].pop()
+    if (data.children && data.children[options.name]) {
+        const { state, id } = data.children[options.name].shift()
         return renderInstance(instance, options.name, id, state)
     }
 
