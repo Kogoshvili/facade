@@ -9,16 +9,46 @@ declare global {
 window.smol = window.smol || {}
 window.smol.config = window.smol.config || {
     protocol: 'http', // http or ws
+    persistence: true
 }
+
+addEventListener('beforeunload', (event) => {
+    socket.close()
+    localStorage.setItem('smolState', JSON.stringify(window.smol.state))
+})
 
 const url = 'http://localhost:3000/smol/http'
 
 if (!window.smol?.state) {
-    fetch(`${url}/sync-state`)
-        .then(res => res.json())
-        .then(state => {
-            window.smol.state = state
+    // check if local storage has state
+    const state = localStorage.getItem('smolState')
+    const persistence = window.smol.config.persistence
+
+    if (persistence && state) {
+        window.smol.state = JSON.parse(state)
+        // post request to set state with local storage state
+        fetch(`${url}/set-state`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: state
         })
+            .then(res => res.json())
+            .then(({ dom, state }) => {
+                updateDOM(dom)
+                updateState(state)
+                document.body.style.visibility = 'visible'
+            })
+    } else {
+        fetch(`${url}/get-state`)
+            .then(res => res.json())
+            .then(state => {
+                window.smol.state = state
+                document.body.style.visibility = 'visible'
+            })
+    }
+
 }
 
 const socket = new WebSocket('ws://localhost:3000/smol/ws')

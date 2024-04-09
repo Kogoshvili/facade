@@ -1,5 +1,10 @@
-persistant state mode where state is stored in localstore and then rebuilt
+features:
 post render method that modifies render dom before it is send using jsdom to make do
-websockets
 multiple pages (instance tree per page)
-something wierd with dom diff works but unnecesery updates?
+
+bugs:
+
+
+feature bug fixes:
+fork dom-diff or write more efficient one that will produce smaller diffs
+ reasoing: something wierd with dom diff, works but unnecesery updates

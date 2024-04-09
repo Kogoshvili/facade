@@ -75,30 +75,62 @@ function processRequest(session: any, componentName: string, componentId: string
 
     const response: any = {}
 
-
     const oldInstanceTree = JSON.parse(session.instanceTree)
     const instanceMap = getCleanInstanceTree()
     const stateDiff = diff(oldInstanceTree, instanceMap)
     response.state = flattenChangeset(stateDiff)
 
-    const newBody = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
-
+    const newBodyString = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
 
     if (session.renderedHtmlBody) {
         const dd = new DiffDOM()
         const prevBody = stringToObj(session.renderedHtmlBody)
-        const domDiff = dd.diff(prevBody, newBody!)
+        const newBody = stringToObj(newBodyString!)
+        const domDiff = dd.diff(prevBody, newBody)
         response.dom = domDiff
     }
 
-    session.renderedHtmlBody = newBody
+    session.renderedHtmlBody = newBodyString
     session.instanceTree = JSON.stringify(instanceMap)
 
     resetInstanceTree()
     return response
 }
 
-router.get('/smol/http/sync-state', (req, res) => {
+router.post('/smol/http/set-state', (req, res) => {
+    const session = req.session as any
+    const state = req.body
+
+    rebuildInstanceTree(JSON.stringify(state))
+    recreateInstances()
+
+    const rendered = renderTemplate(indexHtml)
+
+    const response: any = {}
+
+    const oldInstanceTree = JSON.parse(session.instanceTree)
+    const instanceMap = getCleanInstanceTree()
+    const stateDiff = diff(oldInstanceTree, instanceMap)
+    response.state = flattenChangeset(stateDiff)
+
+    const newBodyString = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
+
+    if (session.renderedHtmlBody) {
+        const dd = new DiffDOM()
+        const prevBody = stringToObj(session.renderedHtmlBody)
+        const newBody = stringToObj(newBodyString!)
+        const domDiff = dd.diff(prevBody, newBody)
+        response.dom = domDiff
+    }
+
+    session.renderedHtmlBody = newBodyString
+    session.instanceTree = JSON.stringify(instanceMap)
+
+    resetInstanceTree()
+    res.send(response)
+})
+
+router.get('/smol/http/get-state', (req, res) => {
     const session = req.session as any
     const instanceTree = JSON.parse(session.instanceTree)
     res.send(instanceTree)

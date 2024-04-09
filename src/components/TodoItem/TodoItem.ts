@@ -6,6 +6,7 @@ import IComponent from 'app/smol/types/component'
 })
 class TodoItem implements IComponent {
     todo: string
+    isDone: string = ''
 
     constructor(props: any) {
         this.todo = props.todo
@@ -14,6 +15,10 @@ class TodoItem implements IComponent {
     onRemove() {
         // @ts-ignore
         this._parent.remove(this.todo)
+    }
+
+    toggleCheckbox() {
+        this.isDone = this.isDone === 'checked' ? '' : 'checked'
     }
 }
 
