@@ -9,6 +9,7 @@ interface IVariables {
     instance?: any
     properties?: Record<string, any>
     methods?: Record<string, string>
+    extra?: Record<string, any>
 }
 
 enum UseState {
@@ -51,6 +52,7 @@ export function getCleanInstanceTree() {
 
     return tree
 }
+let partialBlock: any = null
 
 export function jsonInstanceTree() {
     const tree = getCleanInstanceTree()
@@ -65,14 +67,31 @@ export function registerPartials(components: Record<string, any>) {
     for (const [name] of Object.entries(components)) {
         Handlebars.registerPartial(name, renderPartial)
     }
+    Handlebars.registerPartial('@partial-block', renderPartialBlock)
 }
 
-export function renderInstance(instance: any) {
+function renderPartialBlock(_data: Record<string, any>, options: any) {
+    const instance = options?.data?.root?._instance
+    const methodMap = getMethods(instance)
+    const variables: any = {
+        ...instance,
+        ...methodMap,
+        ...(instance ? { _instance: instance } : {}),
+    }
+
+    return partialBlock({
+        ...variables,
+        ...{ _parent: variables }
+    })
+}
+
+export function renderInstance(instance: any, data: any = {}) {
     const methodMap = getMethods(instance)
     const variables: IVariables = {
         instance,
         properties: {...instance},
-        methods: methodMap
+        methods: methodMap,
+        extra: data
     }
     const template = instance._view()
     return renderTemplate(template, variables)
@@ -84,14 +103,17 @@ export function renderTemplate(template: string, variables: IVariables = {}) {
     const rendered = Handlebars.compile(template)({
         ...variables.properties,
         ...variables.methods,
+        ...variables.extra,
         ...(variables.instance ? { _instance: variables.instance } : {})
     })
 
     return rendered.replace(/<(\w+)/, defineComponent(instance._name, instance._id))
 }
 
+
 export function renderPartial(_data: Record<string, any>, options?: any) {
     const component = components[options.name]
+    let instance = null
 
     if (instanceTree[options.name]) {
         instanceTree[options.name].filter((i: any) => i.state === UseState.InUse).forEach((i: any) => i.state = UseState.Used)
@@ -111,31 +133,42 @@ export function renderPartial(_data: Record<string, any>, options?: any) {
 
             unused.instance.__updateProps(options.hash)
 
-            return renderInstance(unused.instance)
+            instance = unused.instance
         }
     }
 
-    const newId = nanoid(10)
+    if (!instance) {
+        const newId = nanoid(10)
 
-    const instance = makeComponent(component, {
-        _parent: options.data?.root?.instance ?? null,
-        _id: newId,
-        _name: options.name,
-    }, options.hash)
+        const newInstance = makeComponent(component, {
+            _parent: options.data?.root?.instance ?? _data._parent?._instance ?? null,
+            _id: newId,
+            _name: options.name,
+        }, options.hash)
 
-    instanceTree[options.name] = instanceTree[options.name] ?? []
-    instanceTree[options.name].push({
-        id: instance._id,
-        name: instance._name,
-        instance,
-        parent: options.data?.root?._instance ? {
-            name: options.data?.root?._name,
-            id: options.data?.root?._id
-        } : null,
-        state: UseState.InUse
-    })
+        instance = newInstance
+
+        instanceTree[options.name] = instanceTree[options.name] ?? []
+        instanceTree[options.name].push({
+            id: instance._id,
+            name: instance._name,
+            instance: newInstance,
+            parent: (options.data?.root?._instance ?? _data._parent?._instance) ? {
+                name: options.data?.root?._name ?? _data._parent?._instance._name,
+                id: options.data?.root?._id ?? _data._parent?._instance._id
+            } : null,
+            state: UseState.InUse
+        })
+
+        instance.mount?.()
+
+    }
 
     instance.mount?.()
+
+    if (options.data['partial-block']) {
+        partialBlock = options.data['partial-block']
+    }
 
     return renderInstance(instance)
 }

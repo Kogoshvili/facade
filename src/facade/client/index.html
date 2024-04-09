@@ -6,7 +6,9 @@
     <script async src="./static/index.js" type="text/javascript"></script>
 </head>
 <body style="visibility: hidden;">
-    {{> TodoList }}
+    {{#> TodoList }}
+        {{> TodoItem todo='test' }}
+    {{/ TodoList }}
 </body>
 
 </html>
