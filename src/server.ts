@@ -3,9 +3,11 @@ import fs from 'fs'
 import session from 'express-session'
 import { DiffDOM, stringToObj } from 'diff-dom'
 import makeComponent from 'smol/factory'
-import { renderTemplate, registerPartials } from 'app/smol/templater'
+import { renderTemplate, registerPartials, getInstanceTree, resetInstanceTree, jsonInstanceTree, rebuildInstanceTree } from 'app/smol/templater'
 import TodoItem from './components/TodoItem/TodoItem'
 import TodoList from './components/TodoList/TodoList'
+import MyComponent from './components/MyComponent/MyComponent'
+import ChildComponent from './components/ChildComponent/ChildComponent'
 
 const app = express()
 const port = 3000
@@ -26,15 +28,17 @@ interface Session {
 const indexHtml = fs.readFileSync('C:/projects/FS-Framework/public/index.html', 'utf8')
 
 export const components: Readonly<any> = {
+    MyComponent,
+    ChildComponent,
     TodoItem,
     TodoList
 }
 
 registerPartials(components)
 
-export let instanceTree: any = {}
-
 app.post('/smol', (req, res) => {
+    const session = req.session as any
+    rebuildInstanceTree(session.instanceTree)
     const { component: componentName, method } = req.query as { component: string, method: string }
 
     if (!components[componentName]) {
@@ -48,7 +52,6 @@ app.post('/smol', (req, res) => {
     }
 
     const { component, parameters } = req.body
-    const session = req.session as any
 
     const revers = reverseRelationship(component)
 
@@ -68,11 +71,11 @@ app.post('/smol', (req, res) => {
     })
 
     const flatTree = transformObject(revers)
-    instanceTree = flatTree
+    const instanceTree = flatTree
     const mainInstance: any = flatTree[componentName][0].instance
     mainInstance[method](parameters)
     const source = indexHtml
-    const rendered = renderTemplate(source, {}, 'root')
+    const rendered = renderTemplate(source)
 
     let response: string = rendered
 
@@ -86,16 +89,22 @@ app.post('/smol', (req, res) => {
     }
 
     session.renderedHtmlBody = newBody
-    instanceTree = {}
+
+
+    session.instanceTree = jsonInstanceTree()
+    resetInstanceTree()
     res.send(response)
 })
 
 app.get('/', (req, res) => {
-    const source = indexHtml
-    const rendered = renderTemplate(source, {}, 'root')
     const session = req.session as any
+    rebuildInstanceTree(session.instanceTree)
+    const source = indexHtml
+    const rendered = renderTemplate(source)
     const bodyContent = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
     session.renderedHtmlBody = bodyContent
+    session.instanceTree = jsonInstanceTree()
+    resetInstanceTree()
     res.send(rendered)
 })
 

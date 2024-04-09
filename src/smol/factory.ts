@@ -13,6 +13,7 @@ function updateProperties(temp: any, props: Record<string, any>) {
 function makeComponent(component: any, props: any = {}, state: Record<string, any> = {}): Component {
     // eslint-disable-next-line new-cap
     const temp = new component(props)
+    temp.__init(props)
     return updateProperties(temp, state)
 }
 

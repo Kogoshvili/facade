@@ -1,20 +1,18 @@
-import Component from 'app/smol/component'
-import { Component as DComponent } from 'app/smol/decorators/index'
+import { Component } from 'app/smol/decorators/index'
+import IComponent from 'app/smol/types/component'
 
-@DComponent({
-    name: 'TodoItem',
+@Component({
     view: './TodoItem.html'
 })
-class TodoItem extends Component {
+class TodoItem implements IComponent {
     todo: string
 
     constructor(props: any) {
-        super(props)
         this.todo = props.todo
     }
 
     onRemove() {
-        this.parent.remove(this.todo)
+        this._parent.remove(this.todo)
     }
 }
 

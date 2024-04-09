@@ -1,12 +1,10 @@
 import { Component } from 'app/smol/decorators/index'
 
 @Component({
-    name: 'MyComponent',
     view: './MyComponent.html',
-    style: './MyComponent.css',
 })
 class MyComponent {
-    #products: string[] = ['apple', 'banana', 'cherry']
+    value: number
 
     constructor(_props: any) {
         this.value = 0

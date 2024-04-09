@@ -1,15 +1,14 @@
-import Component from 'app/smol/component'
-import { Component as DComponent } from 'app/smol/decorators/index'
+import { Component } from 'app/smol/decorators/index'
+import IComponent from 'app/smol/types/component'
 
-@DComponent({
-    name: 'TodoList',
+@Component({
     view: './TodoList.html',
 })
-class TodoList extends Component {
-    todos: string[] = ['apple', 'banana', 'cherry']
+class TodoList implements IComponent {
+    todos: string[]
 
-    constructor(props: any) {
-        super(props)
+    constructor(_props: any) {
+        this.todos = getTodos()
     }
 
     onChange({ value }: any) {
@@ -19,6 +18,11 @@ class TodoList extends Component {
     remove(todo: string) {
         this.todos = this.todos.filter(t => t !== todo)
     }
+}
+
+function getTodos() {
+    const todos = ['apple', 'banana', 'cherry', 'date', 'elderberry', 'fig', 'grape', 'honeydew', 'kiwi', 'lemon', 'mango', 'nectarine', 'orange', 'pear', 'quince', 'raspberry', 'strawberry', 'tangerine', 'watermelon']
+    return todos.sort(() => Math.random() - 0.5).slice(0, 3)
 }
 
 export default TodoList

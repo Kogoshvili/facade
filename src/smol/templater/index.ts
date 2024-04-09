@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid'
-import { components, instanceTree } from 'app/server'
+import { components } from 'app/server'
 import fp from 'lodash/fp'
 import makeComponent from 'smol/factory'
 import Handlebars from 'handlebars'
@@ -8,25 +8,51 @@ interface IVariables {
     instance?: any
     properties?: Record<string, any>
     methods?: Record<string, string>
-    extras?: {
-        children?: Record<string, any>
-        [key: string]: any
+}
+
+enum UseState {
+    Unused,
+    InUse,
+    Used
+}
+
+let instanceTree: Record<string, any> = {}
+
+export function getInstanceTree() {
+    return instanceTree
+}
+
+export function resetInstanceTree() {
+    instanceTree = {}
+}
+
+export function rebuildInstanceTree(json: string) {
+    if (!json) return
+
+    const tree = JSON.parse(json)
+
+    for (const key in tree) {
+        tree[key] = tree[key].map((i: any) => {
+            i.instance = null
+            return i
+        })
     }
+
+    instanceTree = JSON.parse(json)
 }
 
-export function renderInstance(instance: any, componentName: string, id?: string, props: Record<string, any> = {}) {
-    const methodMap = getMethods(instance)
-    const variables: IVariables = {instance, properties: {...instance}, methods: methodMap, extras: props}
-    const template = instance.render()
-    return renderTemplate(template, variables, componentName, id)
-}
+export function jsonInstanceTree() {
+    const tree = {...instanceTree}
 
-export function renderTemplate(template: string, variables: IVariables, componentName: string, id?: string) {
-    const rendered = Handlebars.compile(template)({
-        ...variables.properties, ...variables.methods, ...variables.extras,
-        instance: variables.instance,
-    })
-    return rendered.replace(/<(\w+)/, defineComponent({...variables.properties, ...variables.extras}, componentName, id))
+    for (const key in tree) {
+        tree[key] = tree[key].map((i: any) => {
+            i.instance = null
+            i.state = UseState.Unused
+            return i
+        })
+    }
+
+    return JSON.stringify(tree)
 }
 
 export function registerPartials(components: Record<string, any>) {
@@ -35,46 +61,74 @@ export function registerPartials(components: Record<string, any>) {
     }
 }
 
-export function renderPartial(data: Record<string, any>, options?: any) {
+export function renderInstance(instance: any) {
+    const methodMap = getMethods(instance)
+    const variables: IVariables = {
+        instance,
+        properties: {...instance},
+        methods: methodMap
+    }
+    const template = instance._view()
+    return renderTemplate(template, variables)
+}
+
+export function renderTemplate(template: string, variables: IVariables = {}) {
+    const instance = variables.instance ?? {}
+
+    const rendered = Handlebars.compile(template)({
+        ...variables.properties,
+        ...variables.methods,
+        ...(variables.instance ? { _instance: variables.instance } : {})
+    })
+
+    return rendered.replace(/<(\w+)/, defineComponent(variables.properties, instance._name, instance._id))
+}
+
+export function renderPartial(_data: Record<string, any>, options?: any) {
     const component = components[options.name]
-    let instance: any = null
+
+    if (instanceTree[options.name]) {
+        instanceTree[options.name].filter((i: any) => i.state === UseState.InUse).forEach((i: any) => i.state = UseState.Used)
+        const unused = instanceTree[options.name].find((i: any) => i.state === UseState.Unused)
+
+        if (unused) {
+            unused.state = UseState.InUse
+
+            if (!unused.instance) {
+                const instance = makeComponent(component, {
+                    parent: options.data?.root?._instance ?? null,
+                    id: unused.id,
+                    name: unused.name,
+                }, options.hash)
+                unused.instance = instance
+            }
+
+            return renderInstance(unused.instance)
+        }
+    }
+
     const newId = nanoid(10)
 
-    if (options.data?._parent?.root?.instance) {
-        const parentObj = options.data._parent.root
-        if (instanceTree[parentObj.name]) {
-            const parent = instanceTree[parentObj.name]?.find((i: any) => i.id === parentObj.id)
-            if (parent)  {
-                const child = parent.children[options.name]?.find((i: any) => !i.used)
-                if (child) {
-                    instance = child.instance
-                    child.used = true
-                }
-            }
-        }
-    }
+    const instance = makeComponent(component, {
+        parent: options.data?.root?._instance ?? null,
+        id: newId,
+        name: options.name,
+    }, options.hash)
 
-    if (!instance) {
-        if (instanceTree[options.name] && instanceTree[options.name].length) {
-            const obj = instanceTree[options.name].find((i: any) => !i.used)
-            if (obj) {
-                instance = obj.instance
-                obj.used = true
-            }
-        }
-    }
+    instanceTree[options.name] = instanceTree[options.name] ?? []
+    instanceTree[options.name].push({
+        id: newId,
+        name: options.name,
+        instance,
+        properties: {...instance},
+        parent: options.data?.root?._instance ? {
+            name: options.data?.root?._name,
+            id: options.data?.root?._id
+        } : null,
+        state: UseState.InUse
+    })
 
-    if (!instance) {
-        instance = makeComponent(component, {
-            parent: options.data?._parent?.root?.instance ?? null,
-            id: newId,
-            name: options.name,
-        }, options.hash)
-    }
-
-    // create object that consists of properties of data object excluding numeric keys
-    const newData = Object.keys(data).reduce((acc, key) => isNaN(parseInt(key)) ? {...acc, [key]: data[key]} : acc, {})
-    return renderInstance(instance, options.name, instance.id, newData)
+    return renderInstance(instance)
 }
 
 const getMethods = (instance: any) => fp.flow(
@@ -94,10 +148,11 @@ const buildMethodMap = (initialize: any) => (methods: string[]) =>
     }), {} as Record<string, string>)
 
 const defineComponent = (variables: Record<string, string> = {}, componentName = 'root', id?: string) => (_match: string, tag: string) => {
-    const cleanVariables = {...variables}
-    delete cleanVariables.id
-    delete cleanVariables.name
-    delete cleanVariables.parent
-    const state = JSON.stringify(cleanVariables)
-    return `<${tag} smol="${componentName}.${id ?? nanoid(10)}" smol-state='${state}'`
+    const state = {...variables}
+    for (const key in state) {
+        if (key.startsWith('_')) {
+            delete state[key]
+        }
+    }
+    return `<${tag} smol="${componentName}.${id ?? 0}" smol-state='${JSON.stringify(state)}'`
 }

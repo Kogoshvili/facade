@@ -1,9 +1,10 @@
-
-interface Component {
-    _name: string;
-    _viewPath: string;
-    render: () => string;
+interface IComponent {
+    _name?: string;
+    _parent?: any;
+    _id?: string;
+    _viewPath?: string;
+    _view?: () => string;
     [key: string]: any;
 }
 
-export default Component
+export default IComponent
