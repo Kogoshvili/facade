@@ -67,7 +67,7 @@ export function registerPartials(components: Record<string, any>) {
     for (const [name] of Object.entries(components)) {
         Handlebars.registerPartial(name, renderPartial)
     }
-    Handlebars.registerPartial('@partial-block', renderPartialBlock)
+    // Handlebars.registerPartial('@partial-block', renderPartialBlock)
 }
 
 function renderPartialBlock(_data: Record<string, any>, options: any) {
@@ -85,13 +85,12 @@ function renderPartialBlock(_data: Record<string, any>, options: any) {
     })
 }
 
-export function renderInstance(instance: any, data: any = {}) {
+export function renderInstance(instance: any) {
     const methodMap = getMethods(instance)
     const variables: IVariables = {
         instance,
         properties: {...instance},
         methods: methodMap,
-        extra: data
     }
     const template = instance._view()
     return renderTemplate(template, variables)
@@ -132,7 +131,6 @@ export function renderPartial(_data: Record<string, any>, options?: any) {
             }
 
             unused.instance.__updateProps(options.hash)
-
             instance = unused.instance
         }
     }
@@ -161,10 +159,8 @@ export function renderPartial(_data: Record<string, any>, options?: any) {
         })
 
         instance.mount?.()
-
     }
 
-    instance.mount?.()
 
     if (options.data['partial-block']) {
         partialBlock = options.data['partial-block']

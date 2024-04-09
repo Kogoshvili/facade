@@ -1,6 +1,8 @@
 features:
 post render method that modifies render dom before it is send using jsdom to make do
 multiple pages (instance tree per page)
+gziping ws sending data as blob
+
 
 bugs:
 

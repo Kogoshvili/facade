@@ -8,8 +8,6 @@ import { renderTemplate, resetInstanceTree, jsonInstanceTree } from 'facade/serv
 
 import TodoItem from './components/TodoItem/TodoItem'
 import TodoList from './components/TodoList/TodoList'
-import MyComponent from './components/MyComponent/MyComponent'
-import ChildComponent from './components/ChildComponent/ChildComponent'
 
 const app = new WebSocketExpress()
 const router = new Router()
@@ -26,8 +24,6 @@ app.use(session({
 }))
 
 registerComponents({
-    MyComponent,
-    ChildComponent,
     TodoItem,
     TodoList
 })
