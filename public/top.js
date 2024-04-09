@@ -90,19 +90,40 @@ const observer = new MutationObserver((mutations) => {
             if (mutation.addedNodes.length > 0 && mutation.addedNodes[0]?.nodeType === Node.ELEMENT_NODE) buildDOMTree(mutation.addedNodes[0])
             return mutation
         })
-        .map(mutation => {
-            if (mutation.type === 'attributes' && mutation.attributeName === 'smol-state') {
-                const newState = mutation.target.getAttribute('smol-state')
-                const [key, id] = mutation.target.getAttribute('smol').split('.')
-                window.smog[key].find(obj => obj.id === id).state = JSON.parse(newState)
-            }
-            return mutation
-        })
 })
+
+// const observer2 = new MutationObserver((mutations) => {
+//     mutations
+//         .map(mutation => {
+//             if (mutation.type === 'attributes' && mutation.attributeName === 'smol-state') {
+//                 const newState = mutation.target.getAttribute('smol-state')
+//                 const [key, id] = mutation.target.getAttribute('smol').split('.')
+//                 const component = window.smog[key].find(obj => obj.id === id)
+
+//                 if (component) {
+//                     component.state = JSON.parse(newState)
+//                 } else {
+//                     buildDOMTree(mutation.target)
+//                 }
+//             }
+//             return mutation
+//         })
+// })
 
 observer.observe(document, {
     childList: true,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ['smol', 'smol-state'],
+    subtree: true
 })
+
+// dom loaded event
+window.addEventListener('DOMContentLoaded', () => {
+    observer.disconnect()
+})
+
+// observer2.observe(document, {
+//     childList: true,
+//     subtree: true,
+//     attributes: true,
+//     attributeOldValue: true,
+//     attributeFilter: ['smol', 'smol-state'],
+// })

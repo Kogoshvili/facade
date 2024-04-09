@@ -18,6 +18,13 @@ app.use(session({
     cookie: { secure: false } // Set secure to true if you're using HTTPS
 }))
 
+interface Session {
+    renderedHtmlBody: string
+    globalState: any
+}
+
+const indexHtml = fs.readFileSync('C:/projects/FS-Framework/public/index.html', 'utf8')
+
 export const components: Readonly<any> = {
     TodoItem,
     TodoList
@@ -64,7 +71,7 @@ app.post('/smol', (req, res) => {
     instanceTree = flatTree
     const mainInstance: any = flatTree[componentName][0].instance
     mainInstance[method](parameters)
-    const source = fs.readFileSync('C:/projects/FS-Framework/public/index.html', 'utf8')
+    const source = indexHtml
     const rendered = renderTemplate(source, {}, 'root')
 
     let response: string = rendered
@@ -84,7 +91,7 @@ app.post('/smol', (req, res) => {
 })
 
 app.get('/', (req, res) => {
-    const source = fs.readFileSync('C:/projects/FS-Framework/public/index.html', 'utf8')
+    const source = indexHtml
     const rendered = renderTemplate(source, {}, 'root')
     const session = req.session as any
     const bodyContent = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
@@ -98,6 +105,18 @@ app.listen(port, () => {
 
 function reverseRelationship(input: any) {
     const parentToChildren: any = {}
+
+    const component = Object.keys(input)[0]
+    if (Object.keys(input[component].parents).length === 0) {
+        return {
+            [component]: [
+                {
+                    ...input[component],
+                    children: {},
+                }
+            ]
+        }
+    }
 
     function traverseAndReverse(obj: any, childType: any) {
         const { id, state, parents } = obj
@@ -150,43 +169,6 @@ function traverseAndModify(tree: any, callback: any) {
     }
 
     return tree
-}
-
-function flattenTree(tree: any) {
-    const flattenedTree: any = {}
-    const childrenReferences: any = {}
-
-    function traverse(obj: any, parentType: string) {
-        if (!flattenedTree[parentType]) {
-            flattenedTree[parentType] = []
-        }
-        flattenedTree[parentType].push(obj)
-
-        for (const childType in obj.children) {
-            if (!childrenReferences[childType]) {
-                childrenReferences[childType] = []
-            }
-            childrenReferences[childType].push(...obj.children[childType])
-
-            obj.children[childType].forEach((child: any) => {
-                traverse(child, childType)
-            })
-
-            delete obj.children[childType]
-        }
-    }
-
-    for (const parentType in tree) {
-        tree[parentType].forEach((parent: any) => {
-            traverse(parent, parentType)
-        })
-    }
-
-    for (const childType in childrenReferences) {
-        flattenedTree[childType] = childrenReferences[childType]
-    }
-
-    return flattenedTree
 }
 
 function transformObject(input: any) {

@@ -43,9 +43,9 @@ export function renderPartial(data: Record<string, any>, options?: any) {
     if (options.data?._parent?.root?.instance) {
         const parentObj = options.data._parent.root
         if (instanceTree[parentObj.name]) {
-            const parent = instanceTree[parentObj.name].find((i: any) => i.id === parentObj.id)
+            const parent = instanceTree[parentObj.name]?.find((i: any) => i.id === parentObj.id)
             if (parent)  {
-                const child = parent.children[options.name].find((i: any) => !i.used)
+                const child = parent.children[options.name]?.find((i: any) => !i.used)
                 if (child) {
                     instance = child.instance
                     child.used = true

@@ -1,4 +1,4 @@
-/* global smol, smog */
+/* global smol, smog, buildDOMTree */
 const url = 'http://localhost:3000/smol'
 
 window.smol = window.smol || {}
@@ -37,6 +37,27 @@ function compileBody(componentName, id, parameters) {
 }
 
 function updateDOM(diffJson) {
-    const dd = new exports.DiffDOM()
+    const dd = new exports.DiffDOM({
+        postDiffApply: function ({ diff, node }) {
+            if (node.nodeType !== Node.ELEMENT_NODE) return
+
+            if (diff.action === 'removeElement') {
+                const smolAttr = node.getAttribute('smol')
+                if (!smolAttr) return
+                const [key, id] = smolAttr.split('.')
+                smog[key] = smog[key].filter(c => c.id !== id)
+            }
+
+            if (diff.action === 'modifyAttribute') {
+                const smolAttr = node.getAttribute('smol')
+                if (!smolAttr) return
+                const [key, id] = smolAttr.split('.')
+                const state = JSON.parse(node.getAttribute('smol-state'))
+                const component = smog[key].find(c => c.id === id)
+                if (component) component.state = state
+                else buildDOMTree(node)
+            }
+        },
+    })
     dd.apply(document.body, JSON.parse(diffJson))
 }
