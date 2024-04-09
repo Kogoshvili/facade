@@ -19,7 +19,7 @@ function recreateInstances(instanceTree: any) {
                         _id: instance.id,
                         _name: instance.name,
                     }, oldProperties)
-                    instance.properties = removeHiddenProperties({...instance.instance})
+                    delete instance.properties
                 }
             }
         } else {
@@ -29,7 +29,7 @@ function recreateInstances(instanceTree: any) {
                 _id: instance.id,
                 _name: instance.name,
             }, oldProperties)
-            instance.properties = removeHiddenProperties({...instance.instance})
+            delete instance.properties
         }
     }
 

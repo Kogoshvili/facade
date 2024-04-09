@@ -34,8 +34,8 @@ export function rebuildInstanceTree(json: string) {
 
     for (const key in tree) {
         tree[key] = tree[key].map((i: any) => {
-            i.instance = null
             i.state = UseState.Unused
+            i.instance = null
             return i
         })
     }
@@ -52,13 +52,18 @@ export function jsonInstanceTree() {
 
     for (const key in tree) {
         tree[key] = tree[key].map((i: any) => {
-            i.instance = null
+            i.properties = removeHiddenProperties(i.instance)
             i.state = UseState.Unused
+            i.instance = null
             return i
         })
     }
 
     return JSON.stringify(tree)
+}
+
+export function getInstance(name: string, id: string) {
+    return instanceTree[name].find((i: any) => i.id === id)
 }
 
 export function registerPartials(components: Record<string, any>) {
@@ -128,7 +133,6 @@ export function renderPartial(_data: Record<string, any>, options?: any) {
         id: instance._id,
         name: instance._name,
         instance,
-        properties: {...removeHiddenProperties(instance)},
         parent: options.data?.root?._instance ? {
             name: options.data?.root?._name,
             id: options.data?.root?._id
@@ -152,7 +156,7 @@ const getPublicMethods = (initialize: any) => (methods: string[]) =>
 const buildMethodMap = (initialize: any) => (methods: string[]) =>
     methods.reduce((acc, m) => ({
         ...acc,
-        [m]: `smol.onClick(event, '${initialize._name}.${m}')`
+        [m]: `smol.onClick(event, '${initialize._name}.${initialize._id}.${m}')`
     }), {} as Record<string, string>)
 
 const defineComponent = (variables: Record<string, string> = {}, componentName = 'root', id?: string) => (_match: string, tag: string) => {

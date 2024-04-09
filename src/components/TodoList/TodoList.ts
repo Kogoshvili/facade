@@ -12,7 +12,7 @@ class TodoList implements IComponent {
     }
 
     mount() {
-        this.todos = getTodos()
+        // this.todos = getTodos()
     }
 
     onChange({ value }: any) {

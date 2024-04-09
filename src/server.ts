@@ -3,7 +3,7 @@ import fs from 'fs'
 import session from 'express-session'
 import { DiffDOM, stringToObj } from 'diff-dom'
 import makeComponent from 'smol/factory'
-import { renderTemplate, registerPartials, getInstanceTree, resetInstanceTree, jsonInstanceTree, rebuildInstanceTree, recreateInstances } from 'app/smol/templater'
+import { renderTemplate, registerPartials, getInstanceTree, resetInstanceTree, jsonInstanceTree, rebuildInstanceTree, recreateInstances, getInstance } from 'app/smol/templater'
 import TodoItem from './components/TodoItem/TodoItem'
 import TodoList from './components/TodoList/TodoList'
 import MyComponent from './components/MyComponent/MyComponent'
@@ -32,7 +32,7 @@ export const components: Readonly<any> = {
 registerPartials(components)
 
 app.post('/smol', (req, res) => {
-    const { component: componentName, method } = req.query as { component: string, method: string }
+    const { component: componentName, id: componentId, method } = req.query as { component: string, method: string }
 
     if (!components[componentName]) {
         res.status(400).send(`Component ${componentName} not found`)
@@ -46,13 +46,11 @@ app.post('/smol', (req, res) => {
 
     const session = req.session as any
     rebuildInstanceTree(session.instanceTree)
-
-    const { parameters } = req.body
-
     recreateInstances()
 
-    return;
-    mainInstance[method](parameters)
+    const { parameters } = req.body
+    const instance = getInstance(componentName, componentId)
+    instance.instance[method](parameters)
     const rendered = renderTemplate(indexHtml)
 
     let response: string = rendered
