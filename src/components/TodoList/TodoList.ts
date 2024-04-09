@@ -5,9 +5,13 @@ import IComponent from 'app/smol/types/component'
     view: './TodoList.html',
 })
 class TodoList implements IComponent {
-    todos: string[]
+    todos: string[] = []
 
     constructor(_props: any) {
+        this.todos = getTodos()
+    }
+
+    mount() {
         this.todos = getTodos()
     }
 

@@ -3,7 +3,7 @@ import fs from 'fs'
 import session from 'express-session'
 import { DiffDOM, stringToObj } from 'diff-dom'
 import makeComponent from 'smol/factory'
-import { renderTemplate, registerPartials, getInstanceTree, resetInstanceTree, jsonInstanceTree, rebuildInstanceTree } from 'app/smol/templater'
+import { renderTemplate, registerPartials, getInstanceTree, resetInstanceTree, jsonInstanceTree, rebuildInstanceTree, recreateInstances } from 'app/smol/templater'
 import TodoItem from './components/TodoItem/TodoItem'
 import TodoList from './components/TodoList/TodoList'
 import MyComponent from './components/MyComponent/MyComponent'
@@ -20,11 +20,6 @@ app.use(session({
     cookie: { secure: false } // Set secure to true if you're using HTTPS
 }))
 
-interface Session {
-    renderedHtmlBody: string
-    globalState: any
-}
-
 const indexHtml = fs.readFileSync('C:/projects/FS-Framework/public/index.html', 'utf8')
 
 export const components: Readonly<any> = {
@@ -37,8 +32,6 @@ export const components: Readonly<any> = {
 registerPartials(components)
 
 app.post('/smol', (req, res) => {
-    const session = req.session as any
-    rebuildInstanceTree(session.instanceTree)
     const { component: componentName, method } = req.query as { component: string, method: string }
 
     if (!components[componentName]) {
@@ -51,31 +44,16 @@ app.post('/smol', (req, res) => {
         return
     }
 
-    const { component, parameters } = req.body
+    const session = req.session as any
+    rebuildInstanceTree(session.instanceTree)
 
-    const revers = reverseRelationship(component)
+    const { parameters } = req.body
 
-    traverseAndModify(revers, (obj: any, thisType: string, parent: any) => {
-        const instance = makeComponent(components[thisType], {
-            parent: parent?.instance ?? null,
-            id: obj.id,
-            name: thisType,
-        }, obj.state)
-        delete obj.state
-        obj.instance = instance
-        obj.parent = parent?.instance ? {
-            instance: parent?.instance ?? null,
-            type: parent.type ?? null,
-            id: parent?.id ?? null,
-        } : null
-    })
+    recreateInstances()
 
-    const flatTree = transformObject(revers)
-    const instanceTree = flatTree
-    const mainInstance: any = flatTree[componentName][0].instance
+    return;
     mainInstance[method](parameters)
-    const source = indexHtml
-    const rendered = renderTemplate(source)
+    const rendered = renderTemplate(indexHtml)
 
     let response: string = rendered
 
@@ -99,8 +77,11 @@ app.post('/smol', (req, res) => {
 app.get('/', (req, res) => {
     const session = req.session as any
     rebuildInstanceTree(session.instanceTree)
-    const source = indexHtml
-    const rendered = renderTemplate(source)
+    if (session.instanceTree) {
+        recreateInstances()
+    }
+    const IT = getInstanceTree()
+    const rendered = renderTemplate(indexHtml)
     const bodyContent = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
     session.renderedHtmlBody = bodyContent
     session.instanceTree = jsonInstanceTree()

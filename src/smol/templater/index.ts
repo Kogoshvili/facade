@@ -3,6 +3,7 @@ import { components } from 'app/server'
 import fp from 'lodash/fp'
 import makeComponent from 'smol/factory'
 import Handlebars from 'handlebars'
+import recreateInstancesA from './instance-recreator'
 
 interface IVariables {
     instance?: any
@@ -34,11 +35,16 @@ export function rebuildInstanceTree(json: string) {
     for (const key in tree) {
         tree[key] = tree[key].map((i: any) => {
             i.instance = null
+            i.state = UseState.Unused
             return i
         })
     }
 
     instanceTree = JSON.parse(json)
+}
+
+export function recreateInstances() {
+    instanceTree = recreateInstancesA(instanceTree)
 }
 
 export function jsonInstanceTree() {
@@ -56,7 +62,7 @@ export function jsonInstanceTree() {
 }
 
 export function registerPartials(components: Record<string, any>) {
-    for (const [name, _component] of Object.entries(components)) {
+    for (const [name] of Object.entries(components)) {
         Handlebars.registerPartial(name, renderPartial)
     }
 }
@@ -96,12 +102,14 @@ export function renderPartial(_data: Record<string, any>, options?: any) {
 
             if (!unused.instance) {
                 const instance = makeComponent(component, {
-                    parent: options.data?.root?._instance ?? null,
-                    id: unused.id,
-                    name: unused.name,
+                    _parent: options.data?.root?._instance ?? null,
+                    _id: unused._id,
+                    _name: unused._name,
                 }, options.hash)
                 unused.instance = instance
             }
+
+            unused.instance.__updateProps(options.hash)
 
             return renderInstance(unused.instance)
         }
@@ -110,17 +118,17 @@ export function renderPartial(_data: Record<string, any>, options?: any) {
     const newId = nanoid(10)
 
     const instance = makeComponent(component, {
-        parent: options.data?.root?._instance ?? null,
-        id: newId,
-        name: options.name,
+        _parent: options.data?.root?.instance ?? null,
+        _id: newId,
+        _name: options.name,
     }, options.hash)
 
     instanceTree[options.name] = instanceTree[options.name] ?? []
     instanceTree[options.name].push({
-        id: newId,
-        name: options.name,
+        id: instance._id,
+        name: instance._name,
         instance,
-        properties: {...instance},
+        properties: {...removeHiddenProperties(instance)},
         parent: options.data?.root?._instance ? {
             name: options.data?.root?._name,
             id: options.data?.root?._id
@@ -148,11 +156,17 @@ const buildMethodMap = (initialize: any) => (methods: string[]) =>
     }), {} as Record<string, string>)
 
 const defineComponent = (variables: Record<string, string> = {}, componentName = 'root', id?: string) => (_match: string, tag: string) => {
-    const state = {...variables}
-    for (const key in state) {
+    return `<${tag} smol="${componentName}.${id ?? 0}" smol-state='${JSON.stringify(removeHiddenProperties(variables))}'`
+}
+
+export const removeHiddenProperties = (props: any) => {
+    const newProps = {...props}
+
+    for (const key in newProps) {
         if (key.startsWith('_')) {
-            delete state[key]
+            delete newProps[key]
         }
     }
-    return `<${tag} smol="${componentName}.${id ?? 0}" smol-state='${JSON.stringify(state)}'`
+
+    return newProps
 }
