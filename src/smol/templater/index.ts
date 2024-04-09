@@ -140,6 +140,8 @@ export function renderPartial(_data: Record<string, any>, options?: any) {
         state: UseState.InUse
     })
 
+    instance.mount?.()
+
     return renderInstance(instance)
 }
 

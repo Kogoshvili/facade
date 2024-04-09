@@ -5,7 +5,6 @@ function makeComponent(component: any, props: any = {}, state: Record<string, an
     const temp = new component(props)
     temp.__init(props)
     temp.__updateProps(state)
-    temp.mount?.()
     return temp
 }
 

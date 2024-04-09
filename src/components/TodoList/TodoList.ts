@@ -11,9 +11,13 @@ class TodoList implements IComponent {
         this.todos = getTodos()
     }
 
+    // executed only once
     mount() {
-        // this.todos = getTodos()
+        this.todos = getTodos()
     }
+
+    // executed every time the component is rendered
+    prerender() {}
 
     onChange({ value }: any) {
         this.todos.push(value)
