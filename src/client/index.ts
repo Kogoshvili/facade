@@ -6,27 +6,51 @@ declare global {
     }
 }
 
-const url = 'http://localhost:3000/smol'
+window.smol = window.smol || {}
+window.smol.config = window.smol.config || {
+    protocol: 'http', // http or ws
+}
+
+const url = 'http://localhost:3000/smol/http'
 
 if (!window.smol?.state) {
-    fetch('http://localhost:3000/sync-state')
+    fetch(`${url}/sync-state`)
         .then(res => res.json())
         .then(state => {
             window.smol.state = state
         })
 }
 
-window.smol = window.smol || {}
+const socket = new WebSocket('ws://localhost:3000/smol/ws')
+
+socket.onopen = function () {
+    console.log('connected')
+}
+
+socket.onmessage = function (event) {
+    const { dom, state } = JSON.parse(event.data)
+    updateDOM(dom)
+    updateState(state)
+}
 
 window.smol.onClick = function (e: any, path: string) {
     const [componentName, componentId, method] = path.split('.')
+    const parameters = { value: e.target.value }
 
+    if (window.smol.config.protocol === 'http') {
+        handleUpdateHttp(componentName, componentId, method, parameters)
+    } else {
+        socket.send(JSON.stringify({ componentName, componentId, method, parameters }))
+    }
+}
+
+function handleUpdateHttp(componentName: string, componentId: string, method: string, parameters: any) {
     fetch(`${url}?component=${componentName}&id=${componentId}&method=${method}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ parameters: { value: e.target.value } })
+        body: JSON.stringify({ parameters })
     })
         .then(res => res.json())
         .then(({ dom, state }) => {
@@ -42,6 +66,8 @@ function updateDOM(domDiff: any) {
 
 function updateState(stateDiff: any) {
     const state = window.smol.state
+
+    if (!Array.isArray(stateDiff)) return
 
     stateDiff.forEach(({ path, value, type }: any) => {
         updateObjectByPath(state, path, { action: type, value })

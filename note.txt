@@ -1,2 +1,5 @@
 persistant state mode where state is stored in localstore and then rebuilt
 post render method that modifies render dom before it is send using jsdom to make do
+websockets
+multiple pages (instance tree per page)
+something wierd with dom diff works but unnecesery updates?

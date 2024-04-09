@@ -2,6 +2,8 @@ import express from 'express'
 import fs from 'fs'
 import session from 'express-session'
 import compression from 'compression'
+import { WebSocketExpress, Router } from 'websocket-express'
+
 import { DiffDOM, stringToObj } from 'diff-dom'
 import { diff, flattenChangeset } from 'json-diff-ts'
 import { renderTemplate, registerPartials, resetInstanceTree, jsonInstanceTree, rebuildInstanceTree, recreateInstances, getInstance, getCleanInstanceTree, getInstanceTree } from 'app/smol/templater'
@@ -10,7 +12,10 @@ import TodoList from './components/TodoList/TodoList'
 import MyComponent from './components/MyComponent/MyComponent'
 import ChildComponent from './components/ChildComponent/ChildComponent'
 
-const app = express()
+const app = new WebSocketExpress()
+const router = new Router()
+
+// const app = express()
 const port = 3000
 app.use(express.json())
 app.use(compression())
@@ -33,7 +38,17 @@ export const components: Readonly<any> = {
 
 registerPartials(components)
 
-app.post('/smol', (req, res) => {
+router.ws('/smol/ws', async (req, res) => {
+    const ws = await res.accept()
+    ws.on('message', (msg: string) => {
+        const data = JSON.parse(msg)
+        const { componentName, componentId, method, parameters } = data as { componentName: string, componentId: string, method: string, parameters: any }
+        const response = processRequest(req.session, componentName, componentId, method, parameters)
+        ws.send(JSON.stringify(response))
+    })
+})
+
+router.post('/smol/http', (req, res) => {
     const { component: componentName, id: componentId, method } = req.query as { component: string, id: string, method: string }
 
     if (!components[componentName]) {
@@ -46,11 +61,14 @@ app.post('/smol', (req, res) => {
         return
     }
 
-    const session = req.session as any
+    res.send(processRequest(req.session, componentName, componentId, method, req.body.parameters))
+})
+
+
+function processRequest(session: any, componentName: string, componentId: string, method: string, parameters: any) {
     rebuildInstanceTree(session.instanceTree)
     recreateInstances()
 
-    const { parameters } = req.body
     const instance = getInstance(componentName, componentId)
     instance.instance[method](parameters)
     const rendered = renderTemplate(indexHtml)
@@ -70,24 +88,23 @@ app.post('/smol', (req, res) => {
         const dd = new DiffDOM()
         const prevBody = stringToObj(session.renderedHtmlBody)
         const domDiff = dd.diff(prevBody, newBody!)
-        response.dom = domDiff//JSON.stringify(domDiff)
+        response.dom = domDiff
     }
 
     session.renderedHtmlBody = newBody
     session.instanceTree = JSON.stringify(instanceMap)
 
     resetInstanceTree()
+    return response
+}
 
-    res.send(response)
-})
-
-app.get('/sync-state', (req, res) => {
+router.get('/smol/http/sync-state', (req, res) => {
     const session = req.session as any
     const instanceTree = JSON.parse(session.instanceTree)
     res.send(instanceTree)
 })
 
-app.get('/', (req, res) => {
+router.get('/', (req, res) => {
     const session = req.session as any
     const rendered = renderTemplate(indexHtml)
     const bodyContent = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
@@ -97,6 +114,9 @@ app.get('/', (req, res) => {
     res.send(rendered)
 })
 
-app.listen(port, () => {
+app.use(router)
+
+const server = app.createServer()
+server.listen(3000, () => {
     console.log(`Example app listening on port ${port}`)
 })
