@@ -29,17 +29,6 @@ export function resetInstanceTree() {
 
 export function rebuildInstanceTree(json: string) {
     if (!json) return
-
-    const tree = JSON.parse(json)
-
-    for (const key in tree) {
-        tree[key] = tree[key].map((i: any) => {
-            i.state = UseState.Unused
-            i.instance = null
-            return i
-        })
-    }
-
     instanceTree = JSON.parse(json)
 }
 
@@ -47,10 +36,11 @@ export function recreateInstances() {
     instanceTree = recreateInstancesA(instanceTree)
 }
 
-export function jsonInstanceTree() {
+export function getCleanInstanceTree() {
     const tree = {...instanceTree}
 
     for (const key in tree) {
+        tree[key] = tree[key].filter((i: any) => i.state !== UseState.Unused)
         tree[key] = tree[key].map((i: any) => {
             i.properties = removeHiddenProperties(i.instance)
             i.state = UseState.Unused
@@ -59,6 +49,11 @@ export function jsonInstanceTree() {
         })
     }
 
+    return tree
+}
+
+export function jsonInstanceTree() {
+    const tree = getCleanInstanceTree()
     return JSON.stringify(tree)
 }
 

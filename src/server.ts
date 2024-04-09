@@ -2,8 +2,8 @@ import express from 'express'
 import fs from 'fs'
 import session from 'express-session'
 import { DiffDOM, stringToObj } from 'diff-dom'
-import makeComponent from 'smol/factory'
-import { renderTemplate, registerPartials, getInstanceTree, resetInstanceTree, jsonInstanceTree, rebuildInstanceTree, recreateInstances, getInstance } from 'app/smol/templater'
+import { diff, flattenChangeset } from 'json-diff-ts'
+import { renderTemplate, registerPartials, resetInstanceTree, jsonInstanceTree, rebuildInstanceTree, recreateInstances, getInstance, getCleanInstanceTree, getInstanceTree } from 'app/smol/templater'
 import TodoItem from './components/TodoItem/TodoItem'
 import TodoList from './components/TodoList/TodoList'
 import MyComponent from './components/MyComponent/MyComponent'
@@ -32,7 +32,7 @@ export const components: Readonly<any> = {
 registerPartials(components)
 
 app.post('/smol', (req, res) => {
-    const { component: componentName, id: componentId, method } = req.query as { component: string, method: string }
+    const { component: componentName, id: componentId, method } = req.query as { component: string, id: string, method: string }
 
     if (!components[componentName]) {
         res.status(400).send(`Component ${componentName} not found`)
@@ -53,23 +53,36 @@ app.post('/smol', (req, res) => {
     instance.instance[method](parameters)
     const rendered = renderTemplate(indexHtml)
 
-    let response: string = rendered
+    const response: any = {}
+
+
+    const oldInstanceTree = JSON.parse(session.instanceTree)
+    const instanceMap = getCleanInstanceTree()
+    const stateDiff = diff(oldInstanceTree, instanceMap)
+    response.state = flattenChangeset(stateDiff)
 
     const newBody = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
+
 
     if (session.renderedHtmlBody) {
         const dd = new DiffDOM()
         const prevBody = stringToObj(session.renderedHtmlBody)
-        const diff = dd.diff(prevBody, newBody!)
-        response = JSON.stringify(diff)
+        const domDiff = dd.diff(prevBody, newBody!)
+        response.dom = domDiff//JSON.stringify(domDiff)
     }
 
     session.renderedHtmlBody = newBody
+    session.instanceTree = JSON.stringify(instanceMap)
 
-
-    session.instanceTree = jsonInstanceTree()
     resetInstanceTree()
+
     res.send(response)
+})
+
+app.get('/sync-state', (req, res) => {
+    const session = req.session as any
+    const instanceTree = JSON.parse(session.instanceTree)
+    res.send(instanceTree)
 })
 
 app.get('/', (req, res) => {

@@ -16,5 +16,5 @@
     "experimentalDecorators": true,
     "target": "ES2022",
   },
-  "exclude": ["node_modules", "dist", "_prev"]
+  "exclude": ["node_modules", "dist", "_prev", "webpack.config.js"]
 }

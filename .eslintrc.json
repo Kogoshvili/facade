@@ -51,5 +51,11 @@
                 "ignoreRestSiblings": true
             }
           ]
-    }
+    },
+    "ignorePatterns": [
+        "node_modules/",
+        "dist/",
+        "_prev/",
+        "webpack.config.js"
+    ]
 }
