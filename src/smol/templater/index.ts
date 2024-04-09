@@ -92,7 +92,7 @@ export function renderTemplate(template: string, variables: IVariables = {}) {
         ...(variables.instance ? { _instance: variables.instance } : {})
     })
 
-    return rendered.replace(/<(\w+)/, defineComponent(variables.properties, instance._name, instance._id))
+    return rendered.replace(/<(\w+)/, defineComponent(instance._name, instance._id))
 }
 
 export function renderPartial(_data: Record<string, any>, options?: any) {
@@ -161,8 +161,8 @@ const buildMethodMap = (initialize: any) => (methods: string[]) =>
         [m]: `smol.onClick(event, '${initialize._name}.${initialize._id}.${m}')`
     }), {} as Record<string, string>)
 
-const defineComponent = (variables: Record<string, string> = {}, componentName = 'root', id?: string) => (_match: string, tag: string) => {
-    return `<${tag} smol="${componentName}.${id ?? 0}" smol-state='${JSON.stringify(removeHiddenProperties(variables))}'`
+const defineComponent = (componentName = 'root', id?: string) => (_match: string, tag: string) => {
+    return `<${tag} smol="${componentName}.${id ?? 0}"'`
 }
 
 export const removeHiddenProperties = (props: any) => {
