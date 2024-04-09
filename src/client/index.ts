@@ -2,30 +2,30 @@ import { DiffDOM } from 'diff-dom'
 
 declare global {
     interface Window {
-        smol: any;
+        facade: any;
     }
 }
 
-window.smol = window.smol || {}
-window.smol.config = window.smol.config || {
+window.facade = window.facade || {}
+window.facade.config = window.facade.config || {
     protocol: 'http', // http or ws
     persistence: true
 }
 
 addEventListener('beforeunload', (event) => {
     socket.close()
-    localStorage.setItem('smolState', JSON.stringify(window.smol.state))
+    localStorage.setItem('facade-state', JSON.stringify(window.facade.state))
 })
 
-const url = 'http://localhost:3000/smol/http'
+const url = 'http://localhost:3000/facade/http'
 
-if (!window.smol?.state) {
+if (!window.facade?.state) {
     // check if local storage has state
-    const state = localStorage.getItem('smolState')
-    const persistence = window.smol.config.persistence
+    const state = localStorage.getItem('facade-state')
+    const persistence = window.facade.config.persistence
 
     if (persistence && state) {
-        window.smol.state = JSON.parse(state)
+        window.facade.state = JSON.parse(state)
         // post request to set state with local storage state
         fetch(`${url}/set-state`, {
             method: 'POST',
@@ -44,14 +44,14 @@ if (!window.smol?.state) {
         fetch(`${url}/get-state`)
             .then(res => res.json())
             .then(state => {
-                window.smol.state = state
+                window.facade.state = state
                 document.body.style.visibility = 'visible'
             })
     }
 
 }
 
-const socket = new WebSocket('ws://localhost:3000/smol/ws')
+const socket = new WebSocket('ws://localhost:3000/facade/ws')
 
 socket.onopen = function () {
     console.log('connected')
@@ -63,11 +63,11 @@ socket.onmessage = function (event) {
     updateState(state)
 }
 
-window.smol.onClick = function (e: any, path: string) {
+window.facade.onClick = function (e: any, path: string) {
     const [componentName, componentId, method] = path.split('.')
     const parameters = { value: e.target.value }
 
-    if (window.smol.config.protocol === 'http') {
+    if (window.facade.config.protocol === 'http') {
         handleUpdateHttp(componentName, componentId, method, parameters)
     } else {
         socket.send(JSON.stringify({ componentName, componentId, method, parameters }))
@@ -95,7 +95,7 @@ function updateDOM(domDiff: any) {
 }
 
 function updateState(stateDiff: any) {
-    const state = window.smol.state
+    const state = window.facade.state
 
     if (!Array.isArray(stateDiff)) return
 

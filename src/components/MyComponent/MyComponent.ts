@@ -1,4 +1,4 @@
-import { Component } from 'app/smol/decorators/index'
+import { Component } from 'app/facade/decorators/index'
 
 @Component({
     view: './MyComponent.html',

@@ -6,7 +6,7 @@ import { WebSocketExpress, Router } from 'websocket-express'
 
 import { DiffDOM, stringToObj } from 'diff-dom'
 import { diff, flattenChangeset } from 'json-diff-ts'
-import { renderTemplate, registerPartials, resetInstanceTree, jsonInstanceTree, rebuildInstanceTree, recreateInstances, getInstance, getCleanInstanceTree, getInstanceTree } from 'app/smol/templater'
+import { renderTemplate, registerPartials, resetInstanceTree, jsonInstanceTree, rebuildInstanceTree, recreateInstances, getInstance, getCleanInstanceTree, getInstanceTree } from 'app/facade/templater'
 import TodoItem from './components/TodoItem/TodoItem'
 import TodoList from './components/TodoList/TodoList'
 import MyComponent from './components/MyComponent/MyComponent'
@@ -38,7 +38,7 @@ export const components: Readonly<any> = {
 
 registerPartials(components)
 
-router.ws('/smol/ws', async (req, res) => {
+router.ws('/facade/ws', async (req, res) => {
     const ws = await res.accept()
     ws.on('message', (msg: string) => {
         const data = JSON.parse(msg)
@@ -48,7 +48,7 @@ router.ws('/smol/ws', async (req, res) => {
     })
 })
 
-router.post('/smol/http', (req, res) => {
+router.post('/facade/http', (req, res) => {
     const { component: componentName, id: componentId, method } = req.query as { component: string, id: string, method: string }
 
     if (!components[componentName]) {
@@ -97,7 +97,7 @@ function processRequest(session: any, componentName: string, componentId: string
     return response
 }
 
-router.post('/smol/http/set-state', (req, res) => {
+router.post('/facade/http/set-state', (req, res) => {
     const session = req.session as any
     const state = req.body
 
@@ -130,7 +130,7 @@ router.post('/smol/http/set-state', (req, res) => {
     res.send(response)
 })
 
-router.get('/smol/http/get-state', (req, res) => {
+router.get('/facade/http/get-state', (req, res) => {
     const session = req.session as any
     const instanceTree = JSON.parse(session.instanceTree)
     res.send(instanceTree)

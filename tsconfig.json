@@ -11,7 +11,7 @@
     "outDir": "./dist",
     "paths": {
       "app/*": ["src/*"],
-      "smol/*": ["src/smol/*"],
+      "facade/*": ["src/facade/*"],
     },
     "experimentalDecorators": true,
     "target": "ES2022",

@@ -1,4 +1,4 @@
-import { Component } from 'app/smol/decorators'
+import { Component } from 'app/facade/decorators'
 
 @Component({
     view: './ChildComponent.html',

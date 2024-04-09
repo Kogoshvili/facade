@@ -1,7 +1,7 @@
 import { nanoid } from 'nanoid'
 import { components } from 'app/server'
 import fp from 'lodash/fp'
-import makeComponent from 'smol/factory'
+import makeComponent from 'facade/factory'
 import Handlebars from 'handlebars'
 import recreateInstancesA from './instance-recreator'
 
@@ -153,11 +153,11 @@ const getPublicMethods = (initialize: any) => (methods: string[]) =>
 const buildMethodMap = (initialize: any) => (methods: string[]) =>
     methods.reduce((acc, m) => ({
         ...acc,
-        [m]: `smol.onClick(event, '${initialize._name}.${initialize._id}.${m}')`
+        [m]: `facade.onClick(event, '${initialize._name}.${initialize._id}.${m}')`
     }), {} as Record<string, string>)
 
 const defineComponent = (componentName = 'root', id?: string) => (_match: string, tag: string) => {
-    return `<${tag} smol="${componentName}.${id ?? 0}"'`
+    return `<${tag} facade="${componentName}.${id ?? 0}"'`
 }
 
 export const removeHiddenProperties = (props: any) => {

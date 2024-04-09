@@ -1,5 +1,5 @@
-import { Component } from 'app/smol/decorators/index'
-import IComponent from 'app/smol/types/component'
+import { Component } from 'app/facade/decorators/index'
+import IComponent from 'app/facade/types/component'
 
 @Component({
     view: './TodoItem.html'
