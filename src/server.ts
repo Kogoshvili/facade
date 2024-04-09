@@ -1,6 +1,7 @@
 import express from 'express'
 import fs from 'fs'
 import session from 'express-session'
+import compression from 'compression'
 import { DiffDOM, stringToObj } from 'diff-dom'
 import { diff, flattenChangeset } from 'json-diff-ts'
 import { renderTemplate, registerPartials, resetInstanceTree, jsonInstanceTree, rebuildInstanceTree, recreateInstances, getInstance, getCleanInstanceTree, getInstanceTree } from 'app/smol/templater'
@@ -12,6 +13,7 @@ import ChildComponent from './components/ChildComponent/ChildComponent'
 const app = express()
 const port = 3000
 app.use(express.json())
+app.use(compression())
 app.use('/static', express.static('C:/projects/FS-Framework/public'))
 app.use(session({
     secret: 'your-secret-key',

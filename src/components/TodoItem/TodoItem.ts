@@ -12,6 +12,7 @@ class TodoItem implements IComponent {
     }
 
     onRemove() {
+        // @ts-ignore
         this._parent.remove(this.todo)
     }
 }
