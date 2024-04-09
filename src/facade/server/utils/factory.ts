@@ -1,4 +1,4 @@
-import Component from './types/component'
+import Component from 'facade/server/types/component'
 
 function makeComponent(component: any, props: any = {}, state: Record<string, any> = {}): Component {
     // eslint-disable-next-line new-cap

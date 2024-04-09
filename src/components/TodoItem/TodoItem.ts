@@ -1,6 +1,5 @@
-import { Component } from 'app/facade/decorators/index'
-import IComponent from 'app/facade/types/component'
-
+import { Component } from 'facade/server/decorators/index'
+import IComponent from 'facade/server/types/component'
 @Component({
     view: './TodoItem.html'
 })

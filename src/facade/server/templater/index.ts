@@ -1,7 +1,7 @@
 import { nanoid } from 'nanoid'
-import { components } from 'app/server'
+import { components } from 'facade/server'
 import fp from 'lodash/fp'
-import makeComponent from 'facade/factory'
+import makeComponent from 'facade/server/utils/factory'
 import Handlebars from 'handlebars'
 import recreateInstancesA from './instance-recreator'
 

@@ -1,5 +1,5 @@
-import makeComponent from '../factory'
-import { components } from 'app/server'
+import makeComponent from 'facade/server/utils/factory'
+import { components } from 'facade/server/index'
 import { removeHiddenProperties } from './index'
 
 function recreateInstances(instanceTree: any) {

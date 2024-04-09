@@ -27,7 +27,7 @@ export default function (env, argv) {
     return {
         mode: mode,
         devtool: isProd ? false : "inline-source-map",
-        context: path.resolve(__dirname, 'src/client'),
+        context: path.resolve(__dirname, 'src/facade/client'),
         entry: './index.ts',
         output: {
             filename: 'index.js',
