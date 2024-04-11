@@ -12,9 +12,12 @@
     "paths": {
       "app/*": ["src/*"],
       "facade/*": ["src/facade/*"],
+      "components/*": ["src/components/*"],
+      "pages/*": ["src/pages/*"],
     },
     "experimentalDecorators": true,
     "target": "ES2022",
+    "module": "ES2022"
   },
   "exclude": ["node_modules", "dist", "_prev", "webpack.config.js"]
 }

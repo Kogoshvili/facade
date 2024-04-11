@@ -3,11 +3,9 @@ import fs from 'fs'
 import session from 'express-session'
 import compression from 'compression'
 import { WebSocketExpress, Router } from 'websocket-express'
-import { facade, registerComponents, registerIndexHtml } from 'facade/server'
-import { renderTemplate, resetInstanceTree, jsonInstanceTree } from 'facade/server/templater'
-
-import TodoItem from './components/TodoItem/TodoItem'
-import TodoList from './components/TodoList/TodoList'
+import ProductList from 'components/ProductList/ProductList'
+import ProductCard from 'components/ProductCard/ProductCard'
+import render, { registerComponents } from 'facade/server/templater/engine'
 
 const app = new WebSocketExpress()
 const router = new Router()
@@ -24,23 +22,24 @@ app.use(session({
 }))
 
 registerComponents({
-    TodoItem,
-    TodoList
+    ProductList,
+    ProductCard
 })
 
-const indexHtml = fs.readFileSync('C:/projects/FS-Framework/public/index.html', 'utf8')
-registerIndexHtml(indexHtml)
+const indexHtml = fs.readFileSync('C:/projects/FS-Framework/src/facade/client/index.html', 'utf8')
+// registerIndexHtml(indexHtml)
 
-facade(app, router)
+// facade(app, router)
 
-router.get('/', (req, res) => {
-    const session = req.session as any
-    const rendered = renderTemplate(indexHtml)
-    const bodyContent = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
-    session.renderedHtmlBody = bodyContent
-    session.instanceTree = jsonInstanceTree()
-    resetInstanceTree()
-    res.send(rendered)
+router.get('/', async (req, res) => {
+    const result = await render(indexHtml, {})
+    // const session = req.session as any
+    // const rendered = renderTemplate(indexHtml)
+    // const bodyContent = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
+    // session.renderedHtmlBody = bodyContent
+    // session.instanceTree = jsonInstanceTree()
+    // resetInstanceTree()
+    res.send(result)
 })
 
 app.use(router)

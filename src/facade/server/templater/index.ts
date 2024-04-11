@@ -38,7 +38,7 @@ export function recreateInstances() {
 }
 
 export function getCleanInstanceTree() {
-    const tree = {...instanceTree}
+    const tree = { ...instanceTree }
 
     for (const key in tree) {
         tree[key] = tree[key].filter((i: any) => i.state !== UseState.Unused)
@@ -89,7 +89,7 @@ export function renderInstance(instance: any) {
     const methodMap = getMethods(instance)
     const variables: IVariables = {
         instance,
-        properties: {...instance},
+        properties: { ...instance },
         methods: methodMap,
     }
     const template = instance._view()
@@ -190,7 +190,7 @@ const defineComponent = (componentName = 'root', id?: string) => (_match: string
 }
 
 export const removeHiddenProperties = (props: any) => {
-    const newProps = {...props}
+    const newProps = { ...props }
 
     for (const key in newProps) {
         if (key.startsWith('_')) {
