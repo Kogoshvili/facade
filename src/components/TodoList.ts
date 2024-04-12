@@ -38,7 +38,7 @@ class TodoList {
                 </div>
                 <ul class="list-none">
                     {{#each todos}}
-                        {{> TodoItem todo={self} class="mb-2" }}
+                        {{> TodoItem todo={self} key={id} }}
                     {{/each}}
                 </ul>
             </div>

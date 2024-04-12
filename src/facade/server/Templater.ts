@@ -78,8 +78,7 @@ export default class Templater {
 
         this.postComponent?.(instance, parent)
 
-        let template = instance.render()
-        template = template.replace(/<(\w+)/, (_match: string, tag: string) => `<${tag} facade="${instance._name}.${instance._id}"'`)
+        const template = instance.render().replace(/<(\w+)/, defineComponent(instance))
 
         const result = await this.render(template, {...instance, ...methods}, instance as any)
 
@@ -110,6 +109,14 @@ export default class Templater {
 
         return ''
     }
+}
+
+const defineComponent = (instance: any) => (_match: string, tag: string) => {
+    let definition = `<${tag} facade="${instance._name}.${instance._id}"`
+    if (instance._key) {
+        definition += ` key="${instance._key}"`
+    }
+    return definition
 }
 
 function getValue(data: any, value: string) {

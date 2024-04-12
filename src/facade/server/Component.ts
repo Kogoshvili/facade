@@ -8,10 +8,10 @@ interface DComponent {
 }
 
 function Component(params?: DComponent) {
-    const { view } = params ?? { view: null }
-    const componentPath = callsites()[1].getFileName() as string
+    return function (target: any) {
+        const { view } = params ?? { view: null }
+        const componentPath = callsites()[1].getFileName() as string
 
-    return function (target: any) { // class
         target.prototype._view = view
         target.prototype._viewPath = view ? path.join(path.dirname(componentPath.replace('file:///', '')), view) : null
 
@@ -20,18 +20,19 @@ function Component(params?: DComponent) {
                 return target.prototype.render()
             }
 
-            //! TODO: make something more efficient?
             return fs.readFileSync(target.prototype._viewPath, 'utf8')
         }
 
         target.prototype._name = target.name
         target.prototype._parent = null
         target.prototype._id = null
+        target.prototype._key = null
 
         target.prototype.__init = function (props: any = {}) {
             this._parent = props._parent ?? {}
             this._id = props._id ?? nanoid(10)
             this._name = props._name ?? target.name
+            this._key = props._key ?? null
         }
 
         target.prototype.__updateProps = function (props: Record<string, any> = {}) {
@@ -42,6 +43,20 @@ function Component(params?: DComponent) {
                 }
             }
         }
+
+        return new Proxy(target, {
+            construct(target, args) {
+                const instance = new target(...args)
+
+                return new Proxy(instance, {
+                    set(target, property, value, receiver) {
+                        const result = Reflect.set(target, property, value, receiver)
+                        // console.log(`Property ${property.toString()} changed to ${value}`)
+                        return result
+                    }
+                })
+            }
+        })
     }
 }
 

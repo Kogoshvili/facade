@@ -87,7 +87,7 @@ export async function getComponentInstance(compName: string, props: any, parent:
 
     if (ComponentGraph[compName]) {
         ComponentGraph[compName].filter((i: any) => i.state === UseState.InUse).forEach((i: any) => i.state = UseState.Used)
-        const unused = ComponentGraph[compName].find((i: any) => i.state === UseState.Unused)
+        const unused = ComponentGraph[compName].find((i: any) => i.state === UseState.Unused && (props.key ? i.key === props.key : true))
 
         if (unused) {
             unused.state = UseState.InUse
@@ -101,7 +101,7 @@ export async function getComponentInstance(compName: string, props: any, parent:
                 unused.instance = instance
             }
 
-            // unused.instance.__updateProps(state)
+            unused.instance.__updateProps(props)
             instance = unused.instance
         }
     }
@@ -110,6 +110,7 @@ export async function getComponentInstance(compName: string, props: any, parent:
         const newInstance = makeComponent(component, {
             _parent: parent ?? null,
             _name: compName,
+            _key: props.key ?? null
         }, props)
 
         instance = newInstance
@@ -118,6 +119,7 @@ export async function getComponentInstance(compName: string, props: any, parent:
         ComponentGraph[compName].push({
             id: instance._id,
             name: instance._name,
+            key: instance._key,
             instance: newInstance,
             properties: removeHiddenProperties(instance),
             parent: parent ? { name: parent._name, id: parent._id } : null,
