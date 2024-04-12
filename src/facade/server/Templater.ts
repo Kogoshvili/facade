@@ -38,6 +38,10 @@ export default class Templater {
     async replacer(match: string, offset: number, content: string, data: any, parent: any): Promise<string> {
         const param = match.trim()
 
+        if (param === 'handleAdd') {
+            console.log('')
+        }
+
         if (param.startsWith('/')) {
             return ''
         }
@@ -75,9 +79,14 @@ export default class Templater {
         this.postComponent?.(instance, parent)
 
         let template = instance.render()
-        template = template.replace(/<(\w+)/, (_match: string, tag: string) => `<${tag} facade="${instance._name}.${instance._id ?? 0}"'`)
+        template = template.replace(/<(\w+)/, (_match: string, tag: string) => `<${tag} facade="${instance._name}.${instance._id}"'`)
 
-        return await this.render(template, {...instance, ...methods}, instance as any)
+        const result = await this.render(template, {...instance, ...methods}, instance as any)
+
+        return result.replace(/@(\w+)(:\w+)?="(.*?)"/g,
+            (_: string, event: string, mode: string = ':lazy', method: string) =>
+                `data-facade-event="${event}.${mode?.replace(':', '')}.${instance._name}.${instance._id}.${method}" id="${instance._name}.${instance._id}"`
+        )
     }
 
     async handleHelper(param: string, content: string, offset: number, data: any, parent: any): Promise<string> {

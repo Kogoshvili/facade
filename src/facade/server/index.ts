@@ -22,12 +22,20 @@ function facade(_app: any, router: any) {
             const data = JSON.parse(msg)
             const session = req.session as any
 
-            const { componentName, componentId, method, parameters } = data as { componentName: string, componentId: string, method: string, parameters: any }
+            const { componentName, componentId, property, parameters, event, mode } = data as any
+
+            if (mode === 'bind') {
+                const basicTree = JSON.parse(session.instanceTree)
+                basicTree[componentName].find((i: any) => i.id === componentId).properties[property] = parameters
+                session.instanceTree = JSON.stringify(basicTree)
+
+                return ws.send(JSON.stringify({}))
+            }
 
             recreateComponentGraph(session.instanceTree)
-            executeMethodOnGraph(componentName, componentId, method, parameters)
+            executeMethodOnGraph(componentName, componentId, property, parameters)
 
-            const renderer = new Templater({ noMount: true })
+            const renderer = new Templater({})
             const rendered = await renderer.render(indexHtml, {})
             const response: any = {}
 
@@ -56,7 +64,8 @@ function facade(_app: any, router: any) {
         })
     })
 
-    router.post('/facade/http', (req: any, res: any) => {
+    router.post('/facade/http', async (req: any, res: any) => {
+        const session = req.session as any
         const { component: componentName, id: componentId, method } = req.query as { component: string, id: string, method: string }
 
         if (!components[componentName]) {
@@ -69,7 +78,37 @@ function facade(_app: any, router: any) {
             return
         }
 
-        // res.send(processRequest(req.session, componentName, componentId, method, req.body.parameters))
+        const { parameters } = req.body
+
+        recreateComponentGraph(session.instanceTree)
+        executeMethodOnGraph(componentName, componentId, method, parameters)
+
+        const renderer = new Templater({ noMount: true })
+        const rendered = await renderer.render(indexHtml, {})
+        const response: any = {}
+
+        const oldInstanceTree = JSON.parse(session.instanceTree)
+        const instanceMap = clearComponentGraph()
+        const stateDiff = diff(oldInstanceTree, instanceMap)
+        response.state = flattenChangeset(stateDiff)
+
+        const oldBodyString = session.renderedHtmlBody
+        const newBodyString = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
+
+        if (oldBodyString) {
+            const dd = new DiffDOM()
+            const prevBody = stringToObj(oldBodyString!)
+            const newBody = stringToObj(newBodyString!)
+            const domDiff = dd.diff(prevBody, newBody)
+            response.dom = domDiff
+        }
+
+        session.renderedHtmlBody = newBodyString
+        session.instanceTree = JSON.stringify(instanceMap)
+
+        deleteComponentGraph()
+
+        res.send(JSON.stringify(response))
     })
 
 

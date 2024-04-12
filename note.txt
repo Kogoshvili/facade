@@ -3,10 +3,8 @@ post render method that modifies render dom before it is send using jsdom to mak
 multiple pages (instance tree per page)
 proper passing stuff as a child
 gziping ws sending data as blob
-ASYNC Handlebars
-Handlebars.create new instance for each page?
 
-replace handlebars with custom solution maybe even jsx?
+better event listener handling, write some custom helper for it
 
 bugs:
 

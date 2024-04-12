@@ -67,14 +67,21 @@ export function recreateComponentGraph(json: string) {
     }
 }
 
-export function executeMethodOnGraph(componentName: string, componentId: string, method: string, parameters: any) {
+export function executeMethodOnGraph(componentName: string, componentId: string, property: string, parameters: any) {
     const instance = ComponentGraph[componentName].find((i: any) => i.id === componentId)
-    const methodResult = instance.instance[method](parameters)
 
-    return methodResult
+    if (instance.instance[property] === undefined) {
+        return
+    }
+
+    if (typeof instance.instance[property] === 'function') {
+        return instance.instance[property](parameters)
+    }
+
+    instance.instance[property] = parameters
 }
 
-export async function getComponentInstance(compName: string, state: any, parent: any) {
+export async function getComponentInstance(compName: string, props: any, parent: any) {
     const component = components[compName]
     let instance = null
 
@@ -90,11 +97,11 @@ export async function getComponentInstance(compName: string, state: any, parent:
                     _parent: parent ?? null,
                     _id: unused._id,
                     _name: unused._name,
-                }, state)
+                }, props)
                 unused.instance = instance
             }
 
-            unused.instance.__updateProps(state)
+            // unused.instance.__updateProps(state)
             instance = unused.instance
         }
     }
@@ -103,7 +110,7 @@ export async function getComponentInstance(compName: string, state: any, parent:
         const newInstance = makeComponent(component, {
             _parent: parent ?? null,
             _name: compName,
-        }, state)
+        }, props)
 
         instance = newInstance
 
@@ -124,11 +131,11 @@ export async function getComponentInstance(compName: string, state: any, parent:
     return instance
 }
 
-function makeComponent(component: any, props: any = {}, state: Record<string, any> = {}): any {
+function makeComponent(component: any, hiddenProps: any = {}, props: Record<string, any> = {}): any {
     // eslint-disable-next-line new-cap
     const temp = new component(props)
-    temp.__init(props)
-    temp.__updateProps(state)
+    temp.__init(hiddenProps)
+    temp.__updateProps(props)
     return temp
 }
 

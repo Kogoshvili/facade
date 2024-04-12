@@ -1,5 +1,7 @@
 import { DiffDOM } from 'diff-dom'
 import Facade from './facade'
+import { debounce } from 'lodash-es'
+import { bind } from 'bind-event-listener'
 
 declare global {
     // eslint-disable-next-line no-var
@@ -18,14 +20,14 @@ facade.config = facade.config || {
 
 facade.state = facade.state || {}
 
-facade.onClick = function (e: any, path: string) {
-    const [componentName, componentId, method] = path.split('.')
-    const parameters = { value: e.target.value }
+facade.onClick = function (e: any, path: string, event?: string, mode?: string) {
+    const [componentName, componentId, property] = path.split('.')
+    const parameters = mode === 'bind' ? e.target.value : { value: e.target.value }
 
     if (facade.config.protocol === 'http') {
-        this.methods.handleUpdateHttp(componentName, componentId, method, parameters)
+        this.methods.handleUpdateHttp(componentName, componentId, property, parameters)
     } else {
-        this.socket.send(JSON.stringify({ componentName, componentId, method, parameters }))
+        this.socket.send(JSON.stringify({ componentName, componentId, property, parameters, event, mode }))
     }
 }
 
@@ -38,6 +40,7 @@ facade.init = function () {
     }
     this.socket.onmessage = (event: any) => {
         const { dom, state } = JSON.parse(event.data)
+        if (!dom || !state) return
         this.methods.updateDOM(dom)
         this.methods.updateState(state)
     }
@@ -50,7 +53,42 @@ facade.init = function () {
     })
 }
 
+facade.mount = function () {
+    this.methods.attachEvents()
+}
+
+addEventListener('DOMContentLoaded', () => {
+    if (!window.facade) return
+    window.facade.mount()
+})
+
+facade.rendered = function () {
+    this.methods.removeEvents()
+    this.methods.attachEvents()
+}
+
+let eventListeners: (() => void)[] = []
+
 facade.methods = {
+    removeEvents() {
+        eventListeners.forEach((remove) => remove())
+        eventListeners = []
+    },
+    attachEvents() {
+        const elements = document.querySelectorAll('[data-facade-event]')
+
+        elements.forEach((element) => {
+            const [event, mode, ...path] = element.getAttribute('data-facade-event')!.split('.')
+
+            const callback = debounce(
+                (e) => {facade.onClick.call(facade, e, path.join('.'), event, mode)},
+                mode === 'lazy' ? 500 : 100
+            )
+
+            const boundEvent = bind(element, { type: event, listener: callback })
+            eventListeners.push(boundEvent)
+        })
+    },
     syncState() {
         // check if local storage has state
         const state = localStorage.getItem('facade-state')
@@ -91,13 +129,23 @@ facade.methods = {
         })
             .then(res => res.json())
             .then(({ dom, state }) => {
+                if (!dom || !state) return
                 this.updateDOM(dom)
                 this.updateState(state)
             })
     },
     updateDOM(domDiff: any) {
-        const dd = new DiffDOM()
+        const dd = new DiffDOM({
+            postDiffApply: function (_info) {},
+            preDiffApply: function (info) {
+                if (info.diff.action === 'modifyChecked' && info.diff.newValue === undefined) {
+                    info.diff.newValue = info.diff.oldValue
+                }
+                return false
+            },
+        })
         dd.apply(document.body, domDiff)
+        facade.rendered()
     },
     updateState(stateDiff: any) {
         const state = facade.state
@@ -110,7 +158,7 @@ facade.methods = {
     },
     updateObjectByPath(obj: any, jsonPath: string, actionObj: { action: string, value: any }) {
         const { action, value } = actionObj
-        const pathParts = jsonPath.split(/[.\[\]]/g).filter(part => part !== '')
+        const pathParts = jsonPath.split(/[.[\]]/g).filter(part => part !== '')
 
         let currentObj = obj
         const lastIndex = pathParts.length - 1

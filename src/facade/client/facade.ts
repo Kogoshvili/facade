@@ -7,8 +7,12 @@ interface Facade {
         url: string
     }
     init: () => void
-    onClick: (e: any, path: string) => void
+    mount: () => void
+    rendered: () => void
+    onClick: (e: any, path: string, event?: string, mode?: string) => void
     methods: {
+        removeEvents: () => void
+        attachEvents: () => void
         syncState: () => void
         handleUpdateHttp: (componentName: string, componentId: string, method: string, parameters: any) => void
         updateDOM: (domDiff: any) => void
