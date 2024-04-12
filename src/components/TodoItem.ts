@@ -1,8 +1,7 @@
-import { Component } from 'facade/server/decorators/index'
-import IComponent from 'facade/server/types/component'
+import { Component } from 'facade/server/Component'
 
 @Component()
-class TodoItem implements IComponent {
+class TodoItem {
     todo: any
 
     constructor(props: any) {

@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import callsites from 'callsites'
-import { nanoid } from 'nanoid';
+import { nanoid } from 'nanoid'
 
 interface DComponent {
     view?: string;

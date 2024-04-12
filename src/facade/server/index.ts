@@ -1,6 +1,7 @@
 import { DiffDOM, stringToObj } from 'diff-dom'
 import { diff, flattenChangeset } from 'json-diff-ts'
-import Templater, { resetInstanceTree, getCleanInstanceTree, rebuildInstanceTree, recreateInstances, executeMethodOnTree, instanceTree, resetStateOfInstanceTree } from 'facade/server/templater/engine'
+import Templater from './Templater'
+import { clearComponentGraph, executeMethodOnGraph, recreateComponentGraph, deleteComponentGraph } from './ComponentManager'
 
 export let indexHtml = ''
 
@@ -23,17 +24,15 @@ function facade(_app: any, router: any) {
 
             const { componentName, componentId, method, parameters } = data as { componentName: string, componentId: string, method: string, parameters: any }
 
-            rebuildInstanceTree(session.instanceTree)
-            recreateInstances()
-
-            executeMethodOnTree(componentName, componentId, method, parameters)
+            recreateComponentGraph(session.instanceTree)
+            executeMethodOnGraph(componentName, componentId, method, parameters)
 
             const renderer = new Templater({ noMount: true })
             const rendered = await renderer.render(indexHtml, {})
             const response: any = {}
 
             const oldInstanceTree = JSON.parse(session.instanceTree)
-            const instanceMap = getCleanInstanceTree()
+            const instanceMap = clearComponentGraph()
             const stateDiff = diff(oldInstanceTree, instanceMap)
             response.state = flattenChangeset(stateDiff)
 
@@ -51,7 +50,7 @@ function facade(_app: any, router: any) {
             session.renderedHtmlBody = newBodyString
             session.instanceTree = JSON.stringify(instanceMap)
 
-            resetInstanceTree()
+            deleteComponentGraph()
 
             ws.send(JSON.stringify(response))
         })
@@ -75,39 +74,39 @@ function facade(_app: any, router: any) {
 
 
     router.post('/facade/http/set-state', async (req: any, res: any) => {
-        const session = req.session as any
-        const state = req.body
+        // const session = req.session as any
+        // const state = req.body
 
-        rebuildInstanceTree(JSON.stringify(state))
-        recreateInstances()
+        // rebuildInstanceTree(JSON.stringify(state))
+        // recreateInstances()
 
-        const renderer = new Templater({ noMount: true })
-        const rendered = await renderer.render(indexHtml, {})
+        // const renderer = new Templater({ noMount: true })
+        // const rendered = await renderer.render(indexHtml, {})
 
-        const response: any = {}
+        // const response: any = {}
 
-        const oldInstanceTree = JSON.parse(session.instanceTree)
-        const instanceMap = getCleanInstanceTree()
-        const stateDiff = diff(oldInstanceTree, instanceMap)
-        response.state = flattenChangeset(stateDiff)
+        // const oldInstanceTree = JSON.parse(session.instanceTree)
+        // const instanceMap = getCleanInstanceTree()
+        // const stateDiff = diff(oldInstanceTree, instanceMap)
+        // response.state = flattenChangeset(stateDiff)
 
-        const oldBodyString = session.renderedHtmlBody
-        const newBodyString = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
+        // const oldBodyString = session.renderedHtmlBody
+        // const newBodyString = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
 
-        if (oldBodyString) {
-            const dd = new DiffDOM()
-            const prevBody = stringToObj(oldBodyString!)
-            const newBody = stringToObj(newBodyString!)
-            const domDiff = dd.diff(prevBody, newBody)
-            response.dom = domDiff
-        }
+        // if (oldBodyString) {
+        //     const dd = new DiffDOM()
+        //     const prevBody = stringToObj(oldBodyString!)
+        //     const newBody = stringToObj(newBodyString!)
+        //     const domDiff = dd.diff(prevBody, newBody)
+        //     response.dom = domDiff
+        // }
 
-        session.renderedHtmlBody = newBodyString
-        session.instanceTree = JSON.stringify(instanceMap)
+        // session.renderedHtmlBody = newBodyString
+        // session.instanceTree = JSON.stringify(instanceMap)
 
-        resetInstanceTree()
+        // resetInstanceTree()
 
-        res.send(response)
+        // res.send(response)
     })
 
     router.get('/facade/http/get-state', (req: any, res: any) => {
@@ -122,9 +121,9 @@ function facade(_app: any, router: any) {
         const rendered = await renderer.render(indexHtml, {})
         const bodyContent = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
         session.renderedHtmlBody = bodyContent
-        const instanceMap = getCleanInstanceTree()
+        const instanceMap = clearComponentGraph()
         session.instanceTree = JSON.stringify(instanceMap)
-        resetInstanceTree()
+        deleteComponentGraph()
         res.send(rendered)
     })
 }
