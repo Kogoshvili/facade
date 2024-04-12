@@ -57,15 +57,15 @@ export default function (env, argv) {
                 ...(isAnalyze ? [new BundleAnalyzerPlugin.BundleAnalyzerPlugin()] : [])
             ]
         },
-        {
-            ...sharedConfig,
-            target: 'node',
-            entry: './src/server.ts',
-            output: {
-                path: path.resolve(__dirname, 'dist'),
-                filename: 'server.js',
-            },
-            externals: [nodeExternals()],
-        }
+        // {
+        //     ...sharedConfig,
+        //     target: 'node',
+        //     entry: './src/server.ts',
+        //     output: {
+        //         path: path.resolve(__dirname, 'dist'),
+        //         filename: 'server.js',
+        //     },
+        //     externals: [nodeExternals()],
+        // }
     ]
 }

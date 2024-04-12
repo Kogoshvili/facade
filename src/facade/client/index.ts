@@ -11,10 +11,12 @@ if (!window.facade) {
 }
 
 facade.config = facade.config || {
-    protocol: 'http', // http or ws
+    protocol: 'ws', // http or ws
     persistence: false,
     url: 'http://localhost:3000/facade/http'
 }
+
+facade.state = facade.state || {}
 
 facade.onClick = function (e: any, path: string) {
     const [componentName, componentId, method] = path.split('.')

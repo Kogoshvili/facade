@@ -3,9 +3,9 @@ import fs from 'fs'
 import session from 'express-session'
 import compression from 'compression'
 import { WebSocketExpress, Router } from 'websocket-express'
-import ProductList from 'components/ProductList/ProductList'
-import ProductCard from 'components/ProductCard/ProductCard'
-import render, { registerComponents } from 'facade/server/templater/engine'
+import TodoItem from './components/TodoItem'
+import TodoList from './components/TodoList'
+import { registerIndexHtml, facade, registerComponents } from './facade/server'
 
 const app = new WebSocketExpress()
 const router = new Router()
@@ -22,25 +22,14 @@ app.use(session({
 }))
 
 registerComponents({
-    ProductList,
-    ProductCard
+    TodoItem,
+    TodoList
 })
 
 const indexHtml = fs.readFileSync('C:/projects/FS-Framework/src/facade/client/index.html', 'utf8')
-// registerIndexHtml(indexHtml)
+registerIndexHtml(indexHtml)
 
-// facade(app, router)
-
-router.get('/', async (req, res) => {
-    const result = await render(indexHtml, {})
-    // const session = req.session as any
-    // const rendered = renderTemplate(indexHtml)
-    // const bodyContent = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
-    // session.renderedHtmlBody = bodyContent
-    // session.instanceTree = jsonInstanceTree()
-    // resetInstanceTree()
-    res.send(result)
-})
+facade(app, router)
 
 app.use(router)
 
