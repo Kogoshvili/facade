@@ -1,5 +1,6 @@
 import fp from 'lodash/fp'
 import { components } from './index'
+import build, { overwriteProps } from './Factory'
 
 enum UseState {
     Unused,
@@ -17,7 +18,7 @@ export const clearComponentGraph = () => {
     for (const key in ComponentGraph) {
         ComponentGraph[key] = ComponentGraph[key].filter((i: any) => i.state !== UseState.Unused)
         ComponentGraph[key] = ComponentGraph[key].map((i: any) => {
-            i.properties = removeHiddenProperties(i.instance)
+            i.properties = fp.flow(deleteInjectables, removeHiddenProperties)(i.properties)
             i.state = UseState.Unused
             i.instance = null
             i.parent = i.parent ?? null
@@ -27,6 +28,16 @@ export const clearComponentGraph = () => {
     }
 
     return ComponentGraph
+}
+
+function deleteInjectables(properties: any) {
+    for (const key in properties) {
+        if (properties[key]?._injectable) {
+            delete properties[key]
+        }
+    }
+
+    return properties
 }
 
 export function recreateComponentGraph(json: string) {
@@ -42,7 +53,7 @@ export function recreateComponentGraph(json: string) {
                 if (parentInstance.instance === null) {
                     resolveInstance(parentInstance)
                 } else {
-                    instance.instance = makeComponent(components[instance.name], {
+                    instance.instance = build(components[instance.name], {
                         _parent: parentInstance.instance,
                         _id: instance.id,
                         _name: instance.name,
@@ -51,7 +62,7 @@ export function recreateComponentGraph(json: string) {
                 }
             }
         } else {
-            instance.instance = makeComponent(components[instance.name], {
+            instance.instance = build(components[instance.name], {
                 _parent: null,
                 _id: instance.id,
                 _name: instance.name,
@@ -93,7 +104,7 @@ export async function getComponentInstance(compName: string, props: any, parent:
             unused.state = UseState.InUse
 
             if (!unused.instance) {
-                const instance = makeComponent(component, {
+                const instance = build(component, {
                     _parent: parent ?? null,
                     _id: unused._id,
                     _name: unused._name,
@@ -101,13 +112,13 @@ export async function getComponentInstance(compName: string, props: any, parent:
                 unused.instance = instance
             }
 
-            unused.instance.__updateProps(props)
+            overwriteProps(unused.instance, props)
             instance = unused.instance
         }
     }
 
     if (!instance) {
-        const newInstance = makeComponent(component, {
+        const newInstance = build(component, {
             _parent: parent ?? null,
             _name: compName,
             _key: props.key ?? null
@@ -132,15 +143,6 @@ export async function getComponentInstance(compName: string, props: any, parent:
 
     return instance
 }
-
-function makeComponent(component: any, hiddenProps: any = {}, props: Record<string, any> = {}): any {
-    // eslint-disable-next-line new-cap
-    const temp = new component(props)
-    temp.__init(hiddenProps)
-    temp.__updateProps(props)
-    return temp
-}
-
 
 export const getMethods = (instance: any) => fp.flow(
     Object.getPrototypeOf,

@@ -2,6 +2,7 @@ import { DiffDOM, stringToObj } from 'diff-dom'
 import { diff, flattenChangeset } from 'json-diff-ts'
 import Templater from './Templater'
 import { clearComponentGraph, executeMethodOnGraph, recreateComponentGraph, deleteComponentGraph } from './ComponentManager'
+// import NDIMiddleware from 'node-dependency-injection-express-middleware'
 
 export let indexHtml = ''
 
@@ -15,7 +16,11 @@ function registerComponents(comps: Record<string, any>) {
     components = comps
 }
 
-function facade(_app: any, router: any) {
+function facade(app: any, router: any) {
+    // app.use(new NDIMiddleware({
+    //     serviceFilePath: 'some/path/to/config.yml'
+    // }).middleware())
+
     router.ws('/facade/ws', async (req: any, res: any) => {
         const ws = await res.accept()
         ws.on('message', async (msg: string) => {

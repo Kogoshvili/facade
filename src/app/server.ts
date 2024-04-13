@@ -3,10 +3,15 @@ import fs from 'fs'
 import session from 'express-session'
 import compression from 'compression'
 import { WebSocketExpress, Router } from 'websocket-express'
-import TodoItem from './components/TodoItem'
-import TodoList from './components/TodoList'
 import { registerIndexHtml, facade, registerComponents } from 'facade/server'
 import path from 'path'
+import ProductCard from './components/ProductCard'
+import ProductList from './components/ProductList'
+import Modal from './components/Modal'
+import 'reflect-metadata'
+
+const __dirname = path.resolve()
+const indexPath = path.join(__dirname, './src/app/', 'index.html')
 
 const app = new WebSocketExpress()
 const router = new Router()
@@ -23,12 +28,12 @@ app.use(session({
 }))
 
 registerComponents({
-    TodoItem,
-    TodoList
+    ProductCard,
+    ProductList,
+    Modal
 })
 
-const __dirname = path.resolve()
-const indexPath = path.join(__dirname, './src/app/', 'index.html')
+
 
 const indexHtml = fs.readFileSync(indexPath, 'utf8')
 registerIndexHtml(indexHtml)

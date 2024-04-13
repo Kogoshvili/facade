@@ -1,12 +1,14 @@
 {
   "compilerOptions": {
     "esModuleInterop": true,
-    "moduleResolution": "node",
-    "forceConsistentCasingInFileNames": true,
-    "strict": true,
-    "sourceMap": true,
-    "skipLibCheck": true,
-    "allowJs": true,
+    // "moduleResolution": "node",
+    // "forceConsistentCasingInFileNames": true,
+    // "strict": true,
+    // "sourceMap": true,
+    // "skipLibCheck": true,
+    // "allowJs": true,
+    "lib": ["es6"],
+    "types": ["reflect-metadata"],
     "baseUrl": "./src",
     "outDir": "./dist",
     "paths": {
@@ -15,8 +17,11 @@
       "components/*": ["./app/components/*"],
       "pages/*": ["./app/pages/*"],
     },
-    "experimentalDecorators": true,
-    "target": "ES2022"
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "experimentalDecorators": true
+    // "target": "ES2022",
+    // "module": "CommonJS"
   },
   "exclude": ["node_modules", "dist", "webpack.config.js", "**/hide"]
 }

@@ -1,7 +1,6 @@
 import fs from 'fs'
 import path from 'path'
 import callsites from 'callsites'
-import { nanoid } from 'nanoid'
 
 interface ComponentProps {
     view?: string;
@@ -42,36 +41,6 @@ function Component(params?: ComponentProps) {
 
             return fs.readFileSync(target.prototype._viewPath, 'utf8')
         }
-
-        target.prototype.__init = function (props: any = {}) {
-            this._parent = props._parent ?? {}
-            this._id = props._id ?? nanoid(10)
-            this._name = props._name ?? target.name
-            this._key = props._key ?? null
-        }
-
-        target.prototype.__updateProps = function (props: Record<string, any> = {}) {
-            const compProperties = Object.getOwnPropertyNames(this)
-            for (const property of compProperties) {
-                if (props?.[property]) {
-                    this[property] = props[property]
-                }
-            }
-        }
-
-        return new Proxy(target, {
-            construct(target, args) {
-                const instance = new target(...args)
-
-                return new Proxy(instance, {
-                    set(target, property, value, receiver) {
-                        const result = Reflect.set(target, property, value, receiver)
-                        // console.log(`Property ${property.toString()} changed to ${value}`)
-                        return result
-                    }
-                })
-            }
-        })
     }
 }
 
