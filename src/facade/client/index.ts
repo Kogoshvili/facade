@@ -69,6 +69,25 @@ facade.rendered = function () {
 
 let eventListeners: (() => void)[] = []
 
+function getTimeout(event: string, mode: string) {
+    switch (mode) {
+        case 'lazy':
+            return 500
+        case 'bind': {
+            if (event === 'input') return 250
+            return 100
+        }
+        case 'eager':
+            return 0
+        case 'default':
+        default: {
+            if (event === 'click') return 0
+            if (event === 'input') return 500
+            return 100
+        }
+    }
+}
+
 facade.methods = {
     removeEvents() {
         eventListeners.forEach((remove) => remove())
@@ -81,8 +100,8 @@ facade.methods = {
             const [event, mode, ...path] = element.getAttribute('data-facade-event')!.split('.')
 
             const callback = debounce(
-                (e) => {facade.onClick.call(facade, e, path.join('.'), event, mode)},
-                mode === 'lazy' ? 500 : 100
+                (e) => facade.onClick.call(facade, e, path.join('.'), event, mode),
+                getTimeout(event, mode)
             )
 
             const boundEvent = bind(element, { type: event, listener: callback })

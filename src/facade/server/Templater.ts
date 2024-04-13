@@ -83,7 +83,7 @@ export default class Templater {
         const result = await this.render(template, {...instance, ...methods}, instance as any)
 
         return result.replace(/@(\w+)(:\w+)?="(.*?)"/g,
-            (_: string, event: string, mode: string = ':lazy', method: string) =>
+            (_: string, event: string, mode: string = ':default', method: string) =>
                 `data-facade-event="${event}.${mode?.replace(':', '')}.${instance._name}.${instance._id}.${method}" id="${instance._name}.${instance._id}"`
         )
     }
