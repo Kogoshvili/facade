@@ -6,6 +6,7 @@ import { WebSocketExpress, Router } from 'websocket-express'
 import TodoItem from './components/TodoItem'
 import TodoList from './components/TodoList'
 import { registerIndexHtml, facade, registerComponents } from 'facade/server'
+import path from 'path'
 
 const app = new WebSocketExpress()
 const router = new Router()
@@ -26,7 +27,10 @@ registerComponents({
     TodoList
 })
 
-const indexHtml = fs.readFileSync('C:/projects/FS-Framework/src/facade/client/index.html', 'utf8')
+const __dirname = path.resolve()
+const indexPath = path.join(__dirname, './src/app/', 'index.html')
+
+const indexHtml = fs.readFileSync(indexPath, 'utf8')
 registerIndexHtml(indexHtml)
 
 facade(app, router)
