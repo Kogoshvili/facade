@@ -23,9 +23,6 @@ function build(
     const proxyfied = new Proxy(instance, {
         set(target, property, value, receiver) {
             const result = Reflect.set(target, property, value, receiver)
-            if (property === 'products') {
-                console.log('products changed')
-            }
             // console.log(`Property ${property.toString()} changed to ${value}`)
             return result
         }
