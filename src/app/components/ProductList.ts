@@ -11,7 +11,7 @@ class ProductList {
     // executed only once result is cached in redis with session id
     async mount() {
         const { data } = await axios.get('https://fakestoreapi.com/products')
-        this.products = data
+        this.products = data.slice(0, 1)
     }
 
     // executed every time the component is rendered

@@ -9,10 +9,7 @@ class ProductCard implements IComponent{
     @Inject(ModalService) modalService: ModalService
 
     // executes every time the component is rendered
-    constructor() { }
-
-    // executed every time the component is rendered
-    setProps(props: any) {
+    constructor(props: any) {
         this.product = props.product
         this.product.description = truncate(this.product.description, 100)
     }

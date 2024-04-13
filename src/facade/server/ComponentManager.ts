@@ -1,6 +1,6 @@
 import fp from 'lodash/fp'
 import { components } from './index'
-import build, { overwriteProps } from './Factory'
+import build from './Factory'
 
 enum UseState {
     Unused,
@@ -18,17 +18,33 @@ export const clearComponentGraph = () => {
     for (const key in ComponentGraph) {
         ComponentGraph[key] = ComponentGraph[key].filter((i: any) => i.state !== UseState.Unused)
         ComponentGraph[key] = ComponentGraph[key].map((i: any) => {
-            i.properties = fp.flow(deleteInjectables, removeHiddenProperties)(i.properties)
+            i.props = deleteFunctionAndClass(i.props)
+            i.properties = fp.flow(deleteInjectables, removeHiddenProperties)({...i.instance})
             i.state = UseState.Unused
             i.instance = null
             i.parent = i.parent ?? null
-            i.children = []
             return i
         })
     }
 
     return ComponentGraph
 }
+
+function deleteFunctionAndClass(properties: any) {
+    function isInstanceOfAnyClass(value) {
+        return value.constructor !== Object && !Array.isArray(value) && typeof value === 'object'
+    }
+
+    for (const key in properties) {
+        if (typeof properties[key] === 'function' || isInstanceOfAnyClass(properties[key])) {
+            delete properties[key]
+        }
+    }
+
+    return properties
+}
+
+
 
 function deleteInjectables(properties: any) {
     for (const key in properties) {
@@ -57,8 +73,7 @@ export function recreateComponentGraph(json: string) {
                         _parent: parentInstance.instance,
                         _id: instance.id,
                         _name: instance.name,
-                    }, instance.properties)
-                    instance.properties = removeHiddenProperties(instance.instance)
+                    }, instance.props, instance.properties)
                 }
             }
         } else {
@@ -66,8 +81,7 @@ export function recreateComponentGraph(json: string) {
                 _parent: null,
                 _id: instance.id,
                 _name: instance.name,
-            }, instance.properties)
-            instance.properties = removeHiddenProperties(instance.instance)
+            }, instance.props, instance.properties)
         }
     }
 
@@ -102,17 +116,6 @@ export async function getComponentInstance(compName: string, props: any, parent:
 
         if (unused) {
             unused.state = UseState.InUse
-
-            if (!unused.instance) {
-                const instance = build(component, {
-                    _parent: parent ?? null,
-                    _id: unused._id,
-                    _name: unused._name,
-                }, props)
-                unused.instance = instance
-            }
-
-            overwriteProps(unused.instance, props)
             instance = unused.instance
         }
     }
@@ -132,10 +135,10 @@ export async function getComponentInstance(compName: string, props: any, parent:
             name: instance._name,
             key: instance._key,
             instance: newInstance,
+            props: props,
             properties: removeHiddenProperties(instance),
             parent: parent ? { name: parent._name, id: parent._id } : null,
-            state: UseState.InUse,
-            children: []
+            state: UseState.InUse
         })
 
         await instance.mount?.()

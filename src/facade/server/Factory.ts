@@ -4,24 +4,28 @@ import { InjectDependencies } from './Injection'
 function build(
     component: any,
     metaProps: any = {},
-    props: Record<string, any> = {}
+    props: Record<string, any> = {},
+    overwrites: Record<string, any> = {}
 ): any {
-    const instance = new component()
+    const instance = new component(props)
 
     InjectDependencies(instance, component)
-
-    instance.setProps?.(props)
 
     setMetadata(instance, {
         ...metaProps,
         _name: component.name
     })
 
+    overwriteProps(instance, overwrites)
+
     instance.init?.()
 
     const proxyfied = new Proxy(instance, {
         set(target, property, value, receiver) {
             const result = Reflect.set(target, property, value, receiver)
+            if (property === 'products') {
+                console.log('products changed')
+            }
             // console.log(`Property ${property.toString()} changed to ${value}`)
             return result
         }

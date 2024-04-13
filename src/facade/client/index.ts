@@ -155,7 +155,7 @@ facade.methods = {
             const part = pathParts[i]
             if (part === '$') continue
             if (!(part in currentObj)) {
-                throw new Error(`Invalid JSONPath: ${jsonPath}`)
+                currentObj[part] = {}
             }
             currentObj = currentObj[part]
         }
