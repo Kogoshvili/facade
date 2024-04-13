@@ -14,7 +14,6 @@ class Modal implements IComponent{
     // executed every time the component is rendered
     init() {
         this.modalService.modal$.subscribe((data: any) => {
-            console.log('Modal data recived')
             this.content = data
         })
     }

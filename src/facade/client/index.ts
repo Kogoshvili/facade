@@ -1,6 +1,6 @@
 import { DiffDOM } from 'diff-dom'
 import Facade from './facade'
-import { debounce } from 'lodash-es'
+import debounce from 'lodash/debounce'
 import { bind } from 'bind-event-listener'
 
 declare global {

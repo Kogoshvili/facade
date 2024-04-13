@@ -11,7 +11,7 @@ import Modal from './components/Modal'
 import 'reflect-metadata'
 
 const __dirname = path.resolve()
-const indexPath = path.join(__dirname, './src/app/', 'index.html')
+const indexPath = path.join(__dirname, './src/facade/client', 'index.html')
 
 const app = new WebSocketExpress()
 const router = new Router()
