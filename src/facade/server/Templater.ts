@@ -1,5 +1,6 @@
 import { get } from 'lodash-es'
-import { getComponentInstance, getMethods } from './ComponentManager'
+import { getBuiltComponentNode, getComponentNodeProperties, getMethods } from './ComponentManager'
+import { IComponentNode } from './Interfaces'
 
 export default class Templater {
     onMatch: any
@@ -12,7 +13,7 @@ export default class Templater {
         this.postComponent = props.postComponent
     }
 
-    async render(template: string, data: Record<string, any>, parent = null) {
+    async render(template: string, data: Record<string, any>, parent: IComponentNode | null = null) {
         const regex = RegExp(/{{\s*([\s\S]+?)\s*}}/g)
         let context = template
         let match // ["{{> ProductList }}", "> ProductList"] groups, index, input
@@ -24,9 +25,6 @@ export default class Templater {
             const helperBlockEndIndex = context.indexOf(`{{${helperTag}}}`, start)
             const end = !isHelper ? start + match[0].length : helperBlockEndIndex
 
-            const callbackResult = await this.onMatch?.(match[1], start, context, parent)
-            if (callbackResult) return callbackResult
-
             const replace = await this.replacer(match[1], start, context, data, parent)
 
             context = context.slice(0, start) + replace + context.slice(end)
@@ -35,7 +33,7 @@ export default class Templater {
         return context
     }
 
-    async replacer(match: string, offset: number, content: string, data: any, parent: any): Promise<string> {
+    async replacer(match: string, offset: number, content: string, data: Record<string, any>, parent: IComponentNode | null = null): Promise<string> {
         const param = match.trim()
 
         if (param === 'handleAdd') {
@@ -65,30 +63,55 @@ export default class Templater {
         return data[param]
     }
 
-    async handleComponent(param: string, data: any, parent: any) {
+    async handleComponent(param: string, data: Record<string, any>, parent: IComponentNode | null = null): Promise<string> {
         const [compName, ...rawProps] = param.replace('>', '').trim().split(' ')
+        if (data === undefined) {
+            console.log('data is undefined')
+        }
         const props = rawProps.reduce((acc: Record<string, any>, item: string) => {
             const [key, value] = item.split('=')
             acc[key] = getValue(data, value)
             return acc
         }, {})
 
-        const instance = await getComponentInstance(compName, props, parent)
-        const methods = getMethods(instance)
+        const componentNode = await getBuiltComponentNode(compName, props, parent)
 
-        this.postComponent?.(instance, parent)
+        if (!componentNode) {
+            return ''
+        }
 
+        if (componentNode.instance === null) {
+            if (componentNode.hasChildren) {
+                const methodsMap = buildMethodMap({_name: componentNode.name, _id: componentNode.id})(componentNode.methods)
+                return await this.render(
+                    componentNode.template!,
+                    {...getComponentNodeProperties(componentNode), ...methodsMap},
+                    componentNode
+                )
+            }
+
+            return componentNode.prevRender ?? ''
+        }
+
+        const instance = componentNode.instance
+
+        const methodsMap = buildMethodMap(instance)(getMethods(instance))
         const template = instance.render().replace(/<(\w+)/, defineComponent(instance))
+        componentNode.template = template
 
-        const result = await this.render(template, {...instance, ...methods}, instance as any)
+        let result = await this.render(template, {...instance, ...methodsMap}, componentNode as any)
 
-        return result.replace(/@(\w+)(:\w+)?="(.*?)"/g,
+        result = result.replace(/@(\w+)(:\w+)?="(.*?)"/g,
             (_: string, event: string, mode: string = ':default', method: string) =>
                 `data-facade-event="${event}.${mode?.replace(':', '')}.${instance._name}.${instance._id}.${method}" id="${instance._name}.${instance._id}"`
         )
+
+        componentNode.prevRender = result
+
+        return result
     }
 
-    async handleHelper(param: string, content: string, offset: number, data: any, parent: any): Promise<string> {
+    async handleHelper(param: string, content: string, offset: number, data: Record<string, any>, parent: IComponentNode | null = null): Promise<string> {
         const [helper, ...rawParams] = param.replace('#', '').trim().split(' ')
         const params = [rawParams].flat().map((param: any) => getValue(data, param)).flat()
 
@@ -111,15 +134,23 @@ export default class Templater {
     }
 }
 
-const defineComponent = (instance: any) => (_match: string, tag: string) => {
+const buildMethodMap = (initialize: { _name: string, _id: string }) => (methods: string[]) =>
+    methods.reduce((acc, m) => ({
+        ...acc,
+        [m]: `facade.event(event, '${initialize._name}.${initialize._id}.${m}')`
+    }), {} as Record<string, string>)
+
+const defineComponent = (instance: { _name: string, _id: string, _key?: string | number | null }) => (_match: string, tag: string) => {
     let definition = `<${tag} facade="${instance._name}.${instance._id}"`
+
     if (instance._key) {
         definition += ` key="${instance._key}"`
     }
+
     return definition
 }
 
-function getValue(data: any, value: string) {
+function getValue(data: Record<string, any>, value: string) {
     const valueIsParam = value.startsWith('{') && value.endsWith('}')
 
     if (valueIsParam) {

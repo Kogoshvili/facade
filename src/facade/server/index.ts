@@ -1,8 +1,7 @@
 import { DiffDOM, stringToObj } from 'diff-dom'
 import { diff, flattenChangeset } from 'json-diff-ts'
 import Templater from './Templater'
-import { clearComponentGraph, executeMethodOnGraph, recreateComponentGraph, deleteComponentGraph } from './ComponentManager'
-// import NDIMiddleware from 'node-dependency-injection-express-middleware'
+import { getJSONableComponentGraph, executeMethodOnGraph, recreateComponentGraph, deleteComponentGraph } from './ComponentManager'
 
 export let indexHtml = ''
 
@@ -16,18 +15,14 @@ function registerComponents(comps: Record<string, any>) {
     components = comps
 }
 
-function facade(app: any, router: any) {
-    // app.use(new NDIMiddleware({
-    //     serviceFilePath: 'some/path/to/config.yml'
-    // }).middleware())
-
+function facade(_app: any, router: any) {
     router.ws('/facade/ws', async (req: any, res: any) => {
         const ws = await res.accept()
         ws.on('message', async (msg: string) => {
             const data = JSON.parse(msg)
             const session = req.session as any
 
-            const { componentName, componentId, property, parameters, event, mode } = data as any
+            const { componentName, componentId, property, parameters, event: _event, mode } = data as any
 
             if (mode === 'bind') {
                 const basicTree = JSON.parse(session.instanceTree)
@@ -38,14 +33,18 @@ function facade(app: any, router: any) {
             }
 
             recreateComponentGraph(session.instanceTree)
-            executeMethodOnGraph(componentName, componentId, property, parameters)
+            const successful = executeMethodOnGraph(componentName, componentId, property, parameters)
+
+            if (!successful) {
+                return ws.send(JSON.stringify({ error: `Method/Property ${property} not found on component ${componentName}` }))
+            }
 
             const renderer = new Templater({})
             const rendered = await renderer.render(indexHtml, {})
             const response: any = {}
 
             const oldInstanceTree = JSON.parse(session.instanceTree)
-            const instanceMap = clearComponentGraph()
+            const instanceMap = getJSONableComponentGraph()
             const stateDiff = diff(oldInstanceTree, instanceMap)
             response.state = flattenChangeset(stateDiff)
 
@@ -93,7 +92,7 @@ function facade(app: any, router: any) {
         const response: any = {}
 
         const oldInstanceTree = JSON.parse(session.instanceTree)
-        const instanceMap = clearComponentGraph()
+        const instanceMap = getJSONableComponentGraph()
         const stateDiff = diff(oldInstanceTree, instanceMap)
         response.state = flattenChangeset(stateDiff)
 
@@ -117,7 +116,7 @@ function facade(app: any, router: any) {
     })
 
 
-    router.post('/facade/http/set-state', async (req: any, res: any) => {
+    router.post('/facade/http/set-state', async (_req: any, _res: any) => {
         // const session = req.session as any
         // const state = req.body
 
@@ -165,7 +164,7 @@ function facade(app: any, router: any) {
         const rendered = await renderer.render(indexHtml, {})
         const bodyContent = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
         session.renderedHtmlBody = bodyContent
-        const instanceMap = clearComponentGraph()
+        const instanceMap = getJSONableComponentGraph()
         session.instanceTree = JSON.stringify(instanceMap)
         deleteComponentGraph()
         res.send(rendered)

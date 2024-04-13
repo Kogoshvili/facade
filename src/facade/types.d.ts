@@ -5,9 +5,8 @@ declare module 'diff-json' {
     export { applyChanges, diff }
 }
 
-declare module 'node-dependency-injection-express-middleware' {
-    export default class NDIMiddleware {
-        constructor(options: any)
-        middleware(): any
-    }
+declare module 'json-diff-ts' {
+    const diff: (oldObj: any, newObj: any) => any
+    const flattenChangeset: (changeset: any) => any
+    export { diff, flattenChangeset }
 }

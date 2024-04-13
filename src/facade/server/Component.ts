@@ -1,24 +1,9 @@
-import fs from 'fs'
 import path from 'path'
 import callsites from 'callsites'
+import { getComponentInstanceFromGraph } from './ComponentManager'
 
 interface ComponentProps {
     view?: string;
-}
-
-export interface IComponent {
-    _view?: string | null;
-    _viewPath?: string | null;
-    _name?: string;
-    _parent?: IComponent | null;
-    _id?: string;
-    _key?: string | null;
-    [key: string]: any;
-}
-
-export interface ComponentConstructor {
-    __init(props: any): void;
-    __updateProps(props: Record<string, any>): void;
 }
 
 function Component(params?: ComponentProps) {
@@ -31,16 +16,29 @@ function Component(params?: ComponentProps) {
 
         target.prototype._name = target.name
         target.prototype._parent = null
+        target.prototype._parentInstance = null
         target.prototype._id = null
         target.prototype._key = null
 
-        target.prototype._view = function () {
-            if (!target.prototype._viewPath) {
-                return target.prototype.render()
+        target.prototype.parent = function () {
+            if (!this._parent) {
+                return null
             }
 
-            return fs.readFileSync(target.prototype._viewPath, 'utf8')
+            if (!this._parentInstance) {
+                this._parentInstance = getComponentInstanceFromGraph(this._parent.name, this._parent.id)
+            }
+
+            return this._parentInstance
         }
+
+        // target.prototype._view = function () {
+        //     if (!target.prototype._viewPath) {
+        //         return target.prototype.render()
+        //     }
+
+        //     return fs.readFileSync(target.prototype._viewPath, 'utf8')
+        // }
     }
 }
 

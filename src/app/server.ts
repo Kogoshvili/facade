@@ -5,10 +5,11 @@ import compression from 'compression'
 import { WebSocketExpress, Router } from 'websocket-express'
 import { registerIndexHtml, facade, registerComponents } from 'facade/server'
 import path from 'path'
-import ProductCard from './components/ProductCard'
-import ProductList from './components/ProductList'
-import Modal from './components/Modal'
-import 'reflect-metadata'
+import ProductCard from './pages/ecommerce/components/ProductCard'
+import ProductList from './pages/ecommerce/components/ProductList'
+import Modal from './pages/ecommerce/components/Modal'
+import TodoItem from './pages/todo/components/TodoItem'
+import TodoList from './pages/todo/components/TodoList'
 
 const __dirname = path.resolve()
 const indexPath = path.join(__dirname, './src/facade/client', 'index.html')
@@ -30,7 +31,9 @@ app.use(session({
 registerComponents({
     ProductCard,
     ProductList,
-    Modal
+    Modal,
+    TodoItem,
+    TodoList
 })
 
 

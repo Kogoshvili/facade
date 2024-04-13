@@ -1,37 +1,61 @@
 import fp from 'lodash/fp'
 import { components } from './index'
 import build from './Factory'
+import { isEqual } from 'lodash'
+import { nanoid } from 'nanoid'
+import { IComponentNode, IComponentNodeJSON } from './Interfaces'
+import hash from 'object-hash'
 
-enum UseState {
-    Unused,
-    InUse,
-    Used
-}
-
-export let ComponentGraph: any = {}
+export let ComponentGraph: Record<string, IComponentNode[]> = {}
 
 export const deleteComponentGraph = () => {
     ComponentGraph = {}
 }
 
-export const clearComponentGraph = () => {
+export const getJSONableComponentGraph = (): Record<string, IComponentNodeJSON[]> => {
+    const ComponentGraphJSONable: Record<string, IComponentNodeJSON[]> = {}
+
     for (const key in ComponentGraph) {
-        ComponentGraph[key] = ComponentGraph[key].filter((i: any) => i.state !== UseState.Unused)
-        ComponentGraph[key] = ComponentGraph[key].map((i: any) => {
+        ComponentGraphJSONable[key] = ComponentGraph[key].map((i: IComponentNode): IComponentNodeJSON => {
+            i.needsRender = false
+
+            if (!i.instance) return i as IComponentNodeJSON
+
+
+            i.properties = removeUnSavableProperties({...i.instance})
+
+            // i.properties = Object.keys(properties).reduce((acc: Record<string, any>, item: string) => {
+            //     acc[item] = {
+            //         hash: hash(properties[item]),
+            //         value: properties[item]
+            //     }
+            //     return acc
+            // }, {} as IComponentNodeJSON['properties'])
+
             i.props = deleteFunctionAndClass(i.props)
-            i.properties = fp.flow(deleteInjectables, removeHiddenProperties)({...i.instance})
-            i.state = UseState.Unused
+            i.needsRender = false
             i.instance = null
-            i.parent = i.parent ?? null
-            return i
+
+            return i as IComponentNodeJSON
         })
     }
 
-    return ComponentGraph
+    return ComponentGraph as Record<string, IComponentNodeJSON[]>
+}
+
+export const getComponentNodeProperties = (componentNode: IComponentNode) => {
+    const properties = componentNode.properties
+
+    // return Object.keys(properties).reduce((acc: Record<string, any>, item: string) => {
+    //     acc[item] = properties[item].value
+    //     return acc
+    // }, {})
+
+    return properties
 }
 
 function deleteFunctionAndClass(properties: any) {
-    function isInstanceOfAnyClass(value) {
+    function isInstanceOfAnyClass(value: any) {
         return value.constructor !== Object && !Array.isArray(value) && typeof value === 'object'
     }
 
@@ -45,113 +69,129 @@ function deleteFunctionAndClass(properties: any) {
 }
 
 
-
-function deleteInjectables(properties: any) {
-    for (const key in properties) {
-        if (properties[key]?._injectable) {
-            delete properties[key]
-        }
-    }
-
-    return properties
-}
-
 export function recreateComponentGraph(json: string) {
     ComponentGraph = JSON.parse(json)
+}
 
-    function resolveInstance(instance: any) {
-        if (instance.parent !== null) {
-            // find the parent instance
-            const parentInstance = ComponentGraph[instance.parent.name].find((parent: any) => parent.id === instance.parent.id)
-            // check if the parent instance exists
-            if (parentInstance) {
-                // check if the parent instance has an instance
-                if (parentInstance.instance === null) {
-                    resolveInstance(parentInstance)
-                } else {
-                    instance.instance = build(components[instance.name], {
-                        _parent: parentInstance.instance,
-                        _id: instance.id,
-                        _name: instance.name,
-                    }, instance.props, instance.properties)
-                }
-            }
-        } else {
-            instance.instance = build(components[instance.name], {
-                _parent: null,
-                _id: instance.id,
-                _name: instance.name,
-            }, instance.props, instance.properties)
-        }
+export function getComponentInstanceFromGraph(componentName: string, componentId: string) {
+    const componentNode = ComponentGraph[componentName].find((i: any) => i.id === componentId)
+
+    if (!componentNode) return null
+    if (componentNode.instance) return componentNode.instance
+
+    const component = components[componentNode.name]
+
+    componentNode.instance = build(
+        component, {
+            _parentInstance: componentNode.parent ?? null,
+            _parent: componentNode.parent,
+            _id: componentNode.id,
+            _name: componentNode.name,
+        },
+        componentNode.props,
+        getComponentNodeProperties(componentNode)
+    )
+
+    return componentNode.instance
+}
+
+export async function executeMethodOnGraph(componentName: string, componentId: string, property: string, parameters: any) {
+    const componentNode = ComponentGraph[componentName].find((i: any) => i.id === componentId)
+
+    if (!componentNode) {
+        console.log(`Component ${componentName} with id ${componentId} not found in the graph`)
     }
 
-    for (const component in ComponentGraph) {
-        for (const instance of ComponentGraph[component]) {
-            resolveInstance(instance)
-        }
+    const { properties, methods } = componentNode!
+    const instance = getComponentInstanceFromGraph(componentName, componentId)
+
+    if (!instance) return false
+
+    if (properties.hasOwnProperty(property)) {
+        instance[property] = parameters
+        componentNode!.needsRender = true
+        return true
+    }
+
+    if (methods.includes(property)) {
+        instance[property](parameters)
+        componentNode!.needsRender = true
+        return true
+    }
+
+    return false
+}
+
+function getClassPropsAndMethods(classObject: any) {
+    return {
+        properties: removeUnSavableProperties({...classObject}),
+        methods: getMethods(classObject)
     }
 }
 
-export function executeMethodOnGraph(componentName: string, componentId: string, property: string, parameters: any) {
-    const instance = ComponentGraph[componentName].find((i: any) => i.id === componentId)
-
-    if (instance.instance[property] === undefined) {
-        return
-    }
-
-    if (typeof instance.instance[property] === 'function') {
-        return instance.instance[property](parameters)
-    }
-
-    instance.instance[property] = parameters
-}
-
-export async function getComponentInstance(compName: string, props: any, parent: any) {
+export async function getBuiltComponentNode(compName: string, props: any, parent: IComponentNode | null = null) {
     const component = components[compName]
-    let instance = null
+
+    if (parent) {
+        parent.hasChildren = true
+    }
 
     if (ComponentGraph[compName]) {
-        ComponentGraph[compName].filter((i: any) => i.state === UseState.InUse).forEach((i: any) => i.state = UseState.Used)
-        const unused = ComponentGraph[compName].find((i: any) => i.state === UseState.Unused && (props.key ? i.key === props.key : true))
+        const unused = ComponentGraph[compName].find((i: any) => (props.key ? i.key === props.key : true))
 
         if (unused) {
-            unused.state = UseState.InUse
-            instance = unused.instance
+            if ((unused.needsRender && !unused.instance) || !isEqual(unused.props, props)) {
+                unused.props = props
+                unused.instance = build(component, {
+                    _parentInstance: parent?.instance ?? null,
+                    _parent: parent ? { name: parent.name, id: parent.id } : null,
+                    _name: unused.name,
+                    _id: unused.id,
+                    _key: unused.key ?? null
+                }, props, {...getComponentNodeProperties(unused), ...props})
+
+                await unused.instance?.onPropsChange?.()
+            }
+
+            return unused
         }
     }
 
-    if (!instance) {
-        const newInstance = build(component, {
-            _parent: parent ?? null,
-            _name: compName,
-            _key: props.key ?? null
-        }, props)
+    const instance = build(component, {
+        _parentInstance: parent?.instance ?? null,
+        _parent: parent ? { name: parent.name, id: parent.id } : null,
+        _name: compName,
+        _id: nanoid(10),
+        _key: props.key ?? null
+    }, props)
 
-        instance = newInstance
+    const { properties, methods } = getClassPropsAndMethods(instance)
 
-        ComponentGraph[compName] = ComponentGraph[compName] ?? []
-        ComponentGraph[compName].push({
-            id: instance._id,
-            name: instance._name,
-            key: instance._key,
-            instance: newInstance,
-            props: props,
-            properties: removeHiddenProperties(instance),
-            parent: parent ? { name: parent._name, id: parent._id } : null,
-            state: UseState.InUse
-        })
+    ComponentGraph[compName] = ComponentGraph[compName] ?? []
+    ComponentGraph[compName].push({
+        id: instance._id!,
+        name: instance._name!,
+        key: instance._key!,
+        instance: instance,
+        props: props,
+        properties,
+        methods,
+        parent: parent ? { name: parent.name, id: parent.id } : null,
+        hasChildren: false,
+        needsRender: true,
+        template: null,
+        prevRender: null
+    })
 
-        await instance.mount?.()
-    }
+    await instance.mount?.()
 
-    return instance
+    return ComponentGraph[compName].find((i: IComponentNode) => i.id === instance._id)
 }
 
 export const getMethods = (instance: any) => fp.flow(
     Object.getPrototypeOf,
     Object.getOwnPropertyNames,
-    getPublicMethods(instance),
-    buildMethodMap(instance)
+    getPublicMethods(instance)
 )(instance)
 
 const specialMethods = ['mount', 'prerender', 'render']
@@ -164,17 +204,11 @@ const getPublicMethods = (initialize: any) => (methods: string[]) =>
         !specialMethods.includes(m)
     )
 
-const buildMethodMap = (initialize: any) => (methods: string[]) =>
-    methods.reduce((acc, m) => ({
-        ...acc,
-        [m]: `facade.event(event, '${initialize._name}.${initialize._id}.${m}')`
-    }), {} as Record<string, string>)
-
-const removeHiddenProperties = (props: any) => {
+const removeUnSavableProperties = (props: any): Record<string, any> => {
     const newProps = { ...props }
 
     for (const key in newProps) {
-        if (key.startsWith('_')) {
+        if (key.startsWith('_') || newProps[key]?._injectable) {
             delete newProps[key]
         }
     }

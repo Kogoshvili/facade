@@ -1,10 +1,13 @@
 features:
-post render method that modifies render dom before it is send using jsdom to make do
 multiple pages (instance tree per page)
-proper passing stuff as a child
-gziping ws sending data as blob
+
+
+gziping ws sending data as blob achivable with configuration of ws npm
 
 better event listener handling, write some custom helper for it
+
+post render method that modifies render dom before it is send using jsdom to make do
+
 
 bugs:
 
