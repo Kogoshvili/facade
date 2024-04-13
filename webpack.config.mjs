@@ -3,11 +3,11 @@ import TerserPlugin from 'terser-webpack-plugin'
 import CopyPlugin from 'copy-webpack-plugin'
 import BundleAnalyzerPlugin from 'webpack-bundle-analyzer'
 import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin'
-import nodeExternals from 'webpack-node-externals'
+// import nodeExternals from 'webpack-node-externals'
 
 const __dirname = path.resolve(path.dirname(''))
 
-export default function (env, argv) {
+export default function (_env, argv) {
     const mode = argv.mode || 'development'
     const isProd = mode === 'production'
     const isAnalyze = !!argv.analyze
@@ -24,14 +24,6 @@ export default function (env, argv) {
             },
             plugins: [new TsconfigPathsPlugin()],
         },
-        module: {
-            rules: [
-                {
-                    test: /\.([cm]?ts|tsx)$/,
-                    loader: 'ts-loader'
-                },
-            ]
-        },
         plugins: [],
         optimization: {
             minimize: true,
@@ -39,11 +31,14 @@ export default function (env, argv) {
         }
     }
 
+    const clientContext = path.resolve(__dirname, 'src/facade/client')
+
     return [
         {
             ...sharedConfig,
             target: 'web',
-            entry: './src/facade/client/index.ts',
+            context: clientContext,
+            entry: './index.ts',
             output: {
                 path: path.resolve(__dirname, 'public'),
                 filename: 'client.js',
@@ -51,21 +46,49 @@ export default function (env, argv) {
             plugins: [
                 new CopyPlugin({
                     patterns: [
-                        { from: './src/facade/client/index.html', to: './index.html' },
+                        { from: './index.html', to: './index.html' },
                     ],
                 }),
                 ...(isAnalyze ? [new BundleAnalyzerPlugin.BundleAnalyzerPlugin()] : [])
-            ]
+            ],
+            module: {
+                rules: [
+                    {
+                        test: /\.([cm]?ts|tsx)$/,
+                        loader: 'ts-loader',
+                        options: {
+                            context: clientContext,
+                        }
+                    },
+                ]
+            },
         },
         // {
         //     ...sharedConfig,
-        //     target: 'node',
-        //     entry: './src/server.ts',
+        //     entry: './src/app/server.ts',
         //     output: {
         //         path: path.resolve(__dirname, 'dist'),
-        //         filename: 'server.js',
+        //         filename: 'server.mjs',
+        //         libraryTarget: 'module',
         //     },
+        //     externalsPresets: { node: true },
         //     externals: [nodeExternals()],
+        //     module: {
+        //         rules: [
+        //             {
+        //                 test: /\.([cm]?ts|tsx)$/,
+        //                 loader: 'ts-loader',
+        //                 options: {
+        //                     compilerOptions: {
+        //                         module: 'es6'
+        //                     }
+        //                 }
+        //             },
+        //         ]
+        //     },
+        //     experiments: {
+        //         outputModule: true
+        //     }
         // }
     ]
 }

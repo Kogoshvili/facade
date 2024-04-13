@@ -20,7 +20,7 @@ facade.config = facade.config || {
 
 facade.state = facade.state || {}
 
-facade.onClick = function (e: any, path: string, event?: string, mode?: string) {
+facade.event = function (e: any, path: string, event?: string, mode?: string) {
     const [componentName, componentId, property] = path.split('.')
     const parameters = mode === 'bind' ? e.target.value : { value: e.target.value }
 
@@ -44,23 +44,11 @@ facade.init = function () {
         this.methods.updateDOM(dom)
         this.methods.updateState(state)
     }
-
-    addEventListener('beforeunload', (_event) => {
-        facade.socket.close()
-        if (!facade.state) return
-        if (!facade.config.persistence) return
-        localStorage.setItem('facade-state', JSON.stringify(facade.state))
-    })
 }
 
 facade.mount = function () {
     this.methods.attachEvents()
 }
-
-addEventListener('DOMContentLoaded', () => {
-    if (!window.facade) return
-    window.facade.mount()
-})
 
 facade.rendered = function () {
     this.methods.removeEvents()
@@ -68,25 +56,6 @@ facade.rendered = function () {
 }
 
 let eventListeners: (() => void)[] = []
-
-function getTimeout(event: string, mode: string) {
-    switch (mode) {
-        case 'lazy':
-            return 500
-        case 'bind': {
-            if (event === 'input') return 250
-            return 100
-        }
-        case 'eager':
-            return 0
-        case 'default':
-        default: {
-            if (event === 'click') return 0
-            if (event === 'input') return 500
-            return 100
-        }
-    }
-}
 
 facade.methods = {
     removeEvents() {
@@ -100,7 +69,7 @@ facade.methods = {
             const [event, mode, ...path] = element.getAttribute('data-facade-event')!.split('.')
 
             const callback = debounce(
-                (e) => facade.onClick.call(facade, e, path.join('.'), event, mode),
+                (e) => facade.event.call(facade, e, path.join('.'), event, mode),
                 getTimeout(event, mode)
             )
 
@@ -115,7 +84,7 @@ facade.methods = {
 
         if (persistence && state) {
             facade.state = JSON.parse(state)
-            // post request to set state with local storage state
+            // post request to set state with local storage state //
             fetch(`${facade.config.url}/set-state`, {
                 method: 'POST',
                 headers: {
@@ -208,5 +177,37 @@ facade.methods = {
         return obj
     }
 }
+
+function getTimeout(event: string, mode: string) {
+    switch (mode) {
+        case 'lazy':
+            return 500
+        case 'bind': {
+            if (event === 'input') return 250
+            return 100
+        }
+        case 'eager':
+            return 0
+        case 'default':
+        default: {
+            if (event === 'click') return 0
+            if (event === 'input') return 500
+            return 100
+        }
+    }
+}
+
+addEventListener('DOMContentLoaded', () => {
+    if (!window.facade) return
+    window.facade.mount()
+})
+
+addEventListener('beforeunload', (_event) => {
+    if (!facade?.socket) return
+    facade.socket.close()
+    if (!facade.state) return
+    if (!facade.config.persistence) return
+    localStorage.setItem('facade-state', JSON.stringify(facade.state))
+})
 
 facade.init()

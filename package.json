@@ -3,14 +3,15 @@
   "version": "1.0.0",
   "description": "",
   "main": "server.js",
+  "type": "module",
   "scripts": {
     "build": "webpack --mode development",
     "build-prod": "webpack --mode production",
     "build-analyze": "webpack --mode production --analyze",
     "watch": "webpack --watch",
-    "start": "node ./dist/server.mjs",
-    "dev": "nodemon ./dist/server.cjs",
-    "eslint": "eslint . --ext .ts --fix"
+    "start": "tsx ./src/app/server.ts",
+    "dev": "tsx --watch ./src/app/server.ts",
+    "lint": "eslint . --ext .ts --fix"
   },
   "keywords": [],
   "author": "",

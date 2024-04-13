@@ -1,7 +1,7 @@
-import { Component } from 'facade/server/Component'
+import { Component, IComponent } from 'facade/server/Component'
 
 @Component()
-class TodoItem {
+class TodoItem implements IComponent{
     todo: any
     isCompleted: boolean = false
 

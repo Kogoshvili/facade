@@ -16,8 +16,7 @@
       "pages/*": ["src/pages/*"],
     },
     "experimentalDecorators": true,
-    "target": "ES2022",
-    "module": "ES2022"
+    "target": "ES2022"
   },
-  "exclude": ["node_modules", "dist", "_prev", "webpack.config.js"]
+  "exclude": ["node_modules", "dist", "webpack.config.js", "**/hide"]
 }

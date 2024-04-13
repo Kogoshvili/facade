@@ -5,7 +5,7 @@ import compression from 'compression'
 import { WebSocketExpress, Router } from 'websocket-express'
 import TodoItem from './components/TodoItem'
 import TodoList from './components/TodoList'
-import { registerIndexHtml, facade, registerComponents } from './facade/server'
+import { registerIndexHtml, facade, registerComponents } from 'facade/server'
 
 const app = new WebSocketExpress()
 const router = new Router()

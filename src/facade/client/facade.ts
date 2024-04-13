@@ -9,7 +9,7 @@ interface Facade {
     init: () => void
     mount: () => void
     rendered: () => void
-    onClick: (e: any, path: string, event?: string, mode?: string) => void
+    event: (e: any, path: string, event?: string, mode?: string) => void
     methods: {
         removeEvents: () => void
         attachEvents: () => void

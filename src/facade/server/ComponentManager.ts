@@ -162,7 +162,7 @@ const getPublicMethods = (initialize: any) => (methods: string[]) =>
 const buildMethodMap = (initialize: any) => (methods: string[]) =>
     methods.reduce((acc, m) => ({
         ...acc,
-        [m]: `facade.onClick(event, '${initialize._name}.${initialize._id}.${m}')`
+        [m]: `facade.event(event, '${initialize._name}.${initialize._id}.${m}')`
     }), {} as Record<string, string>)
 
 const removeHiddenProperties = (props: any) => {
