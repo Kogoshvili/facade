@@ -1,7 +1,6 @@
 import { DiffDOM } from 'diff-dom'
-import Facade from './facade'
+import Facade, { IUpdatedProperties } from './facade'
 import debounce from 'lodash/debounce'
-import { bind } from 'bind-event-listener'
 
 declare global {
     // eslint-disable-next-line no-var
@@ -19,6 +18,10 @@ facade.config = facade.config || {
 }
 
 facade.state = facade.state || {}
+facade.events = facade.events || {
+    stateUpdated: 'facade:state:updated', //new CustomEvent('facade:state:updated', { detail: { updatedProperties: [] }}),
+    domUpdated: 'facade:dom:updated'//new CustomEvent('facade:dom:updated', {})
+}
 
 facade.event = function (e: any, path: string, event?: string, mode?: string) {
     const [componentName, componentId, property] = path.split('.')
@@ -31,6 +34,8 @@ facade.event = function (e: any, path: string, event?: string, mode?: string) {
     }
 }
 
+const attachedEvents: any = []
+
 facade.init = function () {
     this.methods.syncState()
 
@@ -40,42 +45,42 @@ facade.init = function () {
     }
     this.socket.onmessage = (event: any) => {
         const { dom, state } = JSON.parse(event.data)
-        if (!dom || !state) return
-        this.methods.updateDOM(dom)
-        this.methods.updateState(state)
+        if (dom) this.methods.updateDOM(dom)
+        if (state) this.methods.updateState(state)
     }
+
+    addEventListener('facade:state:updated', () => {
+        console.log('State Updated')
+    })
+
+    addEventListener('facade:dom:updated', () => {
+        console.log('DOM Updated')
+        attachedEvents.forEach((removeListener: any) => removeListener())
+        this.mount()
+    })
 }
 
 facade.mount = function () {
-    this.methods.attachEvents()
+    const elements = document.querySelectorAll('[data-facade-event]')
+    elements.forEach(this.methods.attachEvent)
 }
-
-facade.rendered = function () {
-    this.methods.removeEvents()
-    this.methods.attachEvents()
-}
-
-let eventListeners: (() => void)[] = []
 
 facade.methods = {
-    removeEvents() {
-        eventListeners.forEach((remove) => remove())
-        eventListeners = []
-    },
-    attachEvents() {
-        const elements = document.querySelectorAll('[data-facade-event]')
+    attachEvent(element: Element) {
+        const facadeEventValue = element.getAttribute('data-facade-event')
+        const [event, mode, componentName, componentId, property] = facadeEventValue!.split('.')
 
-        elements.forEach((element) => {
-            const [event, mode, ...path] = element.getAttribute('data-facade-event')!.split('.')
+        const callback = debounce(
+            (e) => facade.event.call(facade, e, [componentName, componentId, property].join('.'), event, mode),
+            getTimeout(event, mode)
+        )
 
-            const callback = debounce(
-                (e) => facade.event.call(facade, e, path.join('.'), event, mode),
-                getTimeout(event, mode)
-            )
+        const eventListener = (element: any) => {
+            element.addEventListener(event, callback)
+            return () => element.removeEventListener(event, callback)
+        }
 
-            const boundEvent = bind(element, { type: event, listener: callback })
-            eventListeners.push(boundEvent)
-        })
+        attachedEvents.push(eventListener(element))
     },
     syncState() {
         // check if local storage has state
@@ -117,9 +122,8 @@ facade.methods = {
         })
             .then(res => res.json())
             .then(({ dom, state }) => {
-                if (!dom || !state) return
-                this.updateDOM(dom)
-                this.updateState(state)
+                if (dom) this.updateDOM(dom)
+                if (state) this.updateState(state)
             })
     },
     updateDOM(domDiff: any) {
@@ -133,16 +137,43 @@ facade.methods = {
             },
         })
         dd.apply(document.body, domDiff)
-        facade.rendered()
+
+        dispatchEvent(new CustomEvent(facade.events.domUpdated))
     },
     updateState(stateDiff: any) {
         const state = facade.state
 
         if (!Array.isArray(stateDiff)) return
+        const updatedProperties: IUpdatedProperties[] = []
 
         stateDiff.forEach(({ path, value, type }: any) => {
             this.updateObjectByPath(state, path, { action: type, value })
+
+            if (path.includes('properties')) {
+                const parts = path.split('.')
+
+                // Remove the $ from the first part
+                const nameAndIndex = parts[1].split('[')
+
+                const componentName = nameAndIndex[0] // "TodoList"
+                const index = parseInt(nameAndIndex[1]) // 0
+
+                updatedProperties.push({
+                    componentName,
+                    componentId: state[componentName][index].id,
+                    property: parts[3],
+                    newValue: value
+                })
+            }
         })
+
+        const event = new CustomEvent(facade.events.stateUpdated, {
+            detail: {
+                updatedProperties
+            },
+        })
+
+        dispatchEvent(event)
     },
     updateObjectByPath(obj: any, jsonPath: string, actionObj: { action: string, value: any }) {
         const { action, value } = actionObj
@@ -208,6 +239,20 @@ addEventListener('beforeunload', (_event) => {
     if (!facade.state) return
     if (!facade.config.persistence) return
     localStorage.setItem('facade-state', JSON.stringify(facade.state))
+})
+
+addEventListener('facade:state:updated', ({
+    detail: { updatedProperties }
+}: any) => {
+    updatedProperties.forEach(
+        ({ componentName, componentId, property, newValue }: IUpdatedProperties) => {
+            const search = `[data-facade-event="input.bind.${componentName}.${componentId}.${property}"]`
+            const element = document.querySelector(search)
+            if (!element) return
+            if (newValue === undefined) return
+            // @ts-ignore
+            element.value = newValue
+        })
 })
 
 facade.init()

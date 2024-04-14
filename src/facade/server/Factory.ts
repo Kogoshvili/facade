@@ -9,7 +9,7 @@ function build(
 ): IComponent {
     const instance = new component(props)
 
-    // InjectDependencies(instance, component)
+    InjectDependencies(instance, component)
 
     setMetadata(instance, {
         ...metaProps,

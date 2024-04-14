@@ -25,11 +25,18 @@ function facade(_app: any, router: any) {
             const { componentName, componentId, property, parameters, event: _event, mode } = data as any
 
             if (mode === 'bind') {
-                const basicTree = JSON.parse(session.instanceTree)
-                basicTree[componentName].find((i: any) => i.id === componentId).properties[property] = parameters
-                session.instanceTree = JSON.stringify(basicTree)
+                const oldInstanceTree = JSON.parse(session.instanceTree)
+                const newInstanceTree = JSON.parse(session.instanceTree)
 
-                return ws.send(JSON.stringify({}))
+                newInstanceTree[componentName].find((i: any) => i.id === componentId).properties[property] = parameters
+
+                const stateDiff = diff(oldInstanceTree, newInstanceTree)
+
+                session.instanceTree = JSON.stringify(newInstanceTree)
+
+                return ws.send(JSON.stringify({
+                    state: flattenChangeset(stateDiff)
+                }))
             }
 
             recreateComponentGraph(session.instanceTree)
@@ -46,7 +53,7 @@ function facade(_app: any, router: any) {
             const oldInstanceTree = JSON.parse(session.instanceTree)
             const instanceMap = getJSONableComponentGraph()
             const stateDiff = diff(oldInstanceTree, instanceMap)
-            response.state = flattenChangeset(stateDiff)
+            response.state = flattenChangeset(stateDiff).filter((i: any) => !(i.key === 'prevRender' || i.key === 'template'))
 
             const oldBodyString = session.renderedHtmlBody
             const newBodyString = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]

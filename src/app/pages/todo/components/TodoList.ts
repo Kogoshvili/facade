@@ -29,6 +29,8 @@ class TodoList implements Partial<IComponent> {
         if (newTodo) {
             this.todos = [...this.todos, { id: this.todos.length + 1, title: newTodo, completed: false }]
         }
+
+        this.inputValue = ''
     }
 
     render() {
