@@ -19,8 +19,8 @@ facade.config = facade.config || {
 
 facade.state = facade.state || {}
 facade.events = facade.events || {
-    stateUpdated: 'facade:state:updated', //new CustomEvent('facade:state:updated', { detail: { updatedProperties: [] }}),
-    domUpdated: 'facade:dom:updated'//new CustomEvent('facade:dom:updated', {})
+    stateUpdated: 'facade:state:updated',
+    domUpdated: 'facade:dom:updated'
 }
 
 facade.event = function (e: any, path: string, event?: string, mode?: string) {
