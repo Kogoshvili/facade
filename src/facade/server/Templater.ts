@@ -98,10 +98,6 @@ export default class Templater {
 
         const instance = componentNode.instance
 
-        if (instance.render === undefined) {
-            console.log('instance.render is undefined')
-        }
-
         const methodsMap = buildMethodMap(instance)(getMethods(instance))
         const template = instance.render().replace(/<(\w+)/, defineComponent(instance))
         componentNode.template = template

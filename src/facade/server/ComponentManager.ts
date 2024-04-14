@@ -77,10 +77,6 @@ export function getComponentInstanceFromGraph(componentName: string, componentId
         componentNode.properties
     )
 
-    if (componentNode.instance.render === undefined) {
-        console.log('instance.render is undefined')
-    }
-
     return componentNode.instance
 }
 
@@ -95,10 +91,6 @@ export async function executeMethodOnGraph(componentName: string, componentId: s
     const instance = getComponentInstanceFromGraph(componentName, componentId)
 
     if (!instance) return false
-
-    if (instance.render === undefined) {
-        console.log('instance.render is undefined')
-    }
 
     if (properties.hasOwnProperty(property)) {
         instance[property] = parameters
@@ -134,7 +126,6 @@ export async function getBuiltComponentNode(compName: string, props: any, parent
 
         if (unused) {
             unused.needsRender = unused.needsRender || !isEqual(unused.props, props)
-            const isInstance = !!unused.instance
 
             if (!unused.instance) {
                 unused.props = props
@@ -147,10 +138,6 @@ export async function getBuiltComponentNode(compName: string, props: any, parent
                 }, props, {...unused.properties, ...props})
 
                 await unused.instance?.onPropsChange?.()
-            }
-
-            if (unused.instance.render === undefined) {
-                console.log('instance.render is undefined')
             }
 
             return unused
@@ -183,10 +170,6 @@ export async function getBuiltComponentNode(compName: string, props: any, parent
         prevRender: null,
         haveRendered: false
     })
-
-    if (instance.render === undefined) {
-        console.log('instance.render is undefined')
-    }
 
     await instance.mount?.()
 
