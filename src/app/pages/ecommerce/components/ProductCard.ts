@@ -1,9 +1,10 @@
-import { Component, IComponent } from 'facade/server/Component'
+import { Component } from 'facade/server/Component'
 import ModalService from '../services/ModalService'
 import { Inject } from 'facade/server/Injection'
+import { IComponent } from 'app/facade/server/Interfaces'
 
 @Component()
-class ProductCard implements IComponent{
+class ProductCard implements Partial<IComponent> {
     product: any
     // @ts-ignore
     @Inject(ModalService) modalService: ModalService

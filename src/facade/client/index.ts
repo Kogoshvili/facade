@@ -30,7 +30,8 @@ facade.event = function (e: any, path: string, event?: string, mode?: string) {
     if (facade.config.protocol === 'http') {
         this.methods.handleUpdateHttp(componentName, componentId, property, parameters)
     } else {
-        this.socket.send(JSON.stringify({ componentName, componentId, property, parameters, event, mode }))
+        const page = window.location.pathname.split('/').pop()
+        this.socket.send(JSON.stringify({ page, componentName, componentId, property, parameters, event, mode }))
     }
 }
 

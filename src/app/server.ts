@@ -3,7 +3,7 @@ import fs from 'fs'
 import session from 'express-session'
 import compression from 'compression'
 import { WebSocketExpress, Router } from 'websocket-express'
-import { registerIndexHtml, facade, registerComponents } from 'facade/server'
+import { registerPage, facade, registerComponents } from 'facade/server'
 import path from 'path'
 import ProductCard from './pages/ecommerce/components/ProductCard'
 import ProductList from './pages/ecommerce/components/ProductList'
@@ -12,7 +12,6 @@ import TodoItem from './pages/todo/components/TodoItem'
 import TodoList from './pages/todo/components/TodoList'
 
 const __dirname = path.resolve()
-const indexPath = path.join(__dirname, './src/facade/client', 'index.html')
 
 const app = new WebSocketExpress()
 const router = new Router()
@@ -36,10 +35,12 @@ registerComponents({
     TodoList
 })
 
+const shopHtml = fs.readFileSync(path.join(__dirname, './src/app/pages/', 'ecommerce/index.html'), 'utf8')
+const todoHtml = fs.readFileSync(path.join(__dirname, './src/app/pages/', 'todo/index.html'), 'utf8')
 
+registerPage('index', todoHtml)
+registerPage('shop', shopHtml)
 
-const indexHtml = fs.readFileSync(indexPath, 'utf8')
-registerIndexHtml(indexHtml)
 
 facade(app, router)
 

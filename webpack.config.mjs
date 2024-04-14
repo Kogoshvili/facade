@@ -44,11 +44,11 @@ export default function (_env, argv) {
                 filename: 'client.js',
             },
             plugins: [
-                new CopyPlugin({
-                    patterns: [
-                        { from: './index.html', to: './index.html' },
-                    ],
-                }),
+                // new CopyPlugin({
+                //     patterns: [
+                //         { from: './index.html', to: './index.html' },
+                //     ],
+                // }),
                 ...(isAnalyze ? [new BundleAnalyzerPlugin.BundleAnalyzerPlugin()] : [])
             ],
             module: {

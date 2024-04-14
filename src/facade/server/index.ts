@@ -2,27 +2,28 @@ import { DiffDOM, stringToObj } from 'diff-dom'
 import { diff, flattenChangeset } from 'json-diff-ts'
 import Templater from './Templater'
 import { getJSONableComponentGraph, executeMethodOnGraph, recreateComponentGraph, deleteComponentGraph } from './ComponentManager'
-
-export let indexHtml = ''
+import { clearInjectables } from './Injection'
 
 export let components: Record<string, any> = {}
 
-function registerIndexHtml(html: string) {
-    indexHtml = html
+const pages: Record<string, string> = {}
+
+export function registerPage(path: string, indexHtml: string) {
+    pages[path] = indexHtml
 }
 
-function registerComponents(comps: Record<string, any>) {
+export function registerComponents(comps: Record<string, any>) {
     components = comps
 }
 
-function facade(_app: any, router: any) {
+export function facade(_app: any, router: any) {
     router.ws('/facade/ws', async (req: any, res: any) => {
         const ws = await res.accept()
         ws.on('message', async (msg: string) => {
             const data = JSON.parse(msg)
             const session = req.session as any
 
-            const { componentName, componentId, property, parameters, event: _event, mode } = data as any
+            const { page, componentName, componentId, property, parameters, event: _event, mode } = data as any
 
             if (mode === 'bind') {
                 const oldInstanceTree = JSON.parse(session.instanceTree)
@@ -47,7 +48,7 @@ function facade(_app: any, router: any) {
             }
 
             const renderer = new Templater({})
-            const rendered = await renderer.render(indexHtml, {})
+            const rendered = await renderer.render(pages[page ?? 'index'], {})
             const response: any = {}
 
             const oldInstanceTree = JSON.parse(session.instanceTree)
@@ -70,6 +71,7 @@ function facade(_app: any, router: any) {
             session.instanceTree = JSON.stringify(instanceMap)
 
             deleteComponentGraph()
+            clearInjectables()
 
             ws.send(JSON.stringify(response))
         })
@@ -166,21 +168,21 @@ function facade(_app: any, router: any) {
     })
 
     router.get('/', async (req: any, res: any) => {
+        res.redirect('/index')
+    })
+
+    router.get('/:page', async (req: any, res: any) => {
+        const path = req.params.page === '' ? 'index' : req.params.page
         const session = req.session as any
         const renderer = new Templater({})
-        const rendered = await renderer.render(indexHtml, {})
+        const rendered = await renderer.render(pages[path], {})
         const bodyContent = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
         session.renderedHtmlBody = bodyContent
         const instanceMap = getJSONableComponentGraph()
         session.instanceTree = JSON.stringify(instanceMap)
         deleteComponentGraph()
+        clearInjectables()
         res.send(rendered)
     })
-}
-
-export {
-    facade,
-    registerComponents,
-    registerIndexHtml
 }
 

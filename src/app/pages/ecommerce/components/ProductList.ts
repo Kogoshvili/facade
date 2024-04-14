@@ -1,9 +1,10 @@
 import { Component } from 'facade/server/Component'
 import axios from 'axios'
+import { IComponent } from 'app/facade/server/Interfaces'
 
 
 @Component()
-class ProductList {
+class ProductList implements Partial<IComponent> {
     products: any[] = []
 
     constructor(_props: any) {}
