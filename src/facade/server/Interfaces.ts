@@ -11,6 +11,7 @@ export interface IComponentNode {
     needsRender: boolean
     template: string | null
     prevRender: string | null
+    haveRendered: boolean
 }
 
 

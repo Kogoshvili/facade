@@ -1,5 +1,5 @@
 import { get } from 'lodash-es'
-import { getBuiltComponentNode, getComponentNodeProperties, getMethods } from './ComponentManager'
+import { getBuiltComponentNode, getMethods } from './ComponentManager'
 import { IComponentNode } from './Interfaces'
 
 export default class Templater {
@@ -80,12 +80,15 @@ export default class Templater {
             return ''
         }
 
+        componentNode.haveRendered = true
+
+
         if (componentNode.instance === null) {
             if (componentNode.hasChildren) {
                 const methodsMap = buildMethodMap({_name: componentNode.name, _id: componentNode.id})(componentNode.methods)
-                return await this.render(
+                componentNode.prevRender = await this.render(
                     componentNode.template!,
-                    {...getComponentNodeProperties(componentNode), ...methodsMap},
+                    {...componentNode.properties, ...methodsMap},
                     componentNode
                 )
             }
@@ -94,6 +97,10 @@ export default class Templater {
         }
 
         const instance = componentNode.instance
+
+        if (instance.render === undefined) {
+            console.log('instance.render is undefined')
+        }
 
         const methodsMap = buildMethodMap(instance)(getMethods(instance))
         const template = instance.render().replace(/<(\w+)/, defineComponent(instance))

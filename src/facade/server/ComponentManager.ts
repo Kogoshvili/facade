@@ -4,7 +4,6 @@ import build from './Factory'
 import { isEqual } from 'lodash'
 import { nanoid } from 'nanoid'
 import { IComponentNode, IComponentNodeJSON } from './Interfaces'
-import hash from 'object-hash'
 
 export let ComponentGraph: Record<string, IComponentNode[]> = {}
 
@@ -16,42 +15,28 @@ export const getJSONableComponentGraph = (): Record<string, IComponentNodeJSON[]
     const ComponentGraphJSONable: Record<string, IComponentNodeJSON[]> = {}
 
     for (const key in ComponentGraph) {
-        ComponentGraphJSONable[key] = ComponentGraph[key].map((i: IComponentNode): IComponentNodeJSON => {
-            i.needsRender = false
+        ComponentGraphJSONable[key] = ComponentGraph[key]
+            .reduce((acc: IComponentNodeJSON[], i: IComponentNode) => {
+                if (!i.haveRendered) return acc
 
-            if (!i.instance) return i as IComponentNodeJSON
+                i.needsRender = false
+                i.haveRendered = false
 
+                if (!i.instance) {
+                    acc.push(i as IComponentNodeJSON)
+                    return acc
+                }
 
-            i.properties = removeUnSavableProperties({...i.instance})
+                i.properties = removeUnSavableProperties({...i.instance})
+                i.props = deleteFunctionAndClass(i.props)
+                i.instance = null
 
-            // i.properties = Object.keys(properties).reduce((acc: Record<string, any>, item: string) => {
-            //     acc[item] = {
-            //         hash: hash(properties[item]),
-            //         value: properties[item]
-            //     }
-            //     return acc
-            // }, {} as IComponentNodeJSON['properties'])
-
-            i.props = deleteFunctionAndClass(i.props)
-            i.needsRender = false
-            i.instance = null
-
-            return i as IComponentNodeJSON
-        })
+                acc.push(i as IComponentNodeJSON)
+                return acc
+            }, [])
     }
 
-    return ComponentGraph as Record<string, IComponentNodeJSON[]>
-}
-
-export const getComponentNodeProperties = (componentNode: IComponentNode) => {
-    const properties = componentNode.properties
-
-    // return Object.keys(properties).reduce((acc: Record<string, any>, item: string) => {
-    //     acc[item] = properties[item].value
-    //     return acc
-    // }, {})
-
-    return properties
+    return ComponentGraphJSONable as Record<string, IComponentNodeJSON[]>
 }
 
 function deleteFunctionAndClass(properties: any) {
@@ -89,8 +74,12 @@ export function getComponentInstanceFromGraph(componentName: string, componentId
             _name: componentNode.name,
         },
         componentNode.props,
-        getComponentNodeProperties(componentNode)
+        componentNode.properties
     )
+
+    if (componentNode.instance.render === undefined) {
+        console.log('instance.render is undefined')
+    }
 
     return componentNode.instance
 }
@@ -106,6 +95,10 @@ export async function executeMethodOnGraph(componentName: string, componentId: s
     const instance = getComponentInstanceFromGraph(componentName, componentId)
 
     if (!instance) return false
+
+    if (instance.render === undefined) {
+        console.log('instance.render is undefined')
+    }
 
     if (properties.hasOwnProperty(property)) {
         instance[property] = parameters
@@ -140,7 +133,10 @@ export async function getBuiltComponentNode(compName: string, props: any, parent
         const unused = ComponentGraph[compName].find((i: any) => (props.key ? i.key === props.key : true))
 
         if (unused) {
-            if ((unused.needsRender && !unused.instance) || !isEqual(unused.props, props)) {
+            unused.needsRender = unused.needsRender || !isEqual(unused.props, props)
+            const isInstance = !!unused.instance
+
+            if (!unused.instance) {
                 unused.props = props
                 unused.instance = build(component, {
                     _parentInstance: parent?.instance ?? null,
@@ -148,9 +144,13 @@ export async function getBuiltComponentNode(compName: string, props: any, parent
                     _name: unused.name,
                     _id: unused.id,
                     _key: unused.key ?? null
-                }, props, {...getComponentNodeProperties(unused), ...props})
+                }, props, {...unused.properties, ...props})
 
                 await unused.instance?.onPropsChange?.()
+            }
+
+            if (unused.instance.render === undefined) {
+                console.log('instance.render is undefined')
             }
 
             return unused
@@ -180,8 +180,13 @@ export async function getBuiltComponentNode(compName: string, props: any, parent
         hasChildren: false,
         needsRender: true,
         template: null,
-        prevRender: null
+        prevRender: null,
+        haveRendered: false
     })
+
+    if (instance.render === undefined) {
+        console.log('instance.render is undefined')
+    }
 
     await instance.mount?.()
 
