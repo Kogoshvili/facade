@@ -5,13 +5,15 @@ import { components } from './index'
 
 export async function renderer(jsx: JSXInternal.Element | null, parent: IComponentNode | null = null): Promise<string> {
     // @ts-ignore
-    if (jsx === null || jsx === false || jsx === undefined) {
+    if (shouldIgnore(jsx)) {
         return ''
     }
 
-    if (typeof jsx === 'string' || typeof jsx === 'number') {
-        return jsx
+    if (isPrimitive(jsx)) {
+        return jsx as any
     }
+
+    jsx = jsx as JSXInternal.Element
 
     const elementType = jsx.type
 
@@ -145,6 +147,20 @@ export async function renderer(jsx: JSXInternal.Element | null, parent: ICompone
     } else {
         return await renderer(fragmentResult, parent)
     }
+}
+
+function isPrimitive(jsx: any) {
+    return (
+        typeof jsx === 'string' ||
+        typeof jsx === 'number' ||
+        typeof jsx === 'boolean' ||
+        typeof jsx === 'bigint' ||
+        typeof jsx === 'symbol'
+    )
+}
+
+function shouldIgnore(jsx: any) {
+    return (jsx === null || jsx === false || jsx === undefined)
 }
 
 function isClass(fn: any) {
