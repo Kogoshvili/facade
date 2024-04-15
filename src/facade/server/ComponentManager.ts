@@ -98,6 +98,7 @@ export async function executeMethodOnGraph(componentName: string, componentId: s
         const stringifiedAnon = component._anonymous[componentName][property]
         const anonToFun = `(function(){(${stringifiedAnon})(...arguments)})`
         eval(anonToFun).call(instance, parameters)
+        componentNode!.needsRender = true
         return true
     }
 
