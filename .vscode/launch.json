@@ -19,6 +19,7 @@
             "request": "launch",
             // Debug current file in VSCode
             "program": "${workspaceFolder}/src/app/server.ts",
+            // "program": "${workspaceFolder}/test.tsx",
             /*
             Path to tsx binary
             Assuming locally installed

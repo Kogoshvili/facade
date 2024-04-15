@@ -1,6 +1,11 @@
 features:
 multiple pages (instance tree per page)
 
+defer => sync on next request
+lazy => 500ms
+bind => two way bind 100ms
+eager => 0ms
+
 webTransport
 bun
 

@@ -27,15 +27,21 @@ facade.event = function (e: any, path: string, event?: string, mode?: string) {
     const [componentName, componentId, property] = path.split('.')
     const parameters = mode === 'bind' ? e.target.value : { value: e.target.value }
 
+    request.call(facade, componentName, componentId, property, parameters, event, mode)
+    // debounce(request, getTimeout(mode, event))()
+}
+
+function request(componentName: string, componentId: string, property: string, parameters: any, event?: string, mode?: string) {
+    const page = window.location.pathname.split('/').pop()
+
     if (facade.config.protocol === 'http') {
-        this.methods.handleUpdateHttp(componentName, componentId, property, parameters)
+        // @ts-ignore
+        this.methods.handleUpdateHttp(componentName, componentId, property, parameters, event, mode)
     } else {
-        const page = window.location.pathname.split('/').pop()
+        // @ts-ignore
         this.socket.send(JSON.stringify({ page, componentName, componentId, property, parameters, event, mode }))
     }
 }
-
-const attachedEvents: any = []
 
 facade.init = function () {
     this.methods.syncState()
@@ -56,33 +62,12 @@ facade.init = function () {
 
     addEventListener('facade:dom:updated', () => {
         console.log('DOM Updated')
-        attachedEvents.forEach((removeListener: any) => removeListener())
-        this.mount()
     })
 }
 
-facade.mount = function () {
-    const elements = document.querySelectorAll('[data-facade-event]')
-    elements.forEach(this.methods.attachEvent)
-}
+facade.mount = function () {}
 
 facade.methods = {
-    attachEvent(element: Element) {
-        const facadeEventValue = element.getAttribute('data-facade-event')
-        const [event, mode, componentName, componentId, property] = facadeEventValue!.split('.')
-
-        const callback = debounce(
-            (e) => facade.event.call(facade, e, [componentName, componentId, property].join('.'), event, mode),
-            getTimeout(event, mode)
-        )
-
-        const eventListener = (element: any) => {
-            element.addEventListener(event, callback)
-            return () => element.removeEventListener(event, callback)
-        }
-
-        attachedEvents.push(eventListener(element))
-    },
     syncState() {
         // check if local storage has state
         const state = localStorage.getItem('facade-state')
@@ -113,8 +98,8 @@ facade.methods = {
                 })
         }
     },
-    handleUpdateHttp(componentName: string, componentId: string, method: string, parameters: any) {
-        fetch(`${facade.config.url}?component=${componentName}&id=${componentId}&method=${method}`, {
+    handleUpdateHttp(componentName: string, componentId: string, method: string, parameters: any, event?: string, mode?: string) {
+        fetch(`${facade.config.url}?component=${componentName}&id=${componentId}&method=${method}&event=${event}&mode=${mode}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -210,7 +195,9 @@ facade.methods = {
     }
 }
 
-function getTimeout(event: string, mode: string) {
+function getTimeout(mode?: string, event?: string) {
+    if (!mode) return 100
+
     switch (mode) {
         case 'lazy':
             return 500

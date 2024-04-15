@@ -3,6 +3,7 @@
         "callsites",
         "INJECTABLES",
         "Jsonable",
+        "preact",
         "proxyfied",
         "recived",
         "smol",

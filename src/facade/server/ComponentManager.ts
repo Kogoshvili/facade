@@ -3,7 +3,7 @@ import { components } from './index'
 import build from './Factory'
 import { isEqual } from 'lodash'
 import { nanoid } from 'nanoid'
-import { IComponentNode, IComponentNodeJSON } from './Interfaces'
+import { IComponentNode } from './Interfaces'
 
 export let ComponentGraph: Record<string, IComponentNode[]> = {}
 
@@ -11,19 +11,19 @@ export const deleteComponentGraph = () => {
     ComponentGraph = {}
 }
 
-export const getJSONableComponentGraph = (): Record<string, IComponentNodeJSON[]> => {
-    const ComponentGraphJSONable: Record<string, IComponentNodeJSON[]> = {}
+export const getJSONableComponentGraph = (removeUnused: boolean = true) => {
+    const ComponentGraphJSONable: Record<string, IComponentNode[]> = {}
 
     for (const key in ComponentGraph) {
         ComponentGraphJSONable[key] = ComponentGraph[key]
-            .reduce((acc: IComponentNodeJSON[], i: IComponentNode) => {
-                if (!i.haveRendered) return acc
+            .reduce((acc: IComponentNode[], i: IComponentNode) => {
+                if (removeUnused && !i.haveRendered) return acc
 
                 i.needsRender = false
                 i.haveRendered = false
 
                 if (!i.instance) {
-                    acc.push(i as IComponentNodeJSON)
+                    acc.push(i)
                     return acc
                 }
 
@@ -31,12 +31,12 @@ export const getJSONableComponentGraph = (): Record<string, IComponentNodeJSON[]
                 i.props = deleteFunctionAndClass(i.props)
                 i.instance = null
 
-                acc.push(i as IComponentNodeJSON)
+                acc.push(i)
                 return acc
             }, [])
     }
 
-    return ComponentGraphJSONable as Record<string, IComponentNodeJSON[]>
+    return ComponentGraphJSONable
 }
 
 function deleteFunctionAndClass(properties: any) {
@@ -45,6 +45,7 @@ function deleteFunctionAndClass(properties: any) {
     }
 
     for (const key in properties) {
+        if (properties[key] === undefined) continue
         if (typeof properties[key] === 'function' || isInstanceOfAnyClass(properties[key])) {
             delete properties[key]
         }
@@ -91,6 +92,14 @@ export async function executeMethodOnGraph(componentName: string, componentId: s
     const instance = getComponentInstanceFromGraph(componentName, componentId)
 
     if (!instance) return false
+
+    if (!isNaN(property as any)) {
+        const component = components[componentName]
+        const stringifiedAnon = component._anonymous[componentName][property]
+        const anonToFun = `(function(){(${stringifiedAnon})(...arguments)})`
+        eval(anonToFun).call(instance, parameters)
+        return true
+    }
 
     if (properties.hasOwnProperty(property)) {
         instance[property] = parameters
@@ -166,9 +175,8 @@ export async function getBuiltComponentNode(compName: string, props: any, parent
         parent: parent ? { name: parent.name, id: parent.id } : null,
         hasChildren: false,
         needsRender: true,
-        template: null,
+        haveRendered: false,
         prevRender: null,
-        haveRendered: false
     })
 
     await instance.mount?.()

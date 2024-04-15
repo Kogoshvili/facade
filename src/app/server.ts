@@ -35,11 +35,11 @@ registerComponents({
     TodoList
 })
 
-const shopHtml = fs.readFileSync(path.join(__dirname, './src/app/pages/', 'ecommerce/index.html'), 'utf8')
-const todoHtml = fs.readFileSync(path.join(__dirname, './src/app/pages/', 'todo/index.html'), 'utf8')
+// const shopHtml = fs.readFileSync(path.join(__dirname, './src/app/pages/', 'ecommerce/index.html'), 'utf8')
+// const todoHtml = fs.readFileSync(path.join(__dirname, './src/app/pages/', 'todo/index.jsx'), 'utf8')
 
-registerPage('index', todoHtml)
-registerPage('shop', shopHtml)
+// registerPage('index', todoHtml)
+// registerPage('shop', shopHtml)
 
 
 facade(app, router)

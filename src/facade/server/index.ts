@@ -3,6 +3,8 @@ import { diff, flattenChangeset } from 'json-diff-ts'
 import Templater from './Templater'
 import { getJSONableComponentGraph, executeMethodOnGraph, recreateComponentGraph, deleteComponentGraph } from './ComponentManager'
 import { clearInjectables } from './Injection'
+import { renderer } from './JSXRenderer'
+import Page from 'app/app/pages/todo'
 
 export let components: Record<string, any> = {}
 
@@ -16,6 +18,14 @@ export function registerComponents(comps: Record<string, any>) {
     components = comps
 }
 
+const todoPage = Page
+
+function getJSONDiff(oldInstanceTree: any, newInstanceTree: any) {
+    const stateDiff = diff(oldInstanceTree, newInstanceTree)
+    return flattenChangeset(stateDiff)
+        .filter((i: any) => !(i.key === 'prevRender' || i.key === 'template'))
+}
+
 export function facade(_app: any, router: any) {
     router.ws('/facade/ws', async (req: any, res: any) => {
         const ws = await res.accept()
@@ -23,22 +33,7 @@ export function facade(_app: any, router: any) {
             const data = JSON.parse(msg)
             const session = req.session as any
 
-            const { page, componentName, componentId, property, parameters, event: _event, mode } = data as any
-
-            if (mode === 'bind') {
-                const oldInstanceTree = JSON.parse(session.instanceTree)
-                const newInstanceTree = JSON.parse(session.instanceTree)
-
-                newInstanceTree[componentName].find((i: any) => i.id === componentId).properties[property] = parameters
-
-                const stateDiff = diff(oldInstanceTree, newInstanceTree)
-
-                session.instanceTree = JSON.stringify(newInstanceTree)
-
-                return ws.send(JSON.stringify({
-                    state: flattenChangeset(stateDiff)
-                }))
-            }
+            const { page: _page, componentName, componentId, property, parameters, event: _event, mode } = data as any
 
             recreateComponentGraph(session.instanceTree)
             const successful = executeMethodOnGraph(componentName, componentId, property, parameters)
@@ -47,14 +42,22 @@ export function facade(_app: any, router: any) {
                 return ws.send(JSON.stringify({ error: `Method/Property ${property} not found on component ${componentName}` }))
             }
 
-            const renderer = new Templater({})
-            const rendered = await renderer.render(pages[page ?? 'index'], {})
+            if (mode === 'bind') {
+                const oldInstanceTree = JSON.parse(session.instanceTree)
+                const newInstanceTree = getJSONableComponentGraph(false)
+
+                session.instanceTree = JSON.stringify(newInstanceTree)
+
+                return ws.send(JSON.stringify({
+                    state: getJSONDiff(oldInstanceTree, newInstanceTree)
+                }))
+            }
+
+            const rendered = await renderer(todoPage())
             const response: any = {}
 
-            const oldInstanceTree = JSON.parse(session.instanceTree)
-            const instanceMap = getJSONableComponentGraph()
-            const stateDiff = diff(oldInstanceTree, instanceMap)
-            response.state = flattenChangeset(stateDiff).filter((i: any) => !(i.key === 'prevRender' || i.key === 'template'))
+            const newInstanceTree = getJSONableComponentGraph()
+            response.state = getJSONDiff(JSON.parse(session.instanceTree), newInstanceTree)
 
             const oldBodyString = session.renderedHtmlBody
             const newBodyString = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
@@ -68,7 +71,7 @@ export function facade(_app: any, router: any) {
             }
 
             session.renderedHtmlBody = newBodyString
-            session.instanceTree = JSON.stringify(instanceMap)
+            session.instanceTree = JSON.stringify(newInstanceTree)
 
             deleteComponentGraph()
             clearInjectables()
@@ -172,10 +175,9 @@ export function facade(_app: any, router: any) {
     })
 
     router.get('/:page', async (req: any, res: any) => {
-        const path = req.params.page === '' ? 'index' : req.params.page
+        // const path = req.params.page === '' ? 'index' : req.params.page
         const session = req.session as any
-        const renderer = new Templater({})
-        const rendered = await renderer.render(pages[path], {})
+        const rendered = await renderer(todoPage())
         const bodyContent = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
         session.renderedHtmlBody = bodyContent
         const instanceMap = getJSONableComponentGraph()
