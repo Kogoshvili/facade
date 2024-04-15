@@ -7,7 +7,7 @@ import { Component as Base } from 'facade/server/base/Component'
 class ProductCard extends Base<any> {
     product: any
     // @ts-ignore
-    @Inject(ModalService) modalService: ModalService
+    modalService: ModalService = Inject(ModalService)
 
     // executes every time the component is rendered
     constructor(props: any) {

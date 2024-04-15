@@ -16,6 +16,8 @@ export interface IComponentNode {
     haveRendered: boolean
 
     prevRender: string | null
+
+    effects: { deps: ISignal[], destroy: (() => void) | null }[]
 }
 
 // export interface IComponentNodeJSON {

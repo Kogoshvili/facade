@@ -24,3 +24,13 @@ bugs:
 feature bug fixes:
 fork dom-diff or write more efficient one that will produce smaller diffs
  reasoing: something wierd with dom diff, works but unnecesery updates
+
+
+import _ from 'lodash';
+
+const data = signal(['test'], {equal: _.isEqual});
+
+// Even though this is a different array instance, the deep equality
+// function will consider the values to be equal, and the signal won't
+// trigger any updates.
+data.set(['test']);

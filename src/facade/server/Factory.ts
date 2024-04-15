@@ -1,4 +1,3 @@
-import { InjectDependencies } from './Injection'
 import { IComponent } from './Interfaces'
 
 function build(
@@ -8,8 +7,6 @@ function build(
     overwrites: Record<string, any> = {}
 ): IComponent {
     const instance = new component(props)
-
-    InjectDependencies(instance, component)
 
     setMetadata(instance, {
         ...metaProps,

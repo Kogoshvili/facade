@@ -1,13 +1,3 @@
-export interface ISignal<T> {
-    (v?: T | (() => T)): void;
-    value: T
-    _subscribers: Record<string, any> []
-    set(v: any): boolean
-    get(): any
-    subscribe(fn: any, context: any): void
-    unsubscribe(fn: any, context: any): void
-    notify(): void
-}
 
 class Signal {
     value: any
@@ -19,14 +9,17 @@ class Signal {
     }
 
     set(v: any) {
+        if (typeof v === 'function') {
+            this.value = v(this.value)
+            return true
+        }
+
         this.value = v
         return true
     }
 
     get() {
-        return typeof this.value === 'function'
-            ? this.value()
-            : this.value
+        return typeof this.value === 'function' ? this.value() : this.value
     }
 
     subscribe(fn: any, { name = null }: any = {}) {
@@ -35,22 +28,30 @@ class Signal {
     }
 
     unsubscribe(fn: any, { name = null }: any = {}) {
-        this._subscribers[name] = this._subscribers[name] || []
         this._subscribers[name] = this._subscribers[name]
             .filter((subscriber: any) => subscriber !== fn)
     }
 
     notify() {
-        Object.keys(this._subscribers)
-            .forEach((context: string) => {
-                this._subscribers[context as any]
-                    .forEach((fn: any) => fn())
-            })
+        Object.keys(this._subscribers).forEach((context: string) => {
+            this._subscribers[context as any].forEach((fn: any) => fn())
+        })
     }
 }
 
+interface ISignal<T = any> {
+    (v?: T | (() => T)): void;
+    value: T
+    _subscribers: Record<string, any> []
+    set(v: any): boolean
+    get(): any
+    subscribe(fn: any, context: any): void
+    unsubscribe(fn: any, context: any): void
+    notify(): void
+}
 
-function signal(input: any) {
+
+function signal(input: any): ISignal {
     const ref = new Signal(input)
 
     const callback = (...args: any) => { // nothing, new value, function
@@ -71,18 +72,29 @@ function signal(input: any) {
     })
 }
 
-
-function effect(fn: () => void, deps: any[]) {
+function effect(context: any, fn: () => void, deps: any[]) {
     fn()
+    deps.forEach((dep) => dep.subscribe(fn, context))
+    return () => deps.forEach((dep) => dep.unsubscribe(fn))
+}
 
-    deps.forEach((dep) => dep.subscribe(fn))
+const v = signal(0)
 
-    return {
-        deps,
-        destroy: () => deps.forEach((dep) => dep.unsubscribe(fn))
+class Test {
+    service: any
+
+    constructor() {}
+
+    init() {
+
     }
 }
 
+const c = new Test()
+c.init()
+v(20)
 
+console.log(v._subscribers)
 
-export { signal, effect }
+v()
+v.__value

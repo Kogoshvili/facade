@@ -2,12 +2,19 @@ import { Component } from 'facade/server/Component'
 import ModalService from '../services/ModalService'
 import { Inject } from 'facade/server/Injection'
 import { Component as Base } from 'facade/server/base/Component'
+import { effect } from 'facade/server/Signals'
 
 @Component()
 class Modal extends Base<any> {
     content: any | null = null
-    // @ts-ignore
-    @Inject(ModalService) modalService: ModalService
+    modalService = Inject<ModalService>(ModalService)
+
+    effects: any [] = [
+        effect(
+            () => console.log(this.modalService.modal()),
+            [this.modalService.modal]
+        )
+    ]
 
     // executes every time the component is rendered
     constructor(props: any) {
@@ -16,7 +23,7 @@ class Modal extends Base<any> {
 
     // executed every time the component is rendered
     init() {
-        this.content = this.modalService.modal().content
+        // this.content = this.modalService.modal().content
     }
 
     // executed only once

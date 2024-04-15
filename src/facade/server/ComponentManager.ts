@@ -30,6 +30,10 @@ export const getJSONableComponentGraph = (removeUnused: boolean = true) => {
                 i.properties = removeUnSavableProperties({...i.instance})
                 i.props = deleteFunctionAndClass(i.props)
                 i.instance = null
+                i.effects = i.effects.map(e => ({
+                    deps: e.deps,
+                    destroy: null
+                }))
 
                 acc.push(i)
                 return acc
@@ -77,6 +81,8 @@ export function getComponentInstanceFromGraph(componentName: string, componentId
         componentNode.props,
         componentNode.properties
     )
+
+    componentNode.effects = componentNode.instance.effects
 
     return componentNode.instance
 }
@@ -147,6 +153,7 @@ export async function getBuiltComponentNode(compName: string, props: any, parent
                     _key: unused.key ?? null
                 }, props, {...unused.properties, ...props})
 
+                unused.effects = unused.instance.effects
                 await unused.instance?.onPropsChange?.()
             }
 
@@ -178,6 +185,7 @@ export async function getBuiltComponentNode(compName: string, props: any, parent
         needsRender: true,
         haveRendered: false,
         prevRender: null,
+        effects: instance.effects
     })
 
     await instance.mount?.()
