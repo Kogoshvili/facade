@@ -1,6 +1,5 @@
 import { DiffDOM, stringToObj } from 'diff-dom'
 import { diff, flattenChangeset } from 'json-diff-ts'
-import Templater from './Templater'
 import { getJSONableComponentGraph, executeMethodOnGraph, recreateComponentGraph, deleteComponentGraph } from './ComponentManager'
 import { clearInjectables } from './Injection'
 import { renderer } from './JSXRenderer'
@@ -99,8 +98,7 @@ export function facade(_app: any, router: any) {
         recreateComponentGraph(session.instanceTree)
         executeMethodOnGraph(componentName, componentId, method, parameters)
 
-        const renderer = new Templater({ noMount: true })
-        const rendered = await renderer.render(indexHtml, {})
+        const rendered = await renderer(todoPage())
         const response: any = {}
 
         const oldInstanceTree = JSON.parse(session.instanceTree)
@@ -135,8 +133,7 @@ export function facade(_app: any, router: any) {
         // rebuildInstanceTree(JSON.stringify(state))
         // recreateInstances()
 
-        // const renderer = new Templater({ noMount: true })
-        // const rendered = await renderer.render(indexHtml, {})
+        // const rendered = await renderer(todoPage())
 
         // const response: any = {}
 
