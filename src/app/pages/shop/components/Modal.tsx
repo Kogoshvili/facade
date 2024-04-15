@@ -16,9 +16,7 @@ class Modal extends Base<any> {
 
     // executed every time the component is rendered
     init() {
-        this.modalService.modal$.subscribe((data: any) => {
-            this.content = data
-        })
+        this.content = this.modalService.modal().content
     }
 
     // executed only once

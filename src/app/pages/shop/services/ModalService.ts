@@ -1,16 +1,16 @@
 import { Injectable } from 'app/facade/server/Injection'
-import { Subject } from 'rxjs'
+import signal, { Signal } from 'facade/server/Signals'
 
 @Injectable()
 class ModalService {
-    modal$: Subject<any> = new Subject()
+    modal: Signal<string|null> = signal(null)
 
     openModal(data: any) {
-        this.modal$.next(data)
+        this.modal.set(data)
     }
 
     closeModal() {
-        this.modal$.next(null)
+        this.modal.set(null)
     }
 }
 

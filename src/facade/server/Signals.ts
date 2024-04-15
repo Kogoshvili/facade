@@ -1,33 +1,30 @@
-import { computed as _computed, shallowRef, triggerRef } from '@vue/reactivity'
-
-export interface Signal<T = any> {
-  (): T
-  set: (value: T) => void
-  update: (updater: (value: T) => T) => void
-  mutate: (mutator: (value: T) => void) => void
+export interface Signal<T> {
+    value: T,
+    set: (v: T) => boolean,
+    get: () => T
 }
 
-export function signal<T = any>(initialValue: T) {
-    const ref = shallowRef(initialValue)
-    const signal = () => ref.value
-
-    signal.set = (value: T) => {
-        ref.value = value
+function signal(input: any): Signal<any> {
+    const ref = {
+        value: input,
+        _signal: true,
+        set(v: any) {
+            this.value = v
+        },
+        get() {
+            return this.value
+        }
     }
 
-    signal.update = (updater: (value: T) => T) => {
-        ref.value = updater(ref.value)
-    }
-
-    signal.mutate = (mutator: (value: T) => void) => {
-        mutator(ref.value)
-        triggerRef(ref)
-    }
-
-    return signal as Signal<T>
+    return new Proxy(ref, {
+        get: (target: any, p: string | symbol, receiver: any): any => {
+            // console.log(target, p, receiver, arguments)
+            return Reflect.get(target, p, receiver)
+        },
+        set: (target: any, p: string | symbol, newValue: any, receiver: any): boolean => {
+            return Reflect.set(target, p, newValue, receiver)
+        },
+    })
 }
 
-export function computed<T>(getter: (...args: any[]) => T) {
-    const c = _computed(getter)
-    return () => c.value
-}
+export default signal
