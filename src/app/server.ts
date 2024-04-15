@@ -1,15 +1,17 @@
 import express from 'express'
-import fs from 'fs'
 import session from 'express-session'
 import compression from 'compression'
 import { WebSocketExpress, Router } from 'websocket-express'
 import { registerPage, facade, registerComponents } from 'facade/server'
 import path from 'path'
-import ProductCard from './pages/ecommerce/components/ProductCard'
-import ProductList from './pages/ecommerce/components/ProductList'
-import Modal from './pages/ecommerce/components/Modal'
+import ProductCard from './pages/shop/components/ProductCard'
+import ProductList from './pages/shop/components/ProductList'
+import Modal from './pages/shop/components/Modal'
 import TodoItem from './pages/todo/components/TodoItem'
 import TodoList from './pages/todo/components/TodoList'
+
+import TodoPage from 'app/app/pages/todo'
+import ShopPage from 'app/app/pages/shop'
 
 const __dirname = path.resolve()
 
@@ -35,12 +37,8 @@ registerComponents({
     TodoList
 })
 
-// const shopHtml = fs.readFileSync(path.join(__dirname, './src/app/pages/', 'ecommerce/index.html'), 'utf8')
-// const todoHtml = fs.readFileSync(path.join(__dirname, './src/app/pages/', 'todo/index.jsx'), 'utf8')
-
-// registerPage('index', todoHtml)
-// registerPage('shop', shopHtml)
-
+registerPage('index', TodoPage())
+registerPage('shop', ShopPage())
 
 facade(app, router)
 

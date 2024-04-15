@@ -1,13 +1,16 @@
 import { Component } from 'facade/server/Component'
 import axios from 'axios'
-import { IComponent } from 'app/facade/server/Interfaces'
+import { Component as Base } from 'facade/server/base/Component'
+import ProductCard from './ProductCard'
 
 
 @Component()
-class ProductList implements Partial<IComponent> {
+class ProductList extends Base<any> {
     products: any[] = []
 
-    constructor(_props: any) {}
+    constructor(props: any) {
+        super(props)
+    }
 
     // executed only once result is cached in redis with session id
     async mount() {
@@ -18,17 +21,19 @@ class ProductList implements Partial<IComponent> {
     // executed every time the component is rendered
     prerender() {}
 
-    render() {
-        return `
+    static render(this: ProductList) {
+        return (
             <div class="p-5">
                 <h1 class="text-2xl font-bold mb-4">Product List</h1>
                 <div class="grid grid-cols-6 gap-4">
-                    {{#each products}}
-                        {{> ProductCard product={self} key={id} }}
-                    {{/each}}
+                    {
+                        this.products.map((product) => (
+                            <ProductCard product={product} key={product.id} />
+                        ))
+                    }
                 </div>
             </div>
-        `
+        )
     }
 }
 

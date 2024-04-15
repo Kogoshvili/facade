@@ -1,16 +1,18 @@
 import { Component } from 'facade/server/Component'
 import ModalService from '../services/ModalService'
 import { Inject } from 'facade/server/Injection'
-import { IComponent } from 'app/facade/server/Interfaces'
+import { Component as Base } from 'facade/server/base/Component'
 
 @Component()
-class Modal implements Partial<IComponent>{
-    content: string | null = null
+class Modal extends Base<any> {
+    content: any | null = null
     // @ts-ignore
     @Inject(ModalService) modalService: ModalService
 
     // executes every time the component is rendered
-    constructor() {}
+    constructor(props: any) {
+        super(props)
+    }
 
     // executed every time the component is rendered
     init() {
@@ -29,10 +31,10 @@ class Modal implements Partial<IComponent>{
         this.modalService.closeModal()
     }
 
-    render() {
-        if (!this.content) return ''
+    static render(this: Modal) {
+        if (!this.content) return null
 
-        return `
+        return (
             <div class="fixed z-10 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
                 <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                     <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
@@ -41,22 +43,22 @@ class Modal implements Partial<IComponent>{
                             <div class="sm:flex sm:items-start">
                                 <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
                                     <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title" height="100">
-                                        {{content.title}}
+                                        {this.content.title}
                                     </h3>
                                     <div class="mt-2">
-                                        <img class="w-full" src="{{content.image}}" alt="{{content.title}}">
+                                        <img class="w-full" src="{{content.image}}" alt="{{content.title}}" />
                                         <p class="text-sm text-gray-500">
-                                            {{content.description}}
+                                            {this.content.description}
                                         </p>
                                     </div>
-                                    <button @click="onClose" type="button" class="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm">Close</button>
+                                    <button onClick={this.onClose} type="button" class="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm">Close</button>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        `
+        )
     }
 }
 

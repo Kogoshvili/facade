@@ -9,7 +9,7 @@ export async function renderer(jsx: JSXInternal.Element | null, parent: ICompone
         return ''
     }
 
-    if (typeof jsx === 'string') {
+    if (typeof jsx === 'string' || typeof jsx === 'number') {
         return jsx
     }
 

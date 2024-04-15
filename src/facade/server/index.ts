@@ -3,21 +3,19 @@ import { diff, flattenChangeset } from 'json-diff-ts'
 import { getJSONableComponentGraph, executeMethodOnGraph, recreateComponentGraph, deleteComponentGraph } from './ComponentManager'
 import { clearInjectables } from './Injection'
 import { renderer } from './JSXRenderer'
-import Page from 'app/app/pages/todo'
+
 
 export let components: Record<string, any> = {}
 
-const pages: Record<string, string> = {}
+const pages: Record<string, any> = {}
 
-export function registerPage(path: string, indexHtml: string) {
-    pages[path] = indexHtml
+export function registerPage(path: string, jsx: any) {
+    pages[path] = jsx
 }
 
 export function registerComponents(comps: Record<string, any>) {
     components = comps
 }
-
-const todoPage = Page
 
 function getJSONDiff(oldInstanceTree: any, newInstanceTree: any) {
     const stateDiff = diff(oldInstanceTree, newInstanceTree)
@@ -32,7 +30,7 @@ export function facade(_app: any, router: any) {
             const data = JSON.parse(msg)
             const session = req.session as any
 
-            const { page: _page, componentName, componentId, property, parameters, event: _event, mode } = data as any
+            const { page, componentName, componentId, property, parameters, event: _event, mode } = data as any
 
             recreateComponentGraph(session.instanceTree)
             const successful = executeMethodOnGraph(componentName, componentId, property, parameters)
@@ -52,7 +50,7 @@ export function facade(_app: any, router: any) {
                 }))
             }
 
-            const rendered = await renderer(todoPage())
+            const rendered = await renderer(pages[page])
             const response: any = {}
 
             const newInstanceTree = getJSONableComponentGraph()
@@ -81,7 +79,7 @@ export function facade(_app: any, router: any) {
 
     router.post('/facade/http', async (req: any, res: any) => {
         const session = req.session as any
-        const { component: componentName, id: componentId, method } = req.query as { component: string, id: string, method: string }
+        const { page, component: componentName, id: componentId, method } = req.query as any
 
         if (!components[componentName]) {
             res.status(400).send(`Component ${componentName} not found`)
@@ -98,7 +96,7 @@ export function facade(_app: any, router: any) {
         recreateComponentGraph(session.instanceTree)
         executeMethodOnGraph(componentName, componentId, method, parameters)
 
-        const rendered = await renderer(todoPage())
+        const rendered = await renderer(pages[page])
         const response: any = {}
 
         const oldInstanceTree = JSON.parse(session.instanceTree)
@@ -167,14 +165,14 @@ export function facade(_app: any, router: any) {
         res.send(instanceTree)
     })
 
-    router.get('/', async (req: any, res: any) => {
+    router.get('/', async (_req: any, res: any) => {
         res.redirect('/index')
     })
 
     router.get('/:page', async (req: any, res: any) => {
-        // const path = req.params.page === '' ? 'index' : req.params.page
+        const page = req.params.page === '' ? 'index' : req.params.page
         const session = req.session as any
-        const rendered = await renderer(todoPage())
+        const rendered = await renderer(pages[page])
         const bodyContent = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
         session.renderedHtmlBody = bodyContent
         const instanceMap = getJSONableComponentGraph()
