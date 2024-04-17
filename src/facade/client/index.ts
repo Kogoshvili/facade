@@ -36,8 +36,8 @@ function debouncedRequest(componentName: string, componentId: string, property: 
     facade.requests[key](componentName, componentId, property, parameters, event, mode)
 }
 
-facade.event = function (e: any) {
-    const [componentName, componentId, property, event, mode] = e.target.attributes['data-facade-event'].value.split('.')
+facade.event = function (e: any, path: string) {
+    const [componentName, componentId, property, event, mode] = path.split('.')
     const parameters = mode === 'bind' ? e.target.value : { value: e.target.value }
 
     debouncedRequest(componentName, componentId, property, parameters, event, mode)
@@ -208,8 +208,10 @@ facade.methods = {
 }
 
 function getTimeout(mode?: string, event?: string) {
-    if (!mode) return 100
-
+    // defer => sync on next request
+    // lazy => 500ms
+    // bind => two way bind 100ms
+    // eager => 0ms
     switch (mode) {
         case 'lazy':
             return 500
@@ -219,10 +221,11 @@ function getTimeout(mode?: string, event?: string) {
         }
         case 'eager':
             return 0
+        case 'defer':
         case 'default':
         default: {
             if (event === 'click') return 0
-            if (event === 'input') return 500
+            if (event === 'input') return 250
             return 100
         }
     }
@@ -246,7 +249,7 @@ addEventListener('facade:state:updated', ({
 }: any) => {
     updatedProperties.forEach(
         ({ componentName, componentId, property, newValue }: IUpdatedProperties) => {
-            const search = `[data-facade-event="${componentName}.${componentId}.${property}.input.bind"]`
+            const search = `[oninput="facade.event(event, '${componentName}.${componentId}.${property}.input.bind')"]`
             const element = document.querySelector(search)
             if (!element) return
             if (newValue === undefined) return

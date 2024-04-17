@@ -68,12 +68,10 @@ export async function renderer(jsx: JSXInternal.Element | null, parent: ICompone
                     const [event, mode = 'lazy'] = key.split(':')
                     const eventName = event.startsWith('on') ? event.toLowerCase().slice(2) : event
 
-                    result += ` ${event}="facade.event(event)"`
-                    result += ` data-facade-event="${parent!.name}.${parent!.id}.${functionName}.${eventName}.${mode}"`
+                    result += ` ${event}="facade.event(event, '${parent!.name}.${parent!.id}.${functionName}.${eventName}.${mode}')"`
                 } else {
                     if (key.includes(':bind')) {
-                        result += ' oninput="facade.event(event)"'
-                        result += ` data-facade-event="${parent!.name}.${parent!.id}.${value.replace('this.', '')}.input.bind"`
+                        result += ` oninput="facade.event(event, '${parent!.name}.${parent!.id}.${value.replace('this.', '')}.input.bind')"`
                     } else {
                         // Render attribute with a value
                         result += ` ${key}="${value}"`

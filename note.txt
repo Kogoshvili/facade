@@ -1,38 +1,21 @@
 features:
-multiple pages (instance tree per page?? probably not)
-two way bind so I can clear value from be
-
-defer => sync on next request
-lazy => 500ms
-bind => two way bind 100ms
-eager => 0ms
 
 webTransport
 bun
 
 
-
+multiple pages (instance tree per page?? probably not)
 
 do I event need this? or I can just user inline events?
 better event listener handling, write some custom helper for it
 
+???:
 post render method that modifies render dom before it is send using jsdom to make do
 
+
+future:
 gziping ws sending data as blob achivable with configuration of ws npm
-
-bugs:
-
-
-feature bug fixes:
 fork dom-diff or write more efficient one that will produce smaller diffs
  reasoing: something wierd with dom diff, works but unnecesery updates
 
 
-import _ from 'lodash';
-
-const data = signal(['test'], {equal: _.isEqual});
-
-// Even though this is a different array instance, the deep equality
-// function will consider the values to be equal, and the signal won't
-// trigger any updates.
-data.set(['test']);

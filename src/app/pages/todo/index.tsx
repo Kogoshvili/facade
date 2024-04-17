@@ -1,16 +1,14 @@
+import Header from 'app/app/layout/header'
 import TodoList from './components/TodoList'
+import Body from 'app/app/layout/body'
 
 function Page() {
     return (
         <html>
-            <head>
-                <title>Home</title>
-                <script src="https://cdn.tailwindcss.com"></script>
-                <script async src="./static/client.js" type="text/javascript"></script>
-            </head>
-            <body style="visibility: visible;">
+            <Header name="Todo" />
+            <Body>
                 <TodoList />
-            </body>
+            </Body>
         </html>
     )
 }

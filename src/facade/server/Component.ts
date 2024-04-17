@@ -16,8 +16,6 @@ abstract class AComponent<P = {}> {
         [key: string]: ((...args: any) => void)[]
     } = {}
 
-    effects: { deps: ISignal[], destroy: (() => void) | null }[] = []
-
     constructor(props: P) {
         this.props = props
     }

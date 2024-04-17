@@ -1,6 +1,6 @@
 export interface ISignal<T> {
     (v?: T | (() => T)): T;
-    value: T
+    _value: T
     _subscribers: Record<string, any> []
     set(v: any): boolean
     get(): any
@@ -10,22 +10,31 @@ export interface ISignal<T> {
 }
 
 class Signal {
-    value: any
+    _value: any
     _subscribers: Record<string, any> []
+    options: any = {
+        comparer: (a: any, b: any) => a === b
+    }
 
-    constructor(input: any) {
-        this.value = input
+    constructor(input: any, options?: any) {
+        this._value = input
         this._subscribers = []
+        this.options = { ...this.options, ...options }
     }
 
     set(v: any) {
-        this.value = v
+        if (this.options.comparer(this._value, v)) {
+            return false
+        }
+
+        this._value = v
+        return true
     }
 
     get() {
-        return typeof this.value === 'function'
-            ? this.value()
-            : this.value
+        return typeof this._value === 'function'
+            ? this._value()
+            : this._value
     }
 
     subscribe(fn: any) {
@@ -49,8 +58,8 @@ function signal(input: any) {
     const callback = (...args: any) => { // nothing, new value, function
         // console.log('Accessed', dis.value, args.length)
         if (args.length === 0) return ref.get()
-        ref.set(args[0])
-        ref.notify()
+        const isSuccessful = ref.set(args[0])
+        if (isSuccessful) ref.notify()
     }
 
     return new Proxy(callback, {

@@ -1,6 +1,6 @@
 import { DiffDOM, stringToObj } from 'diff-dom'
 import { diff, flattenChangeset } from 'json-diff-ts'
-import { getJSONableComponentGraph, executeMethodOnGraph, recreateComponentGraph, deleteComponentGraph, ComponentGraph } from './ComponentManager'
+import { getJSONableComponentGraph, executeMethodOnGraph, recreateComponentGraph, deleteComponentGraph } from './ComponentManager'
 import { clearInjectables } from './decorators/Injection'
 import { renderer } from './JSXRenderer'
 
@@ -21,6 +21,11 @@ function getJSONDiff(oldInstanceTree: any, newInstanceTree: any) {
     const stateDiff = diff(oldInstanceTree, newInstanceTree)
     return flattenChangeset(stateDiff)
         .filter((i: any) => !(i.key === 'prevRender' || i.key === 'template'))
+}
+
+async function RenderDOM(page: any) {
+    const rendered = await renderer(page)
+    return `<!DOCTYPE html> <html> ${rendered} </html>`
 }
 
 export function facade(_app: any, router: any) {
@@ -50,8 +55,7 @@ export function facade(_app: any, router: any) {
                 }))
             }
 
-            const graph = ComponentGraph
-            const rendered = await renderer(pages[page])
+            const rendered = await RenderDOM(pages[page])
             const response: any = {}
 
             const newInstanceTree = getJSONableComponentGraph()
@@ -173,7 +177,7 @@ export function facade(_app: any, router: any) {
     router.get('/:page', async (req: any, res: any) => {
         const page = req.params.page === '' ? 'index' : req.params.page
         const session = req.session as any
-        const rendered = await renderer(pages[page])
+        const rendered = await RenderDOM(pages[page])
         const bodyContent = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
         session.renderedHtmlBody = bodyContent
         const instanceMap = getJSONableComponentGraph()

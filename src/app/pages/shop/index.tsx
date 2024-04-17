@@ -1,18 +1,17 @@
 import Modal from './components/Modal'
 import ProductList from './components/ProductList'
+import Header from 'app/app/layout/header'
+import Body from 'app/app/layout/body'
+
 
 function Page() {
     return (
         <html>
-            <head>
-                <title>Home</title>
-                <script src="https://cdn.tailwindcss.com"></script>
-                <script async src="./static/client.js" type="text/javascript"></script>
-            </head>
-            <body style="visibility: visible;">
+            <Header name="Shop" />
+            <Body>
                 <ProductList />
                 <Modal />
-            </body>
+            </Body>
         </html>
     )
 }

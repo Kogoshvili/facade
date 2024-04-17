@@ -17,29 +17,28 @@ export function Injectable(): ClassDecorator {
     }
 }
 
-export interface IInject<T = any> {
+export type iInject<T> = {
     _read: boolean,
     _write: boolean,
     _injectable: boolean,
     _name: string,
     _class: any,
     _mocked: boolean,
-    instance: any,
-    [key: string]: any
-}
+    _instance: T,
+} & T
 
 export function Inject<T>(
     serviceIdentifier: any,
     { read = true, write = true }: { read?: boolean, write?: boolean } = {}
-): IInject<T> {
-    const mock = {
+): T {
+    const mock: iInject<any> = {
         _read: read,
         _write: write,
         _injectable: true,
         _name: serviceIdentifier.name,
         _class: serviceIdentifier,
         _mocked: true,
-        instance: {}
+        _instance: {}
     }
 
     return new Proxy(mock, {
@@ -62,7 +61,7 @@ export function Inject<T>(
                     injectable.instance = new injectable.declaration()
                 }
 
-                target.instance = injectable.instance
+                target._instance = injectable.instance
 
                 const componentNodes: IComponentNode[][] = []
 
@@ -78,7 +77,7 @@ export function Inject<T>(
                 })
             }
 
-            return Reflect.get(target.instance, prop, receiver)
+            return Reflect.get(target._instance, prop, receiver)
         }
     })
 }

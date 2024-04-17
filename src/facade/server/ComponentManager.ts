@@ -30,10 +30,6 @@ export const getJSONableComponentGraph = (removeUnused: boolean = true) => {
                 i.properties = removeUnSavableProperties({...i.instance})
                 i.props = deleteFunctionAndClass(i.props)
                 i.instance = null
-                i.effects = i.effects.map(e => ({
-                    deps: e.deps,
-                    destroy: null
-                }))
 
                 acc.push(i)
                 return acc
