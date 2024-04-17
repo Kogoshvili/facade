@@ -1,9 +1,9 @@
 import { DiffDOM, stringToObj } from 'diff-dom'
 import { diff, flattenChangeset } from 'json-diff-ts'
+import { WebSocketServer } from 'ws'
 import { getJSONableComponentGraph, executeMethodOnGraph, recreateComponentGraph, deleteComponentGraph } from './ComponentManager'
 import { clearInjectables } from './decorators/Injection'
 import { renderer } from './JSXRenderer'
-
 
 export let components: Record<string, any> = {}
 
@@ -32,7 +32,27 @@ async function RenderDOM(page: any) {
     return `<!DOCTYPE html> <html> ${rendered} </html>`
 }
 
-export function facadeWS(server: any, wss: any, sessionParser: any) {
+export function facadeWS(server: any, sessionParser: any, wssConfig: any = {}) {
+    const wss = new WebSocketServer({
+        noServer: true,
+        perMessageDeflate: {
+            zlibDeflateOptions: {
+                chunkSize: 16 * 1024, // Use larger chunks to improve compression efficiency
+                memLevel: 9,          // Use maximum memory for better compression ratio
+                level: 9              // Maximum compression level
+            },
+            zlibInflateOptions: {
+                chunkSize: 16 * 1024  // Consistent chunk size with deflate for optimal performance
+            },
+            clientNoContextTakeover: false, // Do not limit context takeover to enhance compression
+            serverNoContextTakeover: false, // Do not limit context takeover to enhance compression
+            serverMaxWindowBits: 15,        // Use maximum window bits for better compression
+            concurrencyLimit: 1,            // Limit concurrency to reduce CPU usage on server
+            threshold: 0                    // Compress all messages regardless of size
+        },
+        ...wssConfig
+    })
+
     server.on('upgrade', function (request: any, socket: any, head: any) {
         sessionParser(request, {}, () => {
             wss.handleUpgrade(request, socket, head, function (ws: any) {
@@ -103,7 +123,7 @@ export function facadeWS(server: any, wss: any, sessionParser: any) {
 export function facadeHTTP(app: any) {
     app.post('/facade/http', async (req: any, res: any) => {
         const session = req.session as any
-        const { page, component: componentName, id: componentId, method } = req.query as any
+        const { page, component: componentName, id: componentId, method, event, mode } = req.query as any
 
         if (!components[componentName]) {
             res.status(400).send(`Component ${componentName} not found`)
@@ -118,7 +138,22 @@ export function facadeHTTP(app: any) {
         const { parameters } = req.body
 
         recreateComponentGraph(session.instanceTree)
-        executeMethodOnGraph(componentName, componentId, method, parameters)
+        const successful = executeMethodOnGraph(componentName, componentId, property, parameters)
+
+        if (!successful) {
+            return res.send(JSON.stringify({ error: `Method/Property ${property} not found on component ${componentName}` }))
+        }
+
+        if (mode === 'bind') {
+            const oldInstanceTree = JSON.parse(session.instanceTree)
+            const newInstanceTree = getJSONableComponentGraph(false)
+
+            session.instanceTree = JSON.stringify(newInstanceTree)
+
+            return res.send(JSON.stringify({
+                state: getJSONDiff(oldInstanceTree, newInstanceTree)
+            }))
+        }
 
         const rendered = await renderer(pages[page])
         const response: any = {}
@@ -143,44 +178,44 @@ export function facadeHTTP(app: any) {
         session.instanceTree = JSON.stringify(instanceMap)
 
         deleteComponentGraph()
+        clearInjectables()
 
         res.send(JSON.stringify(response))
     })
 
 
-    app.post('/facade/http/set-state', async (_req: any, _res: any) => {
-        // const session = req.session as any
-        // const state = req.body
+    app.post('/facade/http/set-state', async (req: any, res: any) => {
+        const session = req.session as any
+        const { page, state } = req.body
 
-        // rebuildInstanceTree(JSON.stringify(state))
-        // recreateInstances()
+        recreateComponentGraph(state)
 
-        // const rendered = await renderer(todoPage())
+        const rendered = await RenderDOM(pages[page])
+        const response: any = {}
 
-        // const response: any = {}
+        const oldInstanceTree = JSON.parse(session.instanceTree)
+        const instanceMap = getJSONableComponentGraph()
+        const stateDiff = diff(oldInstanceTree, instanceMap)
+        response.state = flattenChangeset(stateDiff)
 
-        // const oldInstanceTree = JSON.parse(session.instanceTree)
-        // const instanceMap = getCleanInstanceTree()
-        // const stateDiff = diff(oldInstanceTree, instanceMap)
-        // response.state = flattenChangeset(stateDiff)
+        const oldBodyString = session.renderedHtmlBody
+        const newBodyString = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
 
-        // const oldBodyString = session.renderedHtmlBody
-        // const newBodyString = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
+        if (oldBodyString) {
+            const dd = new DiffDOM()
+            const prevBody = stringToObj(oldBodyString!)
+            const newBody = stringToObj(newBodyString!)
+            const domDiff = dd.diff(prevBody, newBody)
+            response.dom = domDiff
+        }
 
-        // if (oldBodyString) {
-        //     const dd = new DiffDOM()
-        //     const prevBody = stringToObj(oldBodyString!)
-        //     const newBody = stringToObj(newBodyString!)
-        //     const domDiff = dd.diff(prevBody, newBody)
-        //     response.dom = domDiff
-        // }
+        session.renderedHtmlBody = newBodyString
+        session.instanceTree = JSON.stringify(instanceMap)
 
-        // session.renderedHtmlBody = newBodyString
-        // session.instanceTree = JSON.stringify(instanceMap)
+        deleteComponentGraph()
+        clearInjectables()
 
-        // resetInstanceTree()
-
-        // res.send(response)
+        res.send(JSON.stringify(response))
     })
 
     app.get('/facade/http/get-state', (req: any, res: any) => {
@@ -194,15 +229,24 @@ export function facadeHTTP(app: any) {
     })
 
     app.get('/:page', async (req: any, res: any) => {
-        const page = req.params.page === '' ? 'index' : req.params.page
+        const page = req.params.page
+
+        if (!pages[req.params.page]) {
+            res.status(404).send('Page not found')
+            return
+        }
+
         const session = req.session as any
+
         const rendered = await RenderDOM(pages[page])
-        const bodyContent = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
-        session.renderedHtmlBody = bodyContent
+        session.renderedHtmlBody = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
+
         const instanceMap = getJSONableComponentGraph()
         session.instanceTree = JSON.stringify(instanceMap)
+
         deleteComponentGraph()
         clearInjectables()
+
         res.send(rendered)
     })
 }
