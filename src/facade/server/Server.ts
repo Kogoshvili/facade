@@ -10,7 +10,7 @@ export let components: Record<string, any> = {}
 const pages: Record<string, any> = {}
 
 export function registerPage(path: string, jsx: any) {
-    pages[path] = jsx
+    pages[path] = jsx()
 }
 
 export function registerComponents(comps: Record<string, any>) {

@@ -37,8 +37,8 @@ registerComponents({
     TodoList
 })
 
-registerPage('index', TodoPage())
-registerPage('shop', ShopPage())
+registerPage('index', TodoPage)
+registerPage('shop', ShopPage)
 
 facade(app, router)
 
