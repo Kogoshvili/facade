@@ -63,6 +63,33 @@ export function recreateComponentGraph(json: string) {
     ComponentGraph = JSON.parse(json)
 }
 
+export function makeComponentInstance(componentName: string) {
+    const componentNodes = ComponentGraph[componentName] || []
+
+    const component = components[componentName]
+
+    componentNodes.forEach((node, index) => {
+        if (node.instance) return
+
+        const instance = build(
+            component, {
+                _parentInstance: node.parent ?? null,
+                _parent: node.parent,
+                _id: node.id,
+                _name: node.name,
+            },
+            node.props,
+            node.properties
+        )
+
+        componentNodes[index].instance = instance
+        componentNodes[index].needsRender = true
+        componentNodes[index].haveRendered = false
+    })
+
+    return componentNodes
+}
+
 export function getComponentInstanceFromGraph(componentName: string, componentId: string) {
     const componentNode = ComponentGraph[componentName].find((i: any) => i.id === componentId)
 
@@ -81,6 +108,8 @@ export function getComponentInstanceFromGraph(componentName: string, componentId
         componentNode.props,
         componentNode.properties
     )
+
+    componentNode.instance.init?.()
 
     componentNode.effects = componentNode.instance.effects
 
@@ -152,6 +181,7 @@ export async function getBuiltComponentNode(compName: string, props: any, parent
                     _id: unused.id,
                     _key: unused.key ?? null
                 }, props, {...unused.properties, ...props})
+                unused.instance.init?.()
 
                 unused.effects = unused.instance.effects
                 await unused.instance?.onPropsChange?.()
@@ -168,6 +198,7 @@ export async function getBuiltComponentNode(compName: string, props: any, parent
         _id: nanoid(10),
         _key: props.key ?? null
     }, props)
+    instance.init?.()
 
     const { properties, methods } = getClassPropsAndMethods(instance)
 

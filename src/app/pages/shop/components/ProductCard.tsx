@@ -7,7 +7,7 @@ import { Component as Base } from 'facade/server/base/Component'
 class ProductCard extends Base<any> {
     product: any
     // @ts-ignore
-    modalService: ModalService = Inject(ModalService)
+    modalService = Inject<ModalService>(ModalService, { read: false })
 
     // executes every time the component is rendered
     constructor(props: any) {
@@ -20,7 +20,8 @@ class ProductCard extends Base<any> {
     async mount() {}
 
     openModal() {
-        this.modalService.openModal(this.product)
+        console.log('Open Modal')
+        this.modalService.instance.openModal(this.product)
     }
 
     static render(this: ProductCard) {

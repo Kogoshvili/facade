@@ -15,7 +15,14 @@ function build(
 
     overwriteProps(instance, overwrites)
 
-    instance.init?.()
+    Object.getOwnPropertyNames(instance).forEach((p) => {
+        if (instance[p]?._injectable) {
+            instance[p]._class.prototype._subscribers[component.name] = {
+                read: instance[p]._read,
+                write: instance[p]._write
+            }
+        }
+    })
 
     // const proxyfied = new Proxy(instance, {
     //     set(target, property, value, receiver) {

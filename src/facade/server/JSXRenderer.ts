@@ -15,6 +15,10 @@ export async function renderer(jsx: JSXInternal.Element | null, parent: ICompone
 
     jsx = jsx as JSXInternal.Element
 
+    if (jsx.type === undefined) {
+        return ''
+    }
+
     const elementType = jsx.type
 
     // Normal HTML element

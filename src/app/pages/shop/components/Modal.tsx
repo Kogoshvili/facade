@@ -7,14 +7,14 @@ import { effect } from 'facade/server/Signals'
 @Component()
 class Modal extends Base<any> {
     content: any | null = null
-    modalService = Inject<ModalService>(ModalService)
+    modalService = Inject<ModalService>(ModalService, { read: true })
 
-    effects: any [] = [
-        effect(
-            () => console.log(this.modalService.modal()),
-            [this.modalService.modal]
-        )
-    ]
+    // effects: any [] = [
+    //     effect(
+    //         () => console.log(this.modalService.modal()),
+    //         [this.modalService.modal]
+    //     )
+    // ]
 
     // executes every time the component is rendered
     constructor(props: any) {
@@ -23,7 +23,12 @@ class Modal extends Base<any> {
 
     // executed every time the component is rendered
     init() {
-        // this.content = this.modalService.modal().content
+        this.content = this.modalService.instance.modal
+        // effect(
+        //     () => this.content = this.modalService.instance.modal(),
+        //     [this.modalService.instance.modal]
+        // )
+        // this.modalService.modal$.subscribe((v) => this.content = v)
     }
 
     // executed only once
@@ -37,7 +42,8 @@ class Modal extends Base<any> {
     }
 
     static render(this: Modal) {
-        if (!this.content) return null
+        console.log('MODAL rendered', this.modalService.instance.modal)
+        if (!this.content) return <div>Empty</div>
 
         return (
             <div class="fixed z-10 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
@@ -51,7 +57,7 @@ class Modal extends Base<any> {
                                         {this.content.title}
                                     </h3>
                                     <div class="mt-2">
-                                        <img class="w-full" src="{{content.image}}" alt="{{content.title}}" />
+                                        <img class="w-full" src={this.content.image} alt={this.content.title} />
                                         <p class="text-sm text-gray-500">
                                             {this.content.description}
                                         </p>

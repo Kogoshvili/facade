@@ -3,14 +3,17 @@ import { signal, ISignal } from 'facade/server/Signals'
 
 @Injectable()
 class ModalService {
-    modal: ISignal<string|null> = signal(null)
+    modal: ISignal<string|null> = ''//signal(null)
+
+    constructor() {}
 
     openModal(data: any) {
-        this.modal(data)
+        this.modal = data
+        console.log('MODAL OPENED', data)
     }
 
     closeModal() {
-        this.modal(null)
+        this.modal = null
     }
 }
 

@@ -3,7 +3,6 @@ import axios from 'axios'
 import { Component as Base } from 'facade/server/base/Component'
 import ProductCard from './ProductCard'
 
-
 @Component()
 class ProductList extends Base<any> {
     products: any[] = []
@@ -15,7 +14,7 @@ class ProductList extends Base<any> {
     // executed only once result is cached in redis with session id
     async mount() {
         const { data } = await axios.get('https://fakestoreapi.com/products')
-        this.products = data.slice(0, 10)
+        this.products = data.slice(0, 1)
     }
 
     // executed every time the component is rendered

@@ -3,12 +3,11 @@ function set() {
     return []
 }
 
-function s() {
-    class A {
-        static deps = set()
+class A {
+    static deps = set()
+    constructor() {
+        console.log('CONST')
     }
-
-    return A
 }
 
-s()
+const s = new A()

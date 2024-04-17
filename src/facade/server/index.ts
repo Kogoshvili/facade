@@ -1,6 +1,6 @@
 import { DiffDOM, stringToObj } from 'diff-dom'
 import { diff, flattenChangeset } from 'json-diff-ts'
-import { getJSONableComponentGraph, executeMethodOnGraph, recreateComponentGraph, deleteComponentGraph } from './ComponentManager'
+import { getJSONableComponentGraph, executeMethodOnGraph, recreateComponentGraph, deleteComponentGraph, ComponentGraph } from './ComponentManager'
 import { clearInjectables } from './Injection'
 import { renderer } from './JSXRenderer'
 
@@ -50,6 +50,7 @@ export function facade(_app: any, router: any) {
                 }))
             }
 
+            const graph = ComponentGraph
             const rendered = await renderer(pages[page])
             const response: any = {}
 
