@@ -1,5 +1,6 @@
 features:
-multiple pages (instance tree per page)
+multiple pages (instance tree per page?? probably not)
+two way bind so I can clear value from be
 
 defer => sync on next request
 lazy => 500ms
@@ -9,14 +10,15 @@ eager => 0ms
 webTransport
 bun
 
-two way bind so I can clear value from be
 
-gziping ws sending data as blob achivable with configuration of ws npm
 
+
+do I event need this? or I can just user inline events?
 better event listener handling, write some custom helper for it
 
 post render method that modifies render dom before it is send using jsdom to make do
 
+gziping ws sending data as blob achivable with configuration of ws npm
 
 bugs:
 

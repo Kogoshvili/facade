@@ -1,5 +1,5 @@
 import { DiffDOM } from 'diff-dom'
-import Facade, { IUpdatedProperties } from './facade'
+import Facade, { IUpdatedProperties } from './interfaces'
 import debounce from 'lodash/debounce'
 
 declare global {
