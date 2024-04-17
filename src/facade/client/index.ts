@@ -51,14 +51,15 @@ function request(componentName: string, componentId: string, property: string, p
         facade.methods.handleUpdateHttp(componentName, componentId, property, parameters, event, mode)
     } else {
         // @ts-ignore
-        facade.socket.send(JSON.stringify({ page, componentName, componentId, property, parameters, event, mode }))
+        const request = JSON.stringify({ page, componentName, componentId, property, parameters, event, mode })
+        facade.socket.send(request)
     }
 }
 
 facade.init = function () {
     this.methods.syncState()
 
-    this.socket = new WebSocket('ws://localhost:3000/facade/ws')
+    this.socket = new WebSocket('ws://localhost:3000/')
     this.socket.onopen = () => {
         console.log('Facade Connected')
     }

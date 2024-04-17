@@ -9,6 +9,10 @@ export let components: Record<string, any> = {}
 
 const pages: Record<string, any> = {}
 
+export function registerPages(pages: Record<string, any>) {
+    Object.keys(pages).forEach((key) => registerPage(key, pages[key]))
+}
+
 export function registerPage(path: string, jsx: any) {
     pages[path] = jsx()
 }
@@ -28,12 +32,23 @@ async function RenderDOM(page: any) {
     return `<!DOCTYPE html> <html> ${rendered} </html>`
 }
 
-export function facade(_app: any, router: any) {
-    router.ws('/facade/ws', async (req: any, res: any) => {
-        const ws = await res.accept()
+export function facadeWS(server: any, wss: any, sessionParser: any) {
+    server.on('upgrade', function (request: any, socket: any, head: any) {
+        sessionParser(request, {}, () => {
+            wss.handleUpgrade(request, socket, head, function (ws: any) {
+                wss.emit('connection', ws, request)
+            })
+        })
+    })
+
+    wss.on('connection', async (ws: any, request: any) => {
+        ws.on('error', console.error)
+        ws.on('close', () => console.log('Client disconnected'))
+        ws.on('open', () => console.log('Client connected'))
+        const session = request.session as any
+
         ws.on('message', async (msg: string) => {
             const data = JSON.parse(msg)
-            const session = req.session as any
 
             const { page, componentName, componentId, property, parameters, event: _event, mode } = data as any
 
@@ -78,11 +93,15 @@ export function facade(_app: any, router: any) {
             deleteComponentGraph()
             clearInjectables()
 
-            ws.send(JSON.stringify(response))
+            const result = JSON.stringify(response)
+            ws.send(result)
         })
     })
+}
 
-    router.post('/facade/http', async (req: any, res: any) => {
+
+export function facadeHTTP(app: any) {
+    app.post('/facade/http', async (req: any, res: any) => {
         const session = req.session as any
         const { page, component: componentName, id: componentId, method } = req.query as any
 
@@ -129,7 +148,7 @@ export function facade(_app: any, router: any) {
     })
 
 
-    router.post('/facade/http/set-state', async (_req: any, _res: any) => {
+    app.post('/facade/http/set-state', async (_req: any, _res: any) => {
         // const session = req.session as any
         // const state = req.body
 
@@ -164,17 +183,17 @@ export function facade(_app: any, router: any) {
         // res.send(response)
     })
 
-    router.get('/facade/http/get-state', (req: any, res: any) => {
+    app.get('/facade/http/get-state', (req: any, res: any) => {
         const session = req.session as any
         const instanceTree = JSON.parse(session.instanceTree)
         res.send(instanceTree)
     })
 
-    router.get('/', async (_req: any, res: any) => {
+    app.get('/', async (_req: any, res: any) => {
         res.redirect('/index')
     })
 
-    router.get('/:page', async (req: any, res: any) => {
+    app.get('/:page', async (req: any, res: any) => {
         const page = req.params.page === '' ? 'index' : req.params.page
         const session = req.session as any
         const rendered = await RenderDOM(pages[page])
