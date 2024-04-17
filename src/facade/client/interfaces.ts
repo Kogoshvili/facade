@@ -1,6 +1,7 @@
 interface Facade {
     state: any
-    socket: WebSocket
+    socket: WebSocket,
+    requests: Record<string, any>
     config: {
         protocol: string
         persistence: boolean,

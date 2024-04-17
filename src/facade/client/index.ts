@@ -23,12 +23,24 @@ facade.events = facade.events || {
     domUpdated: 'facade:dom:updated'
 }
 
-facade.event = function (e: any, path: string, event?: string, mode?: string) {
-    const [componentName, componentId, property] = path.split('.')
+facade.requests = facade.requests || {}
+
+function debouncedRequest(componentName: string, componentId: string, property: string, parameters: any, event?: string, mode?: string) {
+    const timeout = getTimeout(mode, event)
+    const key = `${componentName}.${componentId}.${property}.${event}.${mode}`
+
+    if (!facade.requests[key]) {
+        facade.requests[key] = debounce(request, timeout)
+    }
+
+    facade.requests[key](componentName, componentId, property, parameters, event, mode)
+}
+
+facade.event = function (e: any) {
+    const [componentName, componentId, property, event, mode] = e.target.attributes['data-facade-event'].value.split('.')
     const parameters = mode === 'bind' ? e.target.value : { value: e.target.value }
 
-    request.call(facade, componentName, componentId, property, parameters, event, mode)
-    // debounce(request, getTimeout(mode, event))()
+    debouncedRequest(componentName, componentId, property, parameters, event, mode)
 }
 
 function request(componentName: string, componentId: string, property: string, parameters: any, event?: string, mode?: string) {
@@ -36,10 +48,10 @@ function request(componentName: string, componentId: string, property: string, p
 
     if (facade.config.protocol === 'http') {
         // @ts-ignore
-        this.methods.handleUpdateHttp(componentName, componentId, property, parameters, event, mode)
+        facade.methods.handleUpdateHttp(componentName, componentId, property, parameters, event, mode)
     } else {
         // @ts-ignore
-        this.socket.send(JSON.stringify({ page, componentName, componentId, property, parameters, event, mode }))
+        facade.socket.send(JSON.stringify({ page, componentName, componentId, property, parameters, event, mode }))
     }
 }
 
@@ -234,7 +246,7 @@ addEventListener('facade:state:updated', ({
 }: any) => {
     updatedProperties.forEach(
         ({ componentName, componentId, property, newValue }: IUpdatedProperties) => {
-            const search = `[data-facade-event="input.bind.${componentName}.${componentId}.${property}"]`
+            const search = `[data-facade-event="${componentName}.${componentId}.${property}.input.bind"]`
             const element = document.querySelector(search)
             if (!element) return
             if (newValue === undefined) return

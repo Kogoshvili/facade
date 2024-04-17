@@ -31,9 +31,12 @@ export async function renderer(jsx: JSXInternal.Element | null, parent: ICompone
 
         const { children, ...props } = jsx.props
 
-        // Render element attributes
-        for (const key in props) {
-            if (props.hasOwnProperty(key)) {
+        // if keys have bind and onInput or oninput remove onInput
+        const keys = Object.keys(props)
+
+        keys
+            .forEach((key) => {
+                // Render element attributes
                 const value = props[key]
 
                 if (typeof value === 'boolean') {
@@ -62,16 +65,21 @@ export async function renderer(jsx: JSXInternal.Element | null, parent: ICompone
                     }
 
                     // Event handler
-                    const [event, mode] = key.split(':')
+                    const [event, mode = 'lazy'] = key.split(':')
                     const eventName = event.startsWith('on') ? event.toLowerCase().slice(2) : event
 
-                    result += ` ${event}="facade.event(event, '${parent!.name}.${parent!.id}.${functionName}', '${eventName}', '${mode || 'lazy'}')"`
+                    result += ` ${event}="facade.event(event)"`
+                    result += ` data-facade-event="${parent!.name}.${parent!.id}.${functionName}.${eventName}.${mode}"`
                 } else {
-                    // Render attribute with a value
-                    result += ` ${key}="${value}"`
+                    if (key.includes(':bind')) {
+                        result += ' oninput="facade.event(event)"'
+                        result += ` data-facade-event="${parent!.name}.${parent!.id}.${value.replace('this.', '')}.input.bind"`
+                    } else {
+                        // Render attribute with a value
+                        result += ` ${key}="${value}"`
+                    }
                 }
-            }
-        }
+            })
 
         // Check if the element is self-closing
         const isSelfClosing = !children || (Array.isArray(children) && children.length === 0)
