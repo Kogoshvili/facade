@@ -2,7 +2,7 @@
 
 export namespace JSXInternal {
 	export interface DOMAttributes<Target extends EventTarget>
-		extends PreactDOMAttributes {
+	extends PreactDOMAttributes {
 		// Image Events
 		onLoad?: GenericEventHandler<Target> | undefined;
 		onLoadCapture?: GenericEventHandler<Target> | undefined;
