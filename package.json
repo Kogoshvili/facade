@@ -11,7 +11,8 @@
     "watch": "webpack --watch",
     "start": "tsx ./src/app/server.ts",
     "dev": "tsx --watch ./src/app/server.ts",
-    "lint": "eslint . --ext .ts --fix"
+    "lint": "eslint . --ext .ts --fix",
+    "postinstall": "patch-package"
   },
   "keywords": [],
   "author": "",

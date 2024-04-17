@@ -1,0 +1,182 @@
+diff --git a/node_modules/preact/src/index.d.ts b/node_modules/preact/src/index.d.ts
+index 4c0ab0e..4db023f 100644
+--- a/node_modules/preact/src/index.d.ts
++++ b/node_modules/preact/src/index.d.ts
+@@ -94,15 +94,15 @@ export interface FunctionComponent<P = {}> {
+ export interface FunctionalComponent<P = {}> extends FunctionComponent<P> {}
+
+ export interface ComponentClass<P = {}, S = {}> {
+-	new (props: P, context?: any): Component<P, S>;
+-	displayName?: string;
+-	defaultProps?: Partial<P>;
+-	contextType?: Context<any>;
+-	getDerivedStateFromProps?(
+-		props: Readonly<P>,
+-		state: Readonly<S>
+-	): Partial<S> | null;
+-	getDerivedStateFromError?(error: any): Partial<S> | null;
++	new (props: P, context?: any): Component<P, S>; //
++	// displayName?: string;
++	// defaultProps?: Partial<P>;
++	// contextType?: Context<any>;
++	// getDerivedStateFromProps?(
++	// 	props: Readonly<P>,
++	// 	state: Readonly<S>
++	// ): Partial<S> | null;
++	// getDerivedStateFromError?(error: any): Partial<S> | null;
+ }
+ export interface ComponentConstructor<P = {}, S = {}>
+ 	extends ComponentClass<P, S> {}
+@@ -113,74 +113,74 @@ export type AnyComponent<P = {}, S = {}> =
+ 	| Component<P, S>;
+
+ export interface Component<P = {}, S = {}> {
+-	componentWillMount?(): void;
+-	componentDidMount?(): void;
+-	componentWillUnmount?(): void;
+-	getChildContext?(): object;
+-	componentWillReceiveProps?(nextProps: Readonly<P>, nextContext: any): void;
+-	shouldComponentUpdate?(
+-		nextProps: Readonly<P>,
+-		nextState: Readonly<S>,
+-		nextContext: any
+-	): boolean;
+-	componentWillUpdate?(
+-		nextProps: Readonly<P>,
+-		nextState: Readonly<S>,
+-		nextContext: any
+-	): void;
+-	getSnapshotBeforeUpdate?(oldProps: Readonly<P>, oldState: Readonly<S>): any;
+-	componentDidUpdate?(
+-		previousProps: Readonly<P>,
+-		previousState: Readonly<S>,
+-		snapshot: any
+-	): void;
+-	componentDidCatch?(error: any, errorInfo: ErrorInfo): void;
++	// componentWillMount?(): void;
++	// componentDidMount?(): void;
++	// componentWillUnmount?(): void;
++	// getChildContext?(): object;
++	// componentWillReceiveProps?(nextProps: Readonly<P>, nextContext: any): void;
++	// shouldComponentUpdate?(
++	// 	nextProps: Readonly<P>,
++	// 	nextState: Readonly<S>,
++	// 	nextContext: any
++	// ): boolean;
++	// componentWillUpdate?(
++	// 	nextProps: Readonly<P>,
++	// 	nextState: Readonly<S>,
++	// 	nextContext: any
++	// ): void;
++	// getSnapshotBeforeUpdate?(oldProps: Readonly<P>, oldState: Readonly<S>): any;
++	// componentDidUpdate?(
++	// 	previousProps: Readonly<P>,
++	// 	previousState: Readonly<S>,
++	// 	snapshot: any
++	// ): void;
++	// componentDidCatch?(error: any, errorInfo: ErrorInfo): void;
+ }
+
+ export abstract class Component<P, S> {
+-	constructor(props?: P, context?: any);
+-
+-	static displayName?: string;
+-	static defaultProps?: any;
+-	static contextType?: Context<any>;
+-
+-	// Static members cannot reference class type parameters. This is not
+-	// supported in TypeScript. Reusing the same type arguments from `Component`
+-	// will lead to an impossible state where one cannot satisfy the type
+-	// constraint under no circumstances, see #1356.In general type arguments
+-	// seem to be a bit buggy and not supported well at the time of this
+-	// writing with TS 3.3.3333.
+-	static getDerivedStateFromProps?(
+-		props: Readonly<object>,
+-		state: Readonly<object>
+-	): object | null;
+-	static getDerivedStateFromError?(error: any): object | null;
+-
+-	state: Readonly<S>;
+-	props: RenderableProps<P>;
+-	context: any;
+-	base?: Element | Text;
+-
+-	// From https://github.com/DefinitelyTyped/DefinitelyTyped/blob/e836acc75a78cf0655b5dfdbe81d69fdd4d8a252/types/react/index.d.ts#L402
+-	// // We MUST keep setState() as a unified signature because it allows proper checking of the method return type.
+-	// // See: https://github.com/DefinitelyTyped/DefinitelyTyped/issues/18365#issuecomment-351013257
+-	setState<K extends keyof S>(
+-		state:
+-			| ((
+-					prevState: Readonly<S>,
+-					props: Readonly<P>
+-			  ) => Pick<S, K> | Partial<S> | null)
+-			| (Pick<S, K> | Partial<S> | null),
+-		callback?: () => void
+-	): void;
+-
+-	forceUpdate(callback?: () => void): void;
+-
+-	abstract render(
+-		props?: RenderableProps<P>,
+-		state?: Readonly<S>,
+-		context?: any
+-	): ComponentChild;
++	constructor(props?: P); // , context?: any
++
++	// static displayName?: string;
++	// static defaultProps?: any;
++	// static contextType?: Context<any>;
++
++	// // Static members cannot reference class type parameters. This is not
++	// // supported in TypeScript. Reusing the same type arguments from `Component`
++	// // will lead to an impossible state where one cannot satisfy the type
++	// // constraint under no circumstances, see #1356.In general type arguments
++	// // seem to be a bit buggy and not supported well at the time of this
++	// // writing with TS 3.3.3333.
++	// static getDerivedStateFromProps?(
++	// 	props: Readonly<object>,
++	// 	state: Readonly<object>
++	// ): object | null;
++	// static getDerivedStateFromError?(error: any): object | null;
++
++	// state: Readonly<S>;
++	// props: RenderableProps<P>;
++	// context: any;
++	// base?: Element | Text;
++
++	// // From https://github.com/DefinitelyTyped/DefinitelyTyped/blob/e836acc75a78cf0655b5dfdbe81d69fdd4d8a252/types/react/index.d.ts#L402
++	// // // We MUST keep setState() as a unified signature because it allows proper checking of the method return type.
++	// // // See: https://github.com/DefinitelyTyped/DefinitelyTyped/issues/18365#issuecomment-351013257
++	// setState<K extends keyof S>(
++	// 	state:
++	// 		| ((
++	// 				prevState: Readonly<S>,
++	// 				props: Readonly<P>
++	// 		  ) => Pick<S, K> | Partial<S> | null)
++	// 		| (Pick<S, K> | Partial<S> | null),
++	// 	callback?: () => void
++	// ): void;
++
++	// forceUpdate(callback?: () => void): void;
++
++	// abstract render(
++	// 	props?: RenderableProps<P>,
++	// 	state?: Readonly<S>,
++	// 	context?: any
++	// ): ComponentChild;
+ }
+
+ //
+diff --git a/node_modules/preact/src/jsx.d.ts b/node_modules/preact/src/jsx.d.ts
+index 4b1c259..b42bd19 100644
+--- a/node_modules/preact/src/jsx.d.ts
++++ b/node_modules/preact/src/jsx.d.ts
+@@ -1750,6 +1750,8 @@ export namespace JSXInternal {
+ 		onLeavePictureInPictureCapture?: PictureInPictureEventHandler<Target>;
+ 		onResize?: PictureInPictureEventHandler<Target>;
+ 		onResizeCapture?: PictureInPictureEventHandler<Target>;
++
++		[key: string]: any;
+ 	}
+
+ 	// All the WAI-ARIA 1.1 attributes from https://www.w3.org/TR/wai-aria-1.1/

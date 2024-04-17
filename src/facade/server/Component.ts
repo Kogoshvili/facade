@@ -12,6 +12,14 @@ abstract class AComponent<P = {}> {
     _id: string | null = null
     _key: string | null = null
 
+    // #region preact.Component
+    state: any = {}
+    context: any = {}
+    setState: (state: any) => void = () => {}
+    forceUpdate: () => void = () => {}
+    render: () => preact.JSX.Element | null = () => null
+    // #endregion
+
     static _anonymous: {
         [key: string]: ((...args: any) => void)[]
     } = {}

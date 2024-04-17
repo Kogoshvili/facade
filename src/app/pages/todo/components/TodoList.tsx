@@ -44,7 +44,6 @@ class TodoList extends AComponent<any> {
         this.inputValue = value
     }
 
-    //  onClick:lazy={() => { this.test() }}
     static render(this: TodoList) {
         return (
             <div class="p-5">

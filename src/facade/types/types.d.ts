@@ -11,3 +11,12 @@ declare module 'json-diff-ts' {
     const flattenChangeset: (changeset: any) => any
     export { diff, flattenChangeset }
 }
+
+export namespace JSXInternal {
+    export interface HTMLAttributes<RefType extends EventTarget = EventTarget>
+            extends ClassAttributes<RefType>,
+                DOMAttributes<RefType>,
+                AriaAttributes {
+                    [key: string]: any;
+                }
+}
