@@ -23,11 +23,10 @@ class Modal extends Base<any> {
 
     // executed every time the component is rendered
     init() {
-        this.content = this.modalService.instance.modal
-        // effect(
-        //     () => this.content = this.modalService.instance.modal(),
-        //     [this.modalService.instance.modal]
-        // )
+        effect(
+            () => this.content = this.modalService.modal(),
+            [this.modalService.modal]
+        )
         // this.modalService.modal$.subscribe((v) => this.content = v)
     }
 
@@ -42,8 +41,7 @@ class Modal extends Base<any> {
     }
 
     static render(this: Modal) {
-        console.log('MODAL rendered', this.modalService.instance.modal)
-        if (!this.content) return <div>Empty</div>
+        if (!this.content) return null
 
         return (
             <div class="fixed z-10 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">

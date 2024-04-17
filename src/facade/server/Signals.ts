@@ -30,9 +30,6 @@ class Signal {
 
     subscribe(fn: any) {
         this._subscribers.push(fn)
-        console.log('Subscribe')
-        console.log('Value', this.value)
-        console.log('Subscribed', this._subscribers)
     }
 
     unsubscribe(fn: any) {
@@ -41,9 +38,6 @@ class Signal {
     }
 
     notify() {
-        console.log('Notify')
-        console.log('Value', this.value)
-        console.log('Subscribed', this._subscribers)
         this._subscribers.forEach((fn: any) => fn())
     }
 }
@@ -56,8 +50,6 @@ function signal(input: any) {
         // console.log('Accessed', dis.value, args.length)
         if (args.length === 0) return ref.get()
         ref.set(args[0])
-        console.log('Callback')
-        console.log('Subscribed', ref._subscribers)
         ref.notify()
     }
 

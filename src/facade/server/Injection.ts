@@ -13,7 +13,7 @@ export function Injectable(): ClassDecorator {
         target.prototype._name = target.name
         target.prototype._mocked = false
         target.prototype._subscribers = {}
-        INJECTABLES.set(target.name, { declaration: target, instance: new target() })
+        INJECTABLES.set(target.name, { declaration: target, instance: null })
     }
 }
 
@@ -32,14 +32,6 @@ export function Inject<T>(
     serviceIdentifier: any,
     { read = true, write = true }: { read?: boolean, write?: boolean } = {}
 ): IInject<T> {
-    const injectable = INJECTABLES.get(serviceIdentifier.name)
-
-    if (!injectable) {
-        INJECTABLES.set(serviceIdentifier.name, { declaration: serviceIdentifier, instance: new serviceIdentifier() })
-    } else if (!injectable?.instance) {
-        injectable.instance = new serviceIdentifier()
-    }
-
     const mock = {
         _read: read,
         _write: write,
@@ -47,11 +39,8 @@ export function Inject<T>(
         _name: serviceIdentifier.name,
         _class: serviceIdentifier,
         _mocked: true,
-        instance: INJECTABLES.get(serviceIdentifier.name)?.instance
+        instance: {}
     }
-
-
-    return mock
 
     return new Proxy(mock, {
         get: (target: any, prop: any, receiver: any) => {
@@ -68,7 +57,12 @@ export function Inject<T>(
                 }
 
                 target._mocked = false
-                target.instance = injectable.instance ?? new injectable.declaration()
+
+                if (!injectable.instance) {
+                    injectable.instance = new injectable.declaration()
+                }
+
+                target.instance = injectable.instance
 
                 const componentNodes: IComponentNode[][] = []
 

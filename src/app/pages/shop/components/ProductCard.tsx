@@ -20,8 +20,7 @@ class ProductCard extends Base<any> {
     async mount() {}
 
     openModal() {
-        console.log('Open Modal')
-        this.modalService.instance.openModal(this.product)
+        this.modalService.openModal(this.product)
     }
 
     static render(this: ProductCard) {
