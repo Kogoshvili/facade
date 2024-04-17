@@ -21,7 +21,7 @@ const router = new Router()
 const port = 3000
 app.use(express.json())
 app.use(compression())
-app.use('/static', express.static('C:/projects/FS-Framework/public'))
+app.use('/static', express.static(path.join(__dirname, '/public')))
 app.use(session({
     secret: 'your-secret-key',
     resave: false,

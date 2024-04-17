@@ -19,3 +19,24 @@ fork dom-diff or write more efficient one that will produce smaller diffs
  reasoing: something wierd with dom diff, works but unnecesery updates
 
 
+
+life cycle methods:
+constuctor - called only if this component may need to change
+    used only for props assigning
+
+mount - called only once, property change is cached
+    useful for network requests
+
+init - called every time constuctor is called after constuctor
+    useful for effects
+    subscription to something
+
+should component update?
+on prop change?
+pre render?
+post render? (access to dom for post render dom changes?)
+
+on finish? - before instance is removed
+    useful for unsubscribing and clean up stuff
+
+static render - called every time even if component didn't changed
