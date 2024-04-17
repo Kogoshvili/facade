@@ -1,12 +1,9 @@
-import { Component } from 'facade/server/Component'
+import { AComponent, Component, Inject } from 'facade/server'
 import ModalService from '../services/ModalService'
-import { Inject } from 'facade/server/Injection'
-import { Component as Base } from 'facade/server/base/Component'
 
 @Component()
-class ProductCard extends Base<any> {
+class ProductCard extends AComponent<any> {
     product: any
-    // @ts-ignore
     modalService = Inject<ModalService>(ModalService, { read: false })
 
     // executes every time the component is rendered

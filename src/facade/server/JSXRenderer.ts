@@ -1,7 +1,7 @@
 import { JSXInternal } from 'preact/src/jsx'
 import { getBuiltComponentNode } from './ComponentManager'
 import { IComponentNode } from './Interfaces'
-import { components } from './index'
+import { components } from './Server'
 
 export async function renderer(jsx: JSXInternal.Element | null, parent: IComponentNode | null = null): Promise<string> {
     // @ts-ignore

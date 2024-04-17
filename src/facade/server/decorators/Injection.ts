@@ -1,5 +1,5 @@
-import { makeComponentInstance } from "./ComponentManager"
-import { IComponentNode } from "./Interfaces"
+import { makeComponentInstance } from '../ComponentManager'
+import { IComponentNode } from '../Interfaces'
 
 const INJECTABLES = new Map<string, { declaration: any, instance: any }>()
 

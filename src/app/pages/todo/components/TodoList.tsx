@@ -1,10 +1,10 @@
-import { Component } from 'facade/server/Component'
 import axios from 'axios'
+import { Component, AComponent } from 'facade/server'
 import TodoItem from './TodoItem'
-import { Component as Base } from 'facade/server/base/Component'
+
 
 @Component()
-class TodoList extends Base<any> {
+class TodoList extends AComponent<any> {
     todos: any[] = []
     inputValue: string = ''
 

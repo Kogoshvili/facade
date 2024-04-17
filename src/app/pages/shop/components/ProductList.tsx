@@ -1,10 +1,9 @@
-import { Component } from 'facade/server/Component'
 import axios from 'axios'
-import { Component as Base } from 'facade/server/base/Component'
+import { AComponent, Component } from 'facade/server'
 import ProductCard from './ProductCard'
 
 @Component()
-class ProductList extends Base<any> {
+class ProductList extends AComponent<any> {
     products: any[] = []
 
     constructor(props: any) {

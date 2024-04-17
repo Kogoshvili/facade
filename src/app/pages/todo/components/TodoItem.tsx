@@ -1,8 +1,7 @@
-import { Component } from 'facade/server/Component'
-import { Component as Base } from 'facade/server/base/Component'
+import { Component, AComponent } from 'facade/server'
 
 @Component()
-class TodoItem extends Base<any> {
+class TodoItem extends AComponent<any> {
     todo: any
     isCompleted: boolean = false
 

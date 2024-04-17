@@ -20,25 +20,6 @@ export interface IComponentNode {
     effects: { deps: ISignal[], destroy: (() => void) | null }[]
 }
 
-// export interface IComponentNodeJSON {
-//     id: string
-//     name: string
-//     key: string | number | null
-//     instance: null // set to null after render
-//     props: Record<string, any>
-//     properties: Record<string, {
-//         hash: string
-//         value: any
-//     }>
-//     methods: string[]
-//     parent: { name: string, id: string } | null
-//     hasChildren: boolean
-//     needsRender: false
-//     template: preact.JSX.Element | null
-//     prevRender: string | null
-// }
-
-
 export interface IComponent {
     _view: string | null;
     _viewPath: string | null;

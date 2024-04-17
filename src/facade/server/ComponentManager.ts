@@ -1,8 +1,8 @@
 import fp from 'lodash/fp'
-import { components } from './index'
-import build from './Factory'
 import { isEqual } from 'lodash'
 import { nanoid } from 'nanoid'
+import { components } from './Server'
+import build from './Factory'
 import { IComponentNode } from './Interfaces'
 
 export let ComponentGraph: Record<string, IComponentNode[]> = {}

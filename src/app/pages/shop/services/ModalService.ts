@@ -1,5 +1,4 @@
-import { Injectable } from 'app/facade/server/Injection'
-import { signal, ISignal } from 'facade/server/Signals'
+import { signal, ISignal, Injectable } from 'app/facade/server'
 
 @Injectable()
 class ModalService {
