@@ -63,18 +63,18 @@ export function Inject<T>(
 
                 target._instance = injectable.instance
 
-                const componentNodes: IComponentNode[][] = []
+                // const componentNodes: IComponentNode[][] = []
 
-                Object.keys(serviceIdentifier.prototype._subscribers).forEach(s => {
-                    const isListener = serviceIdentifier.prototype._subscribers[s].read
-                    if (isListener) {
-                        componentNodes.push(makeComponentInstance(s))
-                    }
-                })
+                // Object.keys(serviceIdentifier.prototype._subscribers).forEach(s => {
+                //     const isListener = serviceIdentifier.prototype._subscribers[s].read
+                //     if (isListener) {
+                //         componentNodes.push(makeComponentInstance(s))
+                //     }
+                // })
 
-                componentNodes.forEach(nodes => {
-                    nodes.forEach(n => n.instance?.init?.())
-                })
+                // componentNodes.forEach(nodes => {
+                //     nodes.forEach(n => n.instance?.init?.())
+                // })
             }
 
             return Reflect.get(target._instance, prop, receiver)

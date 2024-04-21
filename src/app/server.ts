@@ -29,16 +29,16 @@ const sessionParser = session({
 app.use(sessionParser)
 
 registerComponents({
-    ProductCard,
-    ProductList,
-    Modal,
+    // ProductCard,
+    // ProductList,
+    // Modal,
     TodoItem,
     TodoList
 })
 
 registerPages({
     'index': TodoPage,
-    'shop': ShopPage
+    // 'shop': ShopPage
 })
 
 facadeHTTP(app)

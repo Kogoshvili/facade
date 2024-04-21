@@ -3,25 +3,15 @@ import { Component, AComponent } from 'facade/server'
 import TodoItem from './TodoItem'
 
 
-@Component()
 class TodoList extends AComponent<any> {
     todos: any[] = []
     inputValue: string = ''
 
-    constructor(props: any) {
-        super(props)
-    }
-
     // executed only once result is cached in redis with session id
-    async mount() {
+    async created() {
         const { data } = await axios.get('https://jsonplaceholder.typicode.com/todos')
         this.todos = data.slice(0, 1)
     }
-
-    onPropsChanged() {}
-
-    // executed every time the component is rendered
-    prerender() {}
 
     handleRemove(id: number) {
         this.todos = this.todos.filter((todo) => todo.id !== id)

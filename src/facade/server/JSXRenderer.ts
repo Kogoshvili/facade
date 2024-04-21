@@ -1,9 +1,9 @@
 import { JSXInternal } from 'preact/src/jsx'
-import { getBuiltComponentNode } from './ComponentManager'
+import { rebuildInstance, getComponent, getComponentNode, makeComponentNode } from './ComponentGraph'
+import { isEqual } from 'lodash'
 import { IComponentNode } from './Interfaces'
-import { components } from './Server'
 
-export async function renderer(jsx: JSXInternal.Element | null, parent: IComponentNode | null = null): Promise<string> {
+export async function renderer(jsx: JSXInternal.Element | null, parent: IComponentNode | null = null, parentXPath: string = '', index: number | null = null): Promise<string> {
     // @ts-ignore
     if (shouldIgnore(jsx)) {
         return ''
@@ -34,50 +34,50 @@ export async function renderer(jsx: JSXInternal.Element | null, parent: ICompone
         // if keys have bind and onInput or oninput remove onInput
         const keys = Object.keys(props)
 
-        keys
-            .forEach((key) => {
-                // Render element attributes
-                const value = props[key]
+        keys.forEach((key) => {
+            // Render element attributes
+            const value = props[key]
 
-                if (typeof value === 'boolean') {
-                    // Render boolean attribute without a value if it is true
-                    if (value) {
-                        result += ` ${key}`
-                    }
-                } else if (typeof value === 'function') {
-                    let functionName = value.name
-                    const stringified = value.toString()
+            if (typeof value === 'boolean') {
+                // Render boolean attribute without a value if it is true
+                if (value) {
+                    result += ` ${key}`
+                }
+            } else if (typeof value === 'function') {
+                let functionName = value.name
+                const stringified = value.toString()
 
-                    const isArrow = /(\w+=>)|(\((\w+(,\w+))?\))=>/.test(stringified)
+                const isArrow = /(\w+=>)|(\((\w+(,\w+))?\))=>/.test(stringified)
 
-                    if (isArrow) {
-                        const component = components[parent!.name]
-                        component._anonymous[parent!.name] = component._anonymous[parent!.name] || []
-                        const anonymousMethods = component._anonymous[parent!.name]
-                        const index = anonymousMethods.findIndex((i: string) => i === stringified)
+                if (isArrow) {
+                    const parentNode = parent as IComponentNode
+                    const component = getComponent(parentNode.name)!.declaration as any
+                    component._anonymous[parentNode.name] = component._anonymous[parentNode.name] || []
+                    const anonymousMethods = component._anonymous[parentNode.name]
+                    const index = anonymousMethods.findIndex((i: string) => i === stringified)
 
-                        if (index === -1) {
-                            const length = anonymousMethods.push(stringified)
-                            functionName = `${length!-1}`
-                        } else {
-                            functionName = `${index}`
-                        }
-                    }
-
-                    // Event handler
-                    const [event, mode = 'lazy'] = key.split(':')
-                    const eventName = event.startsWith('on') ? event.toLowerCase().slice(2) : event
-
-                    result += ` ${event}="facade.event(event, '${parent!.name}.${parent!.id}.${functionName}.${eventName}.${mode}')"`
-                } else {
-                    if (key.includes(':bind')) {
-                        result += ` oninput="facade.event(event, '${parent!.name}.${parent!.id}.${value.replace('this.', '')}.input.bind')"`
+                    if (index === -1) {
+                        const length = anonymousMethods.push(stringified)
+                        functionName = `${length!-1}`
                     } else {
-                        // Render attribute with a value
-                        result += ` ${key}="${value}"`
+                        functionName = `${index}`
                     }
                 }
-            })
+
+                // Event handler
+                const [event, mode = 'lazy'] = key.split(':')
+                const eventName = event.startsWith('on') ? event.toLowerCase().slice(2) : event
+
+                result += ` ${event}="facade.event(event, '${parent!.name}.${parent!.id}.${functionName}.${eventName}.${mode}')"`
+            } else {
+                if (key.includes(':bind')) {
+                    result += ` oninput="facade.event(event, '${parent!.name}.${parent!.id}.${value.replace('this.', '')}.input.bind')"`
+                } else {
+                    // Render attribute with a value
+                    result += ` ${key}="${value}"`
+                }
+            }
+        })
 
         // Check if the element is self-closing
         const isSelfClosing = !children || (Array.isArray(children) && children.length === 0)
@@ -88,15 +88,18 @@ export async function renderer(jsx: JSXInternal.Element | null, parent: ICompone
             result += '>'
 
             if (children) {
+                let xpath = `${parentXPath}/${elementType}`
+                if (index !== null) xpath += `[${index}]`
+
                 if (typeof children === 'string') {
                     result += children
                 } else if (Array.isArray(children)) {
-                    const promises = children.map(async (child) => await renderer(child, parent))
+                    const promises = children.map(async (child, index) => await renderer(child, parent, xpath, index))
                     result += (await Promise.all(promises)).join('')
                 } else if (typeof children === 'function') {
-                    result += await renderer(children(), parent)
+                    result += await renderer(children(), parent, xpath)
                 } else {
-                    result += await renderer(children, parent)
+                    result += await renderer(children, parent, xpath)
                 }
             }
 
@@ -106,56 +109,46 @@ export async function renderer(jsx: JSXInternal.Element | null, parent: ICompone
         return result
     }
 
+    // Custom component
     if (isClass(elementType)) {
-        // Custom component
-        const props = jsx.props || {}
-        props.key = jsx.key
-        // @ts-ignore
-        const componentNode = await getBuiltComponentNode(elementType.name, props, parent)
+        const props = { ...jsx.props, key: jsx.key ?? null }
+        let componentNode = getComponentNode(elementType.name, parentXPath)
+        let instance
 
-        if (!componentNode) {
-            return ''
+        if (componentNode) {
+            instance = componentNode.instance ?? rebuildInstance(componentNode).instance
+
+            if (!isEqual(componentNode.props, props)) {
+                instance!.recived(props)
+            }
+        } else {
+            componentNode = await makeComponentNode(elementType.name, parentXPath, props, parent)
+            instance = componentNode.instance
         }
 
         componentNode.haveRendered = true
-
-        const component = components[componentNode.name]
-
-        if (componentNode.instance === null) {
-            if (componentNode.hasChildren) {
-                // const methodsMap = buildMethodMap({_name: componentNode.name, _id: componentNode.id})(componentNode.methods)
-                componentNode.prevRender = await renderer(
-                    component!.render.call({...componentNode.props, ...componentNode.properties, ...componentNode.methods}),
-                    // {...componentNode.properties, ...methodsMap},
-                    componentNode
-                )
-            }
-
-            return componentNode.prevRender ?? ''
-        }
-
-        const instance = componentNode.instance
-
-        // const methodsMap = buildMethodMap(instance)(getMethods(instance))
-        const template = component!.render.call(instance)
-
-        let subResult = await renderer(template, componentNode)
-
-        subResult = subResult.replace(/<(\w+)/, defineComponent(instance))
-
+        const template = (elementType as any).render.call(instance!)
+        const xpath = `${parentXPath}/${elementType.name}`
+        let subResult = await renderer(template, componentNode, xpath)
+        subResult = subResult.replace(/<(\w+)/, defineComponent(componentNode.name, componentNode.id, componentNode.key))
         componentNode.prevRender = subResult
 
         return subResult
     }
 
     // @ts-ignore
-    const fragmentResult = elementType(jsx.props)
+    const functionName = elementType.name
+    const functionResult = (elementType as any)(jsx.props)
 
-    if (Array.isArray(fragmentResult)) {
-        const promises = fragmentResult.map(async (child) => await renderer(child, parent))
+    let xpath = `${parentXPath}/${functionName ?? 'fragment'}`
+
+    if (Array.isArray(functionResult)) {
+        if (index !== null) xpath += `[${index}]`
+
+        const promises = functionResult.map(async (child, index) => await renderer(child, parent, xpath, index))
         return (await Promise.all(promises)).join('')
     } else {
-        return await renderer(fragmentResult, parent)
+        return await renderer(functionResult, parent, xpath)
     }
 }
 
@@ -180,11 +173,11 @@ function isClass(fn: any) {
     )
 }
 
-const defineComponent = (instance: { _name: string, _id: string, _key?: string | number | null }) => (_match: string, tag: string) => {
-    let definition = `<${tag} facade="${instance._name}.${instance._id}"`
+const defineComponent = (name: string | null, id: string | null, key?: string | number | null) => (_match: string, tag: string) => {
+    let definition = `<${tag} facade="${name}.${id}"`
 
-    if (instance._key) {
-        definition += ` key="${instance._key}"`
+    if (key) {
+        definition += ` key="${key}"`
     }
 
     return definition

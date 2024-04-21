@@ -4,11 +4,12 @@ import { nanoid } from 'nanoid'
 import { components } from './Server'
 import build from './Factory'
 import { IComponentNode } from './Interfaces'
+import { Graph } from '@datastructures-js/graph'
 
-export let ComponentGraph: Record<string, IComponentNode[]> = {}
+export let ComponentGraph = new Graph<string, IComponentNode>()
 
 export const deleteComponentGraph = () => {
-    ComponentGraph = {}
+    ComponentGraph.clear()
 }
 
 export const getJSONableComponentGraph = (removeUnused: boolean = true) => {
@@ -59,7 +60,7 @@ export function recreateComponentGraph(json: string) {
     ComponentGraph = JSON.parse(json)
 }
 
-export function makeComponentInstance(componentName: string) {
+export async function makeComponentInstance(componentName: string) {
     const componentNodes = ComponentGraph[componentName] || []
 
     const component = components[componentName]
@@ -247,3 +248,36 @@ const removeUnSavableProperties = (props: any): Record<string, any> => {
 
     return newProps
 }
+
+
+// function serializeGraph(graph, start) {
+//     let graphData = {
+//         vertices: {},
+//         edges: []
+//     }
+
+//     graph.traverseBfs(start, (vertexKey, vertexValue) => {
+//         graphData.vertices[vertexKey] = vertexValue
+//         let connectedVertices = graph.getConnectedVertices(vertexKey)
+//         connectedVertices.forEach(connectedVertexKey => {
+//             graphData.edges.push({from: vertexKey, to: connectedVertexKey})
+//         })
+//     })
+
+//     return JSON.stringify(graphData, null, 2)
+// }
+
+// function deserializeGraph(json) {
+//     let graphData = JSON.parse(json)
+//     let graph = new Graph()
+
+//     for (let vertexKey in graphData.vertices) {
+//         graph.addVertex(vertexKey, graphData.vertices[vertexKey])
+//     }
+
+//     graphData.edges.forEach(edge => {
+//         graph.addEdge(edge.from, edge.to)
+//     })
+
+//     return graph
+// }

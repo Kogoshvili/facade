@@ -1,23 +1,24 @@
-export interface IComponentNode {
-    id: string
+import { AComponent } from './Component'
+
+export interface IComponentDeclaration {
     name: string
+    declaration: (new () => AComponent<any>)
+    instance: any
+    methods: string[]
+    properties: string[]
+}
+
+export interface IComponentNode {
+    name: string
+    id: string
     key: string | number | null
-
-    instance: IComponent | null
-
+    xpath: string | null
+    instance: AComponent | null
     props: Record<string, any>
     properties: Record<string, any>
-    methods: string[]
-
-    parent: { name: string, id: string } | null
-    hasChildren: boolean
-
     needsRender: boolean
     haveRendered: boolean
-
     prevRender: string | null
-
-    effects: { deps: ISignal[], destroy: (() => void) | null }[]
 }
 
 export interface IComponent {

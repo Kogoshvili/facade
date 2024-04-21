@@ -4,7 +4,7 @@ import ModalService from '../services/ModalService'
 @Component()
 class ProductCard extends AComponent<any> {
     product: any
-    modalService = Inject<ModalService>(ModalService, { read: false })
+    modalService = Inject<ModalService>(ModalService)
 
     // executes every time the component is rendered
     constructor(props: any) {

@@ -1,22 +1,13 @@
 import { Component, AComponent } from 'facade/server'
 
-@Component()
 class TodoItem extends AComponent<any> {
     todo: any
     isCompleted: boolean = false
 
-    constructor(props: any) {
-        super(props)
+    recived(props: any): void {
         this.todo = props.todo
-    }
-
-    // executed only once
-    async mount() {
         this.isCompleted = this.todo.completed
     }
-
-    // executed every time the component is rendered
-    prerender() {}
 
     onRemove() {
         (this as any).parent().handleRemove(this.todo.id)

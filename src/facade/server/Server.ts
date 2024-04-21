@@ -1,11 +1,10 @@
 import { DiffDOM, stringToObj } from 'diff-dom'
 import { diff, flattenChangeset } from 'json-diff-ts'
 import { WebSocketServer } from 'ws'
-import { getJSONableComponentGraph, executeMethodOnGraph, recreateComponentGraph, deleteComponentGraph } from './ComponentManager'
+// import { getJSONableComponentGraph, executeMethodOnGraph, recreateComponentGraph, deleteComponentGraph } from './ComponentManager'
 import { clearInjectables } from './decorators/Injection'
 import { renderer } from './JSXRenderer'
-
-export let components: Record<string, any> = {}
+import { clearComponentGraph, deserializeGraph, serializableGraph, executeOnGraph } from './ComponentGraph'
 
 const pages: Record<string, any> = {}
 
@@ -17,18 +16,14 @@ export function registerPage(path: string, jsx: any) {
     pages[path] = jsx()
 }
 
-export function registerComponents(comps: Record<string, any>) {
-    components = comps
-}
-
 function getJSONDiff(oldInstanceTree: any, newInstanceTree: any) {
     const stateDiff = diff(oldInstanceTree, newInstanceTree)
     return flattenChangeset(stateDiff)
         .filter((i: any) => !(i.key === 'prevRender' || i.key === 'template'))
 }
 
-async function RenderDOM(page: any) {
-    const rendered = await renderer(page)
+async function RenderDOM(page: string) {
+    const rendered = await renderer(pages[page], null, page, null)
     return `<!DOCTYPE html> <html> ${rendered} </html>`
 }
 
@@ -72,28 +67,28 @@ export function facadeWS(server: any, sessionParser: any, wssConfig: any = {}) {
 
             const { page, componentName, componentId, property, parameters, event: _event, mode } = data as any
 
-            recreateComponentGraph(session.instanceTree)
-            const successful = executeMethodOnGraph(componentName, componentId, property, parameters)
+            deserializeGraph(session.instanceTree)
+            const successful = executeOnGraph(componentName, componentId, property, parameters)
 
             if (!successful) {
                 return ws.send(JSON.stringify({ error: `Method/Property ${property} not found on component ${componentName}` }))
             }
 
-            if (mode === 'bind') {
-                const oldInstanceTree = JSON.parse(session.instanceTree)
-                const newInstanceTree = getJSONableComponentGraph(false)
+            // if (mode === 'bind') {
+            //     const oldInstanceTree = JSON.parse(session.instanceTree)
+            //     const newInstanceTree = getJSONableComponentGraph(false)
 
-                session.instanceTree = JSON.stringify(newInstanceTree)
+            //     session.instanceTree = JSON.stringify(newInstanceTree)
 
-                return ws.send(JSON.stringify({
-                    state: getJSONDiff(oldInstanceTree, newInstanceTree)
-                }))
-            }
+            //     return ws.send(JSON.stringify({
+            //         state: getJSONDiff(oldInstanceTree, newInstanceTree)
+            //     }))
+            // }
 
-            const rendered = await RenderDOM(pages[page])
+            const rendered = await RenderDOM(page)
             const response: any = {}
 
-            const newInstanceTree = getJSONableComponentGraph()
+            const newInstanceTree = serializableGraph()
             response.state = getJSONDiff(JSON.parse(session.instanceTree), newInstanceTree)
 
             const oldBodyString = session.renderedHtmlBody
@@ -110,8 +105,8 @@ export function facadeWS(server: any, sessionParser: any, wssConfig: any = {}) {
             session.renderedHtmlBody = newBodyString
             session.instanceTree = JSON.stringify(newInstanceTree)
 
-            deleteComponentGraph()
-            clearInjectables()
+            clearComponentGraph()
+            // clearInjectables()
 
             const result = JSON.stringify(response)
             ws.send(result)
@@ -124,16 +119,7 @@ export function facadeHTTP(app: any) {
     app.post('/facade/http', async (req: any, res: any) => {
         const session = req.session as any
         const { page, component: componentName, id: componentId, method, event, mode } = req.query as any
-
-        if (!components[componentName]) {
-            res.status(400).send(`Component ${componentName} not found`)
-            return
-        }
-
-        if (typeof components[componentName].prototype[method] !== 'function') {
-            res.status(400).send(`Method ${method} not found on component ${componentName}`)
-            return
-        }
+        const { property } = req.body
 
         const { parameters } = req.body
 
@@ -219,9 +205,9 @@ export function facadeHTTP(app: any) {
     })
 
     app.get('/facade/http/get-state', (req: any, res: any) => {
-        const session = req.session as any
-        const instanceTree = JSON.parse(session.instanceTree)
-        res.send(instanceTree)
+        // const session = req.session as any
+        // const instanceTree = JSON.parse(session.instanceTree)
+        // res.send(instanceTree)
     })
 
     app.get('/', async (_req: any, res: any) => {
@@ -238,14 +224,15 @@ export function facadeHTTP(app: any) {
 
         const session = req.session as any
 
-        const rendered = await RenderDOM(pages[page])
+        if (session.instanceTree) {
+            deserializeGraph(session.instanceTree)
+        }
+
+        const rendered = await RenderDOM(page)
         session.renderedHtmlBody = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
 
-        const instanceMap = getJSONableComponentGraph()
-        session.instanceTree = JSON.stringify(instanceMap)
-
-        deleteComponentGraph()
-        clearInjectables()
+        session.instanceTree = JSON.stringify(serializableGraph())
+        clearComponentGraph()
 
         res.send(rendered)
     })

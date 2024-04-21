@@ -55,15 +55,20 @@ class Signal {
 function signal(input: any) {
     const ref = new Signal(input)
 
-    const callback = (...args: any) => { // nothing, new value, function
+    function callback(...args: any) { // nothing, new value, function
         // console.log('Accessed', dis.value, args.length)
         if (args.length === 0) return ref.get()
         const isSuccessful = ref.set(args[0])
         if (isSuccessful) ref.notify()
     }
 
+    callback.prototype.toJSON = function() {
+        return { __type: 'signal', value: ref.get() }
+    }
+
     return new Proxy(callback, {
-        get: (_target: any, p: string | symbol, _receiver: any): any => {
+        get: (target: any, p: string | symbol, _receiver: any): any => {
+            if (target.prototype[p]) return target.prototype[p]
             return (ref as any)[p]
         },
     })

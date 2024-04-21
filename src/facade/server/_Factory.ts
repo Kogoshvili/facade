@@ -1,19 +1,20 @@
 import { IComponent } from './Interfaces'
 
-function build(
+async function build(
     component: any,
     metaProps: any = {},
     props: Record<string, any> = {},
     overwrites: Record<string, any> = {}
-): IComponent {
-    const instance = new component(props)
+): Promise<IComponent> {
+    const instance = new component()
+    await instance.create(props)
 
-    setMetadata(instance, {
+    Object.assign(instance, {
         ...metaProps,
         _name: component.name
     })
 
-    overwriteProps(instance, overwrites)
+    Object.assign(instance, overwrites)
 
     Object.getOwnPropertyNames(instance).forEach((p) => {
         if (instance[p]?._injectable) {
