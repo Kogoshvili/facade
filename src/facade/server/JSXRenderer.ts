@@ -1,10 +1,10 @@
 import { JSXInternal } from 'preact/src/jsx'
-import { rebuildInstance, getComponent, getComponentNode, makeComponentNode } from './ComponentGraph'
+import { rebuildInstance, getComponentNode, makeComponentNode } from './ComponentGraph'
 import { isEqual } from 'lodash'
 import { IComponentNode } from './Interfaces'
+import { getComponent } from './ComponentRegistry'
 
 export async function renderer(jsx: JSXInternal.Element | null, parent: IComponentNode | null = null, parentXPath: string = '', index: number | null = null): Promise<string> {
-    // @ts-ignore
     if (shouldIgnore(jsx)) {
         return ''
     }
@@ -69,6 +69,20 @@ export async function renderer(jsx: JSXInternal.Element | null, parent: ICompone
                 const eventName = event.startsWith('on') ? event.toLowerCase().slice(2) : event
 
                 result += ` ${event}="facade.event(event, '${parent!.name}.${parent!.id}.${functionName}.${eventName}.${mode}')"`
+            } else if (typeof value === 'object' && value !== null) {
+                // Render style attribute
+                if (key === 'style') {
+                    let style = '' as string
+                    for (const styleKey in value) {
+                        // turn camelCase to kebab-case
+                        const actualStyleKey = styleKey.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase()
+                        style += `${actualStyleKey}: ${value[styleKey]};`
+                    }
+                    result += ` style="${style}"`
+                } else {
+                    // Render attribute with an object value
+                    result += ` ${key}="${JSON.stringify(value)}"`
+                }
             } else {
                 if (key.includes(':bind')) {
                     result += ` oninput="facade.event(event, '${parent!.name}.${parent!.id}.${value.replace('this.', '')}.input.bind')"`
@@ -94,7 +108,7 @@ export async function renderer(jsx: JSXInternal.Element | null, parent: ICompone
                 if (typeof children === 'string') {
                     result += children
                 } else if (Array.isArray(children)) {
-                    const promises = children.map(async (child, index) => await renderer(child, parent, xpath, index))
+                    const promises = children.map(async (child, index) => await renderer(child, parent, xpath))
                     result += (await Promise.all(promises)).join('')
                 } else if (typeof children === 'function') {
                     result += await renderer(children(), parent, xpath)
@@ -112,7 +126,8 @@ export async function renderer(jsx: JSXInternal.Element | null, parent: ICompone
     // Custom component
     if (isClass(elementType)) {
         const props = { ...jsx.props, key: jsx.key ?? null }
-        let componentNode = getComponentNode(elementType.name, parentXPath)
+        const xpath = `${parentXPath}/${elementType.name}${props.key ? `[${props.key}]` : ''}`
+        let componentNode = getComponentNode(elementType.name, xpath)
         let instance
 
         if (componentNode) {
@@ -122,13 +137,12 @@ export async function renderer(jsx: JSXInternal.Element | null, parent: ICompone
                 instance!.recived(props)
             }
         } else {
-            componentNode = await makeComponentNode(elementType.name, parentXPath, props, parent)
+            componentNode = await makeComponentNode(elementType.name, xpath, props, parent)
             instance = componentNode.instance
         }
 
         componentNode.haveRendered = true
         const template = (elementType as any).render.call(instance!)
-        const xpath = `${parentXPath}/${elementType.name}`
         let subResult = await renderer(template, componentNode, xpath)
         subResult = subResult.replace(/<(\w+)/, defineComponent(componentNode.name, componentNode.id, componentNode.key))
         componentNode.prevRender = subResult

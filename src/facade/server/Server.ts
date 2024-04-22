@@ -68,22 +68,21 @@ export function facadeWS(server: any, sessionParser: any, wssConfig: any = {}) {
             const { page, componentName, componentId, property, parameters, event: _event, mode } = data as any
 
             deserializeGraph(session.instanceTree)
-            const successful = executeOnGraph(componentName, componentId, property, parameters)
+            const successful = await executeOnGraph(componentName, componentId, property, parameters)
 
             if (!successful) {
                 return ws.send(JSON.stringify({ error: `Method/Property ${property} not found on component ${componentName}` }))
             }
 
-            // if (mode === 'bind') {
-            //     const oldInstanceTree = JSON.parse(session.instanceTree)
-            //     const newInstanceTree = getJSONableComponentGraph(false)
+            if (mode === 'bind') {
+                const oldInstanceTree = JSON.parse(session.instanceTree)
+                const newInstanceTree = serializableGraph()
+                session.instanceTree = JSON.stringify(newInstanceTree)
 
-            //     session.instanceTree = JSON.stringify(newInstanceTree)
-
-            //     return ws.send(JSON.stringify({
-            //         state: getJSONDiff(oldInstanceTree, newInstanceTree)
-            //     }))
-            // }
+                return ws.send(JSON.stringify({
+                    state: getJSONDiff(oldInstanceTree, newInstanceTree)
+                }))
+            }
 
             const rendered = await RenderDOM(page)
             const response: any = {}

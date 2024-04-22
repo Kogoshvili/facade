@@ -2,36 +2,8 @@ import GraphConstructor from './Graph'
 import { IComponentDeclaration, IComponentNode } from './Interfaces'
 import { nanoid } from 'nanoid'
 import { signal } from './Signals'
+import { getComponent } from './ComponentRegistry'
 
-// #region Component Dictionary
-const Components = new Map<string, IComponentDeclaration>()
-
-export function registerComponent(name: string, declaration: any) {
-    const instance = new declaration()
-    const methods = Object.getOwnPropertyNames(declaration.prototype).filter((m) => m !== 'constructor')
-    const properties = Object.getOwnPropertyNames(instance)
-
-    Components.set(name, {
-        name,
-        declaration,
-        instance,
-        methods,
-        properties
-    })
-}
-
-export function registerComponents(components: Record<string, any>) {
-    for (const key in components) {
-        registerComponent(key, components[key])
-    }
-}
-
-export function getComponent(name: string) {
-    return Components.get(name)
-}
-// #endregion
-
-// #region Component Graph
 const Graph = new GraphConstructor<string, IComponentNode>()
 const Roots = new Set<string>()
 
@@ -43,7 +15,7 @@ export function serializableGraph() {
     return Graph.toJSONable((_, value) => {
         return {
             ...value,
-            properties: JSON.stringify(value.instance),
+            properties: value.instance ? { ...value.instance } : value.properties,
             instance: null,
         }
     })
@@ -52,7 +24,7 @@ export function serializableGraph() {
 export function deserializeGraph(json: string) {
     Graph.fromJSON(JSON.parse(json), (_key: string, value: IComponentNode) => {
         const props: Record<string, any> = {}
-        const oldProps = JSON.parse(value.properties as any)
+        const oldProps = value.properties
 
         for (const key in oldProps) {
             if (typeof oldProps[key] === 'object' && oldProps[key] !== null) {
@@ -152,11 +124,25 @@ export async function executeOnGraph(componentName: string, componentId: string,
 
     const instance = vertex.instance ?? rebuildInstance(vertex).instance!
 
-    if (!instance[property]) return false
+    // check if property exists on the instance
+    if (!(property in instance) && isNaN(property as any)) {
+        return false
+    }
 
-    await instance[property](parameters)
+    // check if it is an anonymous function
+    if (!isNaN(property as any)) {
+        const component = getComponent(componentName)!.declaration
+        const stringifiedAnon = component._anonymous[componentName][property]
+        const anonToFun = `(function(){(${stringifiedAnon})(...arguments)})`
+        eval(anonToFun).call(instance, parameters)
+    }
 
+    if (typeof instance[property] !== 'function') {
+        instance[property] = parameters
+    } else {
+        await instance[property](parameters)
+    }
+
+    vertex.needsRender = true
     return true
 }
-
-// #endregion

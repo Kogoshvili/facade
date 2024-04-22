@@ -1,18 +1,9 @@
 import { getNode, rebuildInstance } from './ComponentGraph'
 
 // eslint-disable-next-line @typescript-eslint/ban-types
-abstract class AComponent<P = {}> {
-    props: any
-
-    _view: string | null = null
-    _viewPath: string | null = null
-    _name: string | null = null
-    _parent: { name: string, id: string } | null = null
-    _parentInstance: AComponent | null = null
-    _id: string | null = null
-    _key: string | null = null
-
+abstract class AComponent<P = {}, D = any > {
     // #region preact.Component
+    props: any = {}
     state: any = {}
     context: any = {}
     setState: (state: any) => void = () => {}
@@ -20,7 +11,26 @@ abstract class AComponent<P = {}> {
     render: () => preact.JSX.Element | null = () => null
     // #endregion
 
+    _name: string | null = null
+    _parent: { name: string, id: string } | null = null
+    _parentInstance: AComponent | null = null
+    _id: string | null = null
+    _key: string | null = null
+
     static _anonymous: {[key: string]: ((...args: any) => void)[]} = {}
+
+    parent(): D | null {
+        if (!this._parent) {
+            return null
+        }
+
+        if (!this._parentInstance) {
+            const vertex = getNode({ name: this._parent.name, id: this._parent.id })
+            this._parentInstance = rebuildInstance(vertex!).instance
+        }
+
+        return this._parentInstance as D
+    }
 
     // Executes every time the component is created
     recived(props: P) {
@@ -57,19 +67,6 @@ abstract class AComponent<P = {}> {
     // Executes every time the component is rendered
     static render(this: any): preact.JSX.Element | null {
         return null
-    }
-
-    parent(): AComponent | null {
-        if (!this._parent) {
-            return null
-        }
-
-        if (!this._parentInstance) {
-            const vertex = getNode({ name: this._parent.name, id: this._parent.id })
-            this._parentInstance = rebuildInstance(vertex!).instance
-        }
-
-        return this._parentInstance
     }
 
     [key: string]: any
