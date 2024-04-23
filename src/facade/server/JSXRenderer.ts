@@ -65,7 +65,7 @@ export async function renderer(jsx: JSXInternal.Element | null, parent: ICompone
                 }
 
                 // Event handler
-                const [event, mode = 'lazy'] = key.split(':')
+                const [event, mode = 'default'] = key.split(':')
                 const eventName = event.startsWith('on') ? event.toLowerCase().slice(2) : event
 
                 result += ` ${event}="facade.event(event, '${parent!.name}.${parent!.id}.${functionName}.${eventName}.${mode}')"`
