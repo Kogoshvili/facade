@@ -5,6 +5,7 @@ const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPl
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
 const nodeExternals = require('webpack-node-externals');
 const options = require('preact').options;
+var ProgressPlugin = require('progress-webpack-plugin')
 
 module.exports = (env, argv) => {
     const mode = argv.mode || 'development'
@@ -23,7 +24,7 @@ module.exports = (env, argv) => {
             },
             plugins: [new TsconfigPathsPlugin()],
         },
-        plugins: [],
+        plugins: [new ProgressPlugin(true)],
         optimization: {
             minimize: false,
             minimizer: [new TerserPlugin()],
