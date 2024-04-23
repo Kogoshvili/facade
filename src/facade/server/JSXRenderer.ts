@@ -2,7 +2,7 @@ import { JSXInternal } from 'preact/src/jsx'
 import { rebuildInstance, getComponentNode, makeComponentNode } from './ComponentGraph'
 import { isEqual } from 'lodash'
 import { IComponentNode } from './Interfaces'
-import { getComponent } from './ComponentRegistry'
+import { callWithContext, callWithContextAsync, getComponent } from './ComponentRegistry'
 
 export async function renderer(jsx: JSXInternal.Element | null, parent: IComponentNode | null = null, parentXPath: string = '', index: number | null = null): Promise<string> {
     if (shouldIgnore(jsx)) {
@@ -134,12 +134,15 @@ export async function renderer(jsx: JSXInternal.Element | null, parent: ICompone
             instance = componentNode.instance ?? rebuildInstance(componentNode).instance
 
             if (!isEqual(componentNode.props, props)) {
-                instance!.recived(props)
+                callWithContext(componentNode.name, () => instance!.recived(props))
+
             }
         } else {
             componentNode = await makeComponentNode(elementType.name, xpath, props, parent)
             instance = componentNode.instance
         }
+
+        await callWithContextAsync(componentNode.name, () => instance?.mounted())
 
         componentNode.haveRendered = true
         const template = (elementType as any).render.call(instance!)

@@ -4,8 +4,6 @@ import { signal, ISignal, Injectable } from 'app/facade/server'
 class ModalService {
     modal: ISignal<string|null> = signal(null)
 
-    constructor() {}
-
     openModal(data: any) {
         this.modal(data)
     }

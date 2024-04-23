@@ -1,8 +1,8 @@
 import GraphConstructor from './Graph'
 import { IComponentDeclaration, IComponentNode } from './Interfaces'
 import { nanoid } from 'nanoid'
-import { signal } from './Signals'
-import { getComponent } from './ComponentRegistry'
+import { effect, signal } from './Signals'
+import { buildComponent, callWithContext, callWithContextAsync, getComponent } from './ComponentRegistry'
 import { getInjectable, Inject } from './decorators/Injection'
 
 const Graph = new GraphConstructor<string, IComponentNode>()
@@ -30,7 +30,9 @@ export function deserializeGraph(json: string) {
         for (const key in oldProps) {
             if (typeof oldProps[key] === 'object' && oldProps[key] !== null) {
                 if (oldProps[key].__type === 'signal') {
-                    props[key] = signal(oldProps[key].value)
+                    const prevValue = oldProps[key].value
+                    props[key] = signal(prevValue._value)
+                    props[key]._dependants = prevValue._dependants
                     continue
                 }
                 if (oldProps[key].__type === 'inject') {
@@ -51,8 +53,7 @@ export function deserializeGraph(json: string) {
 
 export function rebuildInstance(vertex: IComponentNode) {
     const parent = Graph.getParentVertices(getVertexIds(vertex).any)[0]
-    const component = getComponent(vertex.name) as IComponentDeclaration
-    const instance = new component.declaration()
+    const instance = buildComponent(vertex.name)
     Object.assign(instance, vertex.properties)
 
     vertex.instance = instance
@@ -76,18 +77,9 @@ export function getComponentNode(name: string, xpath: string): IComponentNode | 
 }
 
 export async function makeComponentNode(name: string, xpath: string, props: Record<string, any>, parent?: IComponentNode | null): Promise<IComponentNode> {
-    const instance = new (getComponent(name)!.declaration)()
-    instance.recived(props)
-    await instance.created()
-
-    Object.getOwnPropertyNames(instance).forEach((p) => {
-        if (instance[p]?._injectable) {
-            instance[p]._class.prototype._subscribers[name] = {
-                read: instance[p]._read,
-                write: instance[p]._write
-            }
-        }
-    })
+    const instance = buildComponent(name)
+    callWithContext(name, () => instance.recived(props))
+    await callWithContextAsync(name, () => instance.created())
 
     const properties = Object.getOwnPropertyNames(instance)
         .reduce((acc, prop) => ({ ...acc, [prop]: instance[prop] }), {})
@@ -150,7 +142,7 @@ export async function executeOnGraph(componentName: string, componentId: string,
     return true
 }
 
-export function initComponentInstances(componentName: string) {
+export function makeSureInstancesExist(componentName: string) {
     const vertices = Graph.getComponentVertices(componentName)
 
     for (const vertex of vertices) {

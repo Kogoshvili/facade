@@ -1,15 +1,14 @@
-import { AComponent, Inject, effect } from 'facade/server'
+import { AComponent, effect, Inject } from 'facade/server'
 import ModalService from '../services/ModalService'
 
 class Modal extends AComponent<any> {
     content: any | null = null
-    modalService = Inject<ModalService>(ModalService, { read: true })
+    modalService = Inject<ModalService>(ModalService)
 
-    mounted() {
-        effect(
-            () => this.content = this.modalService().modal(),
-            [this.modalService().modal]
-        )
+    async mounted() {
+        effect(() => {
+            this.content = this.modalService().modal()
+        })
     }
 
     onClose() {

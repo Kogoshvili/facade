@@ -67,6 +67,7 @@ async function process(session: any, page: string, componentName: string, compon
     session.instanceTree = JSON.stringify(newInstanceTree)
 
     clearComponentGraph()
+    clearInjectables()
 
     return response
 }
@@ -187,6 +188,7 @@ export function facadeHTTP(app: any) {
 
         session.instanceTree = JSON.stringify(serializableGraph())
         clearComponentGraph()
+        clearInjectables()
 
         res.send(rendered)
     })

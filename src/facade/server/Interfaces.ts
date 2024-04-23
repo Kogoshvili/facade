@@ -3,9 +3,6 @@ import { AComponent } from './Component'
 export interface IComponentDeclaration {
     name: string
     declaration: (new () => AComponent<any>) & AComponent<any>
-    instance: any
-    methods: string[]
-    properties: string[]
 }
 
 export interface IComponentNode {

@@ -1,18 +1,18 @@
+import { AComponent } from './Component'
 import { IComponentDeclaration } from './Interfaces'
 
 const Components = new Map<string, IComponentDeclaration>()
 
-export function registerComponent(name: string, declaration: any) {
-    const instance = new declaration()
-    const methods = Object.getOwnPropertyNames(declaration.prototype).filter((m) => m !== 'constructor')
-    const properties = Object.getOwnPropertyNames(instance)
+let currentComponent: any = null
 
+export function getCurrentComponent() {
+    return currentComponent
+}
+
+export function registerComponent(name: string, declaration: any) {
     Components.set(name, {
         name,
-        declaration,
-        instance,
-        methods,
-        properties
+        declaration
     })
 }
 
@@ -24,4 +24,22 @@ export function registerComponents(components: Record<string, any>) {
 
 export function getComponent(name: string) {
     return Components.get(name)
+}
+
+export function buildComponent(name: string) {
+    return callWithContext(name, () => new (Components.get(name)!.declaration)())
+}
+
+export async function callWithContextAsync(name: string, f: any) {
+    currentComponent = name
+    const result = await f()
+    currentComponent = null
+    return result
+}
+
+export function callWithContext(name: string, f: any) {
+    currentComponent = name
+    const result = f()
+    currentComponent = null
+    return result
 }

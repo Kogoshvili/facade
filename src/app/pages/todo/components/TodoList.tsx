@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { AComponent } from 'facade/server'
 import TodoItem from './TodoItem'
+import { nanoid } from 'nanoid'
 
 
 class TodoList extends AComponent<any> {
@@ -20,7 +21,7 @@ class TodoList extends AComponent<any> {
     handleAdd({ value }: any) {
         const newTodo = this.inputValue || value
         if (newTodo) {
-            this.todos = [...this.todos, { id: this.todos.length + 1, title: newTodo, completed: false }]
+            this.todos = [...this.todos, { id: nanoid(5), title: newTodo, completed: false }]
         }
 
         this.inputValue = ''

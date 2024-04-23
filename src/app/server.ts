@@ -12,6 +12,7 @@ import TodoList from './pages/todo/components/TodoList'
 
 import TodoPage from 'app/app/pages/todo'
 import ShopPage from 'app/app/pages/shop'
+import Wrapper from './pages/shop/components/Wrapper'
 
 if (__dirname === undefined) {
 var __dirname = path.resolve()
@@ -33,6 +34,7 @@ registerComponents({
     ProductCard,
     ProductList,
     Modal,
+    Wrapper,
     TodoItem,
     TodoList
 })

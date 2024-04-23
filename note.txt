@@ -3,7 +3,6 @@ features:
 webTransport
 bun
 
-client side state is broken becasue of graph
 recived and input()?
 
 multiple pages (instance tree per page?? probably not)
