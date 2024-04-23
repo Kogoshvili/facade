@@ -14,7 +14,7 @@ if (!window.facade) {
 facade.config = facade.config || {
     protocol: 'ws', // http or ws
     persistence: false,
-    url: 'http://localhost:3000/facade/http'
+    url: `${window.location.origin}/facade/http`
 }
 
 facade.state = facade.state || {}
@@ -59,7 +59,7 @@ function request(componentName: string, componentId: string, property: string, p
 facade.init = function () {
     this.methods.syncState()
 
-    this.socket = new WebSocket('ws://localhost:3000/')
+    this.socket = new WebSocket(`ws://${window.location.host}/`)
     this.socket.onopen = () => {
         console.log('Facade Connected')
     }
