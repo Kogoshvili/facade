@@ -9,8 +9,8 @@
     "build:analyze": "webpack --mode production --analyze",
     "build:server": "tsc",
     "watch": "webpack --watch",
-    "start": "tsx ./src/app/server.ts",
-    "dev": "tsx --watch ./src/app/server.ts",
+    "start": "tsx ./src/server.ts",
+    "dev": "tsx --watch ./src/server.ts",
     "lint": "eslint . --ext .ts --fix",
     "postinstall": "patch-package"
   },

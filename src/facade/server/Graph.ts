@@ -7,15 +7,17 @@ enum EdgeType {
     Sibling = 'Sibling'
 }
 
-class Graph<K, V> extends BaseGraph<K, V> {
-    private _keyAliases: any
+class Graph<K = string, V = any> extends BaseGraph<string | number, V> {
+    private _keyAliases: Map<string, string>
+    private _componentVertices: Map<string, Set<string>>
+
     constructor() {
         super()
-        this._keyAliases = new Map<K, K>()
+        this._keyAliases = new Map<string, string>()
         this._componentVertices = new Map<string, Set<string>>()
     }
 
-    setKeyAliases(aliases: Map) {
+    setKeyAliases(aliases: Map<string, string>) {
         this._keyAliases = aliases
     }
 
@@ -23,11 +25,11 @@ class Graph<K, V> extends BaseGraph<K, V> {
         return this._keyAliases
     }
 
-    addComponentVertex(name: string, key: K) {
+    addComponentVertex(name: string, key: string) {
         if (!this._componentVertices.has(name)) {
             this._componentVertices.set(name, new Set())
         }
-        this._componentVertices.get(name).add(key)
+        this._componentVertices.get(name)!.add(key)
     }
 
     getComponentVertices(name: string) {
@@ -44,7 +46,7 @@ class Graph<K, V> extends BaseGraph<K, V> {
         return this
     }
 
-    addVertex(realKey: K, value: V, aliasKeys?: K[]) {
+    addVertex(realKey: string, value: V, aliasKeys?: string[]) {
         if (aliasKeys) {
             aliasKeys.forEach(key => {
                 this.addKeyAlias(key, realKey)

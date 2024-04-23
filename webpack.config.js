@@ -65,7 +65,7 @@ module.exports = (env, argv) => {
         },
         {
             ...sharedConfig,
-            entry: './src/app/server.ts',
+            entry: './src/server.ts',
             target: 'node18',
             output: {
                 path: path.resolve(__dirname, 'dist'),

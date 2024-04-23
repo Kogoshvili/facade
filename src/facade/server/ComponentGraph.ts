@@ -1,7 +1,7 @@
 import GraphConstructor from './Graph'
-import { IComponentDeclaration, IComponentNode } from './Interfaces'
+import { IComponentNode } from './Interfaces'
 import { nanoid } from 'nanoid'
-import { effect, signal } from './Signals'
+import { signal } from './Signals'
 import { buildComponent, callWithContext, callWithContextAsync, getComponent } from './ComponentRegistry'
 import { getInjectable, Inject } from './decorators/Injection'
 

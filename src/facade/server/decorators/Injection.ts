@@ -20,8 +20,6 @@ export function Injectable(): ClassDecorator {
 }
 
 export function Inject<T>(serviceIdentifier: any): (() => T) {
-    // const componentClass = getCurrentComponent()
-
     const ref: any = {
         _injectable: true,
         _name: serviceIdentifier.name,

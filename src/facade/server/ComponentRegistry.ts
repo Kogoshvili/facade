@@ -1,4 +1,3 @@
-import { AComponent } from './Component'
 import { IComponentDeclaration } from './Interfaces'
 
 const Components = new Map<string, IComponentDeclaration>()

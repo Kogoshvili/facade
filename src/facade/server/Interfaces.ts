@@ -17,18 +17,3 @@ export interface IComponentNode {
     haveRendered: boolean
     prevRender: string | null
 }
-
-export interface IComponent {
-    _view: string | null;
-    _viewPath: string | null;
-    _name: string;
-    _parent: { name: string, id: string } | null
-    _parentInstance: IComponent | null;
-    _id: string;
-    _key: string | null;
-    parent: () => IComponent | null;
-    mount: () => void;
-    render: () => preact.JSX.Element;
-    onPropsChanged: () => void;
-    [key: string]: any;
-}

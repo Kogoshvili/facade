@@ -6,7 +6,7 @@ export interface ISignal<T> {
     (v?: T | (() => T)): T;
     _value: T
     _subscribers: (() => void)[]
-    _dependants: string[]
+    _owner: null | { prototype: { _dependants: Set<string> }}
     set(v: any): boolean
     get(): any
     subscribe(fn: (v?: any) => void): void
@@ -18,6 +18,7 @@ class Signal {
     _value: any
     _subscribers: (() => void)[] = []
     _owner: null | { prototype: { _dependants: Set<string> }} = null
+
     options: any = {
         comparer: (a: any, b: any) => a === b
     }
@@ -117,43 +118,5 @@ function effect(fn: (v?: any) => void) {
 
     return result
 }
-
-// content = effect(
-//     () => this.modalService().modal(),
-//     [this.modalService().modal]
-// )
-
-// function effect<T = any>(fn: (v?: any) => void, deps: any[]): () => T {
-//     const result = fn()
-//     const ref = new Signal(result)
-
-//     deps.forEach((dep) => dep.subscribe(fn))
-
-//     function callback() {
-//         return ref.get()
-//     }
-
-//     callback.prototype.toJSON = function() {
-//         return { __type: 'effect', value: ref.get() }
-//     }
-
-//     callback.prototype.destroy = function() {
-//         deps.forEach((dep) => dep.unsubscribe(fn))
-//     }
-
-//     callback.prototype._reinit = function() {
-//         const result = fn()
-//         ref.set(result)
-//     }
-
-//     return new Proxy(callback, {
-//         get: (target: any, p: string | symbol, _receiver: any): any => {
-//             if (target.prototype[p]) return target.prototype[p]
-//             return (ref as any)[p]
-//         },
-//     })
-// }
-
-
 
 export { signal, effect }
