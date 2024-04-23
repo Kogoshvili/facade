@@ -6,7 +6,7 @@
     "sourceMap": true,
     "skipLibCheck": true,
     "allowJs": true,
-    "lib": ["es6", "dom"],
+    "lib": ["ES2022", "dom"],
     "baseUrl": "./src",
     "outDir": "./dist",
     "paths": {
@@ -15,12 +15,12 @@
       "components/*": ["./app/components/*"],
       "pages/*": ["./app/pages/*"],
     },
-    "module": "commonjs",
-    "moduleResolution": "node",
+    "module": "Preserve",
+    "moduleResolution": "Node",
     "experimentalDecorators": true,
     "target": "ES2022",
     "jsx": "react-jsx",
     "jsxImportSource": "preact",
   },
-  "exclude": ["node_modules", "dist", "webpack.config.js", "**/hide"]
+  "exclude": ["dist", "webpack.config.js", "**/hide"]
 }

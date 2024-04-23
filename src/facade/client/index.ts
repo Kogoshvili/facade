@@ -45,7 +45,7 @@ facade.event = function (e: any, path: string) {
 
 function request(componentName: string, componentId: string, property: string, parameters: any, event?: string, mode?: string) {
     const page = window.location.pathname.split('/').pop()
-
+    console.time('My operation #1')
     if (facade.config.protocol === 'http') {
         // @ts-ignore
         facade.methods.handleUpdateHttp(componentName, componentId, property, parameters, event, mode)
@@ -136,6 +136,7 @@ facade.methods = {
             },
         })
         dd.apply(document.body, domDiff)
+        console.timeEnd('My operation #1')
 
         dispatchEvent(new CustomEvent(facade.events.domUpdated))
     },

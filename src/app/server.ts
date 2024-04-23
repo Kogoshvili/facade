@@ -13,8 +13,9 @@ import TodoList from './pages/todo/components/TodoList'
 import TodoPage from 'app/app/pages/todo'
 import ShopPage from 'app/app/pages/shop'
 
-const __dirname = path.resolve()
-
+if (__dirname === undefined) {
+var __dirname = path.resolve()
+}
 const app = express()
 const port = 3000
 app.use(express.json())

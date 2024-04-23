@@ -1,13 +1,12 @@
-import path from 'path'
-import TerserPlugin from 'terser-webpack-plugin'
-import CopyPlugin from 'copy-webpack-plugin'
-import BundleAnalyzerPlugin from 'webpack-bundle-analyzer'
-import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin'
-// import nodeExternals from 'webpack-node-externals'
+const path = require('path');
+const TerserPlugin = require('terser-webpack-plugin');
+const CopyPlugin = require('copy-webpack-plugin');
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
+const nodeExternals = require('webpack-node-externals');
+const options = require('preact').options;
 
-const __dirname = path.resolve(path.dirname(''))
-
-export default function (_env, argv) {
+module.exports = (env, argv) => {
     const mode = argv.mode || 'development'
     const isProd = mode === 'production'
     const isAnalyze = !!argv.analyze
@@ -26,7 +25,7 @@ export default function (_env, argv) {
         },
         plugins: [],
         optimization: {
-            minimize: true,
+            minimize: false,
             minimizer: [new TerserPlugin()],
         }
     }
@@ -63,32 +62,38 @@ export default function (_env, argv) {
                 ]
             },
         },
-        // {
-        //     ...sharedConfig,
-        //     entry: './src/app/server.ts',
-        //     output: {
-        //         path: path.resolve(__dirname, 'dist'),
-        //         filename: 'server.mjs',
-        //         libraryTarget: 'module',
-        //     },
-        //     externalsPresets: { node: true },
-        //     externals: [nodeExternals()],
-        //     module: {
-        //         rules: [
-        //             {
-        //                 test: /\.([cm]?ts|tsx)$/,
-        //                 loader: 'ts-loader',
-        //                 options: {
-        //                     compilerOptions: {
-        //                         module: 'es6'
-        //                     }
-        //                 }
-        //             },
-        //         ]
-        //     },
-        //     experiments: {
-        //         outputModule: true
-        //     }
-        // }
+        {
+            ...sharedConfig,
+            entry: './src/app/server.ts',
+            target: 'node18',
+            output: {
+                path: path.resolve(__dirname, 'dist'),
+                filename: 'server.js',
+                library: {
+                    type: 'commonjs',
+                },
+                globalObject: 'this',
+            },
+            node: {
+                __dirname: false,
+                __filename: false,
+            },
+            externalsPresets: { node: true },
+            externals: [
+                'utf-8-validate',
+                'bufferutil',
+            ],
+            module: {
+                rules: [
+                    {
+                        test: /\.([cm]?ts|tsx)$/,
+                        loader: 'ts-loader',
+                        options: {
+                            transpileOnly: true,
+                        }
+                    },
+                ]
+            },
+        }
     ]
 }
