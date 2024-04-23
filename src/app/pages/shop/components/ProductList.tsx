@@ -1,23 +1,14 @@
 import axios from 'axios'
-import { AComponent, Component } from 'facade/server'
+import { AComponent } from 'facade/server'
 import ProductCard from './ProductCard'
 
-@Component()
 class ProductList extends AComponent<any> {
     products: any[] = []
 
-    constructor(props: any) {
-        super(props)
-    }
-
-    // executed only once result is cached in redis with session id
-    async mount() {
+    async created() {
         const { data } = await axios.get('https://fakestoreapi.com/products')
         this.products = data.slice(0, 6)
     }
-
-    // executed every time the component is rendered
-    prerender() {}
 
     static render(this: ProductList) {
         return (

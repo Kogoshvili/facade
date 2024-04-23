@@ -1,7 +1,11 @@
-import { makeComponentInstance } from '../ComponentManager'
+import { initComponentInstances } from '../ComponentGraph'
 import { IComponentNode } from '../Interfaces'
 
 const INJECTABLES = new Map<string, { declaration: any, instance: any }>()
+
+export function getInjectable(name: string) {
+    return INJECTABLES.get(name)
+}
 
 export function clearInjectables() {
     INJECTABLES.forEach((value) => value.instance = null)
@@ -30,54 +34,94 @@ export type iInject<T> = {
 export function Inject<T>(
     serviceIdentifier: any,
     { read = true, write = true }: { read?: boolean, write?: boolean } = {}
-): T {
-    const mock: iInject<any> = {
+): (() => T) {
+
+    const ref: any = {
         _read: read,
         _write: write,
         _injectable: true,
         _name: serviceIdentifier.name,
         _class: serviceIdentifier,
-        _mocked: true,
-        _instance: {}
+        _instance: null
     }
 
-    return new Proxy(mock, {
-        get: (target: any, prop: any, receiver: any) => {
-            const p = prop.toString()
-            if (p.startsWith('_') || p === 'toString' || p === 'toJSON') {
-                return Reflect.get(target, prop, receiver)
+    function callback() {
+        if (!ref._instance) {
+            const injectable = INJECTABLES.get(ref._name)
+
+            if (injectable === undefined) {
+                throw new Error(`No provider for type: ${ref._name}`)
             }
 
-            if (target._mocked) {
-                const injectable = INJECTABLES.get(target._name)
-
-                if (injectable === undefined) {
-                    throw new Error(`No provider for type: ${target._name}`)
-                }
-
-                target._mocked = false
-
-                if (!injectable.instance) {
-                    injectable.instance = new injectable.declaration()
-                }
-
-                target._instance = injectable.instance
-
-                // const componentNodes: IComponentNode[][] = []
-
-                // Object.keys(serviceIdentifier.prototype._subscribers).forEach(s => {
-                //     const isListener = serviceIdentifier.prototype._subscribers[s].read
-                //     if (isListener) {
-                //         componentNodes.push(makeComponentInstance(s))
-                //     }
-                // })
-
-                // componentNodes.forEach(nodes => {
-                //     nodes.forEach(n => n.instance?.init?.())
-                // })
+            if (!injectable.instance) {
+                injectable.instance = new injectable.declaration()
             }
 
-            return Reflect.get(target._instance, prop, receiver)
+            const componentNodes: IComponentNode[][] = []
+
+            Object.keys(serviceIdentifier.prototype._subscribers).forEach(s => {
+                const isListener = serviceIdentifier.prototype._subscribers[s].read
+                if (isListener) {
+                    componentNodes.push(initComponentInstances(s))
+                }
+            })
+
+            ref._instance = injectable.instance
+
+            componentNodes.flat().forEach(n => n.instance?.mounted?.())
         }
+
+        return ref._instance
+    }
+
+    callback.prototype.toJSON = function() {
+        return { __type: 'inject', value: ref._name }
+    }
+
+    return new Proxy(callback, {
+        get: (target: any, p: string | symbol, _receiver: any): any => {
+            if (target.prototype[p]) return target.prototype[p]
+            return (ref as any)[p]
+        },
     })
+
+    // return new Proxy(mock, {
+    //     get: (target: any, prop: any, receiver: any) => {
+    //         const p = prop.toString()
+    //         if (p.startsWith('_') || p === 'toString' || p === 'toJSON') {
+    //             return Reflect.get(target, prop, receiver)
+    //         }
+
+    //         if (target._mocked) {
+    //             const injectable = INJECTABLES.get(target._name)
+
+    //             if (injectable === undefined) {
+    //                 throw new Error(`No provider for type: ${target._name}`)
+    //             }
+
+    //             target._mocked = false
+
+    //             if (!injectable.instance) {
+    //                 injectable.instance = new injectable.declaration()
+    //             }
+
+    //             target._instance = injectable.instance
+
+    //             // const componentNodes: IComponentNode[][] = []
+
+    //             // Object.keys(serviceIdentifier.prototype._subscribers).forEach(s => {
+    //             //     const isListener = serviceIdentifier.prototype._subscribers[s].read
+    //             //     if (isListener) {
+    //             //         componentNodes.push(makeComponentInstance(s))
+    //             //     }
+    //             // })
+
+    //             // componentNodes.forEach(nodes => {
+    //             //     nodes.forEach(n => n.instance?.init?.())
+    //             // })
+    //         }
+
+    //         return Reflect.get(target._instance, prop, receiver)
+    //     }
+    // })
 }

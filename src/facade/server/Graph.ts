@@ -12,6 +12,7 @@ class Graph<K, V> extends BaseGraph<K, V> {
     constructor() {
         super()
         this._keyAliases = new Map<K, K>()
+        this._componentVertices = new Map<string, string[]>()
     }
 
     setKeyAliases(aliases: Map) {
@@ -20,6 +21,18 @@ class Graph<K, V> extends BaseGraph<K, V> {
 
     get keyAliases() {
         return this._keyAliases
+    }
+
+    addComponentVertex(name: string, key: K) {
+        if (!this._componentVertices.has(name)) {
+            this._componentVertices.set(name, [])
+        }
+        this._componentVertices.get(name).push(key)
+    }
+
+    getComponentVertices(name: string) {
+        const keys = this._componentVertices.get(name) || []
+        return keys.map(key => this.getVertexValue(key)) as V[]
     }
 
     getRealKey(key: K) {
@@ -38,6 +51,8 @@ class Graph<K, V> extends BaseGraph<K, V> {
             })
         }
 
+        const [name] = realKey.toString().split('/')
+        this.addComponentVertex(name, realKey)
 
         this._vertices.set(realKey, value)
         this.addKeyAlias(realKey, realKey)

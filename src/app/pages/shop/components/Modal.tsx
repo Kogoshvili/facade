@@ -1,34 +1,19 @@
-import { AComponent, Component, Inject, effect } from 'facade/server'
+import { AComponent, Inject, effect } from 'facade/server'
 import ModalService from '../services/ModalService'
 
-@Component()
 class Modal extends AComponent<any> {
     content: any | null = null
     modalService = Inject<ModalService>(ModalService, { read: true })
 
-    // don't put effect here, stack overflow
-    // executes every time the component is rendered
-    constructor(props: any) {
-        super(props)
-    }
-
-    // Place for effects
-    // executed every time the component is rendered
-    init() {
+    mounted() {
         effect(
-            () => this.content = this.modalService.modal(),
-            [this.modalService.modal]
+            () => this.content = this.modalService().modal(),
+            [this.modalService().modal]
         )
     }
 
-    // executed only once
-    async mount() {}
-
-    // executed every time the component is rendered
-    prerender() {}
-
     onClose() {
-        this.modalService.closeModal()
+        this.modalService().closeModal()
     }
 
     static render(this: Modal) {

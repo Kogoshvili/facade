@@ -3,6 +3,7 @@ import { IComponentDeclaration, IComponentNode } from './Interfaces'
 import { nanoid } from 'nanoid'
 import { signal } from './Signals'
 import { getComponent } from './ComponentRegistry'
+import { getInjectable, Inject } from './decorators/Injection'
 
 const Graph = new GraphConstructor<string, IComponentNode>()
 const Roots = new Set<string>()
@@ -30,6 +31,11 @@ export function deserializeGraph(json: string) {
             if (typeof oldProps[key] === 'object' && oldProps[key] !== null) {
                 if (oldProps[key].__type === 'signal') {
                     props[key] = signal(oldProps[key].value)
+                    continue
+                }
+                if (oldProps[key].__type === 'inject') {
+                    const injectable = getInjectable(oldProps[key].value)!
+                    props[key] = Inject(injectable.declaration)
                     continue
                 }
             }
@@ -74,6 +80,15 @@ export async function makeComponentNode(name: string, xpath: string, props: Reco
     instance.recived(props)
     await instance.created()
 
+    Object.getOwnPropertyNames(instance).forEach((p) => {
+        if (instance[p]?._injectable) {
+            instance[p]._class.prototype._subscribers[name] = {
+                read: instance[p]._read,
+                write: instance[p]._write
+            }
+        }
+    })
+
     const properties = Object.getOwnPropertyNames(instance)
         .reduce((acc, prop) => ({ ...acc, [prop]: instance[prop] }), {})
 
@@ -102,18 +117,6 @@ export async function makeComponentNode(name: string, xpath: string, props: Reco
     }
 
     return vertex
-}
-
-function getVertexIds({ name, id, xpath }: { name: string | null, id?: string | null, xpath?: string | null }) {
-    const keys = {
-        id: id ? `${name}/${id}` : null,
-        xpath: xpath ? `${name}/${xpath}` : null,
-    }
-
-    return {
-        ...keys,
-        any: (keys.id || keys.xpath) as string
-    }
 }
 
 export async function executeOnGraph(componentName: string, componentId: string, property: string, parameters: any) {
@@ -145,4 +148,28 @@ export async function executeOnGraph(componentName: string, componentId: string,
 
     vertex.needsRender = true
     return true
+}
+
+export function initComponentInstances(componentName: string) {
+    const vertices = Graph.getComponentVertices(componentName)
+
+    for (const vertex of vertices) {
+        if (!vertex.instance) {
+            rebuildInstance(vertex)
+        }
+    }
+
+    return vertices
+}
+
+function getVertexIds({ name, id, xpath }: { name: string | null, id?: string | null, xpath?: string | null }) {
+    const keys = {
+        id: id ? `${name}/${id}` : null,
+        xpath: xpath ? `${name}/${xpath}` : null,
+    }
+
+    return {
+        ...keys,
+        any: (keys.id || keys.xpath) as string
+    }
 }

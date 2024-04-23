@@ -1,23 +1,17 @@
-import { AComponent, Component, Inject } from 'facade/server'
+import { AComponent, Inject } from 'facade/server'
 import ModalService from '../services/ModalService'
 
-@Component()
 class ProductCard extends AComponent<any> {
     product: any
     modalService = Inject<ModalService>(ModalService)
 
-    // executes every time the component is rendered
-    constructor(props: any) {
-        super(props)
+    recived(props: any) {
         this.product = props.product
         this.product.description = truncate(this.product.description, 100)
     }
 
-    // executed only once
-    async mount() {}
-
     openModal() {
-        this.modalService.openModal(this.product)
+        this.modalService().openModal(this.product)
     }
 
     static render(this: ProductCard) {
