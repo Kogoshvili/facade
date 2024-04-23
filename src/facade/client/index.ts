@@ -45,10 +45,10 @@ facade.event = function (e: any, path: string) {
 
 function request(componentName: string, componentId: string, property: string, parameters: any, event?: string, mode?: string) {
     const page = window.location.pathname.split('/').pop()
-    console.time('My operation #1')
+
     if (facade.config.protocol === 'http') {
         // @ts-ignore
-        facade.methods.handleUpdateHttp(componentName, componentId, property, parameters, event, mode)
+        facade.methods.handleUpdateHttp(page, componentName, componentId, property, parameters, event, mode)
     } else {
         // @ts-ignore
         const request = JSON.stringify({ page, componentName, componentId, property, parameters, event, mode })
@@ -111,8 +111,8 @@ facade.methods = {
                 })
         }
     },
-    handleUpdateHttp(componentName: string, componentId: string, method: string, parameters: any, event?: string, mode?: string) {
-        fetch(`${facade.config.url}?component=${componentName}&id=${componentId}&method=${method}&event=${event}&mode=${mode}`, {
+    handleUpdateHttp(page: string, componentName: string, componentId: string, property: string, parameters: any, event?: string, mode?: string) {
+        fetch(`${facade.config.url}?page=${page}&component=${componentName}&id=${componentId}&property=${property}&event=${event}&mode=${mode}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -136,7 +136,6 @@ facade.methods = {
             },
         })
         dd.apply(document.body, domDiff)
-        console.timeEnd('My operation #1')
 
         dispatchEvent(new CustomEvent(facade.events.domUpdated))
     },
@@ -151,17 +150,13 @@ facade.methods = {
 
             if (path.includes('properties')) {
                 const parts = path.split('.')
-
-                // Remove the $ from the first part
-                const nameAndIndex = parts[1].split('[')
-
-                const componentName = nameAndIndex[0] // "TodoList"
-                const index = parseInt(nameAndIndex[1]) // 0
+                const propertyIndex = parts.findIndex((part: string) => part === 'properties') + 1
+                const index = parts[1].match(/\d+/g)
 
                 updatedProperties.push({
-                    componentName,
-                    componentId: state[componentName][index].id,
-                    property: parts[3],
+                    componentName: state[index].value.name,
+                    componentId: state[index].value.id,
+                    property: parts[propertyIndex],
                     newValue: value
                 })
             }
@@ -184,7 +179,7 @@ facade.methods = {
 
         for (let i = 0; i < lastIndex; i++) {
             const part = pathParts[i]
-            if (part === '$') continue
+            if (part === '$' || part === '$root') continue
             if (!(part in currentObj)) {
                 currentObj[part] = {}
             }

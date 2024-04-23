@@ -27,6 +27,50 @@ async function RenderDOM(page: string) {
     return `<!DOCTYPE html> <html> ${rendered} </html>`
 }
 
+async function process(session: any, page: string, componentName: string, componentId: string, property: string, parameters: any, mode: string) {
+    deserializeGraph(session.instanceTree)
+    const successful = await executeOnGraph(componentName, componentId, property, parameters)
+
+    if (!successful) {
+        return { error: `Method/Property ${property} not found on component ${componentName}` }
+    }
+
+    if (mode === 'bind') {
+        const oldInstanceTree = JSON.parse(session.instanceTree)
+        const newInstanceTree = serializableGraph()
+        session.instanceTree = JSON.stringify(newInstanceTree)
+
+        return {
+            state: getJSONDiff(oldInstanceTree.vertices, newInstanceTree.vertices)
+        }
+    }
+
+    const rendered = await RenderDOM(page)
+    const response: any = {}
+
+    const newInstanceTree = serializableGraph()
+    const oldInstanceTree = JSON.parse(session.instanceTree)
+    response.state = getJSONDiff(oldInstanceTree.vertices, newInstanceTree.vertices)
+
+    const oldBodyString = session.renderedHtmlBody
+    const newBodyString = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
+
+    if (oldBodyString) {
+        const dd = new DiffDOM()
+        const prevBody = stringToObj(oldBodyString!)
+        const newBody = stringToObj(newBodyString!)
+        const domDiff = dd.diff(prevBody, newBody)
+        response.dom = domDiff
+    }
+
+    session.renderedHtmlBody = newBodyString
+    session.instanceTree = JSON.stringify(newInstanceTree)
+
+    clearComponentGraph()
+
+    return response
+}
+
 export function facadeWS(server: any, sessionParser: any, wssConfig: any = {}) {
     const wss = new WebSocketServer({
         noServer: true,
@@ -63,150 +107,61 @@ export function facadeWS(server: any, sessionParser: any, wssConfig: any = {}) {
         const session = request.session as any
 
         ws.on('message', async (msg: string) => {
-            const data = JSON.parse(msg)
-
-            const { page, componentName, componentId, property, parameters, event: _event, mode } = data as any
-
-            deserializeGraph(session.instanceTree)
-            const successful = await executeOnGraph(componentName, componentId, property, parameters)
-
-            if (!successful) {
-                return ws.send(JSON.stringify({ error: `Method/Property ${property} not found on component ${componentName}` }))
-            }
-
-            if (mode === 'bind') {
-                const oldInstanceTree = JSON.parse(session.instanceTree)
-                const newInstanceTree = serializableGraph()
-                session.instanceTree = JSON.stringify(newInstanceTree)
-
-                return ws.send(JSON.stringify({
-                    state: getJSONDiff(oldInstanceTree, newInstanceTree)
-                }))
-            }
-
-            const rendered = await RenderDOM(page)
-            const response: any = {}
-
-            const newInstanceTree = serializableGraph()
-            response.state = getJSONDiff(JSON.parse(session.instanceTree), newInstanceTree)
-
-            const oldBodyString = session.renderedHtmlBody
-            const newBodyString = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
-
-            if (oldBodyString) {
-                const dd = new DiffDOM()
-                const prevBody = stringToObj(oldBodyString!)
-                const newBody = stringToObj(newBodyString!)
-                const domDiff = dd.diff(prevBody, newBody)
-                response.dom = domDiff
-            }
-
-            session.renderedHtmlBody = newBodyString
-            session.instanceTree = JSON.stringify(newInstanceTree)
-
-            clearComponentGraph()
-            // clearInjectables()
-
-            const result = JSON.stringify(response)
-            ws.send(result)
+            const { page, componentName, componentId, property, parameters, event: _event, mode } = JSON.parse(msg) as any
+            const result = await process(session, page, componentName, componentId, property, parameters, mode)
+            ws.send(JSON.stringify(result))
         })
     })
 }
 
-
 export function facadeHTTP(app: any) {
     app.post('/facade/http', async (req: any, res: any) => {
         const session = req.session as any
-        const { page, component: componentName, id: componentId, method, event, mode } = req.query as any
-        const { property } = req.body
-
+        const { page, component: componentName, id: componentId, property, event, mode } = req.query as any
         const { parameters } = req.body
-
-        recreateComponentGraph(session.instanceTree)
-        const successful = executeMethodOnGraph(componentName, componentId, property, parameters)
-
-        if (!successful) {
-            return res.send(JSON.stringify({ error: `Method/Property ${property} not found on component ${componentName}` }))
-        }
-
-        if (mode === 'bind') {
-            const oldInstanceTree = JSON.parse(session.instanceTree)
-            const newInstanceTree = getJSONableComponentGraph(false)
-
-            session.instanceTree = JSON.stringify(newInstanceTree)
-
-            return res.send(JSON.stringify({
-                state: getJSONDiff(oldInstanceTree, newInstanceTree)
-            }))
-        }
-
-        const rendered = await renderer(pages[page])
-        const response: any = {}
-
-        const oldInstanceTree = JSON.parse(session.instanceTree)
-        const instanceMap = getJSONableComponentGraph()
-        const stateDiff = diff(oldInstanceTree, instanceMap)
-        response.state = flattenChangeset(stateDiff)
-
-        const oldBodyString = session.renderedHtmlBody
-        const newBodyString = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
-
-        if (oldBodyString) {
-            const dd = new DiffDOM()
-            const prevBody = stringToObj(oldBodyString!)
-            const newBody = stringToObj(newBodyString!)
-            const domDiff = dd.diff(prevBody, newBody)
-            response.dom = domDiff
-        }
-
-        session.renderedHtmlBody = newBodyString
-        session.instanceTree = JSON.stringify(instanceMap)
-
-        deleteComponentGraph()
-        clearInjectables()
-
-        res.send(JSON.stringify(response))
+        const result = await process(session, page, componentName, componentId, property, parameters, mode)
+        res.send(JSON.stringify(result))
     })
 
 
     app.post('/facade/http/set-state', async (req: any, res: any) => {
-        const session = req.session as any
-        const { page, state } = req.body
+        // const session = req.session as any
+        // const { page, state } = req.body
 
-        recreateComponentGraph(state)
+        // recreateComponentGraph(state)
 
-        const rendered = await RenderDOM(pages[page])
-        const response: any = {}
+        // const rendered = await RenderDOM(pages[page])
+        // const response: any = {}
 
-        const oldInstanceTree = JSON.parse(session.instanceTree)
-        const instanceMap = getJSONableComponentGraph()
-        const stateDiff = diff(oldInstanceTree, instanceMap)
-        response.state = flattenChangeset(stateDiff)
+        // const oldInstanceTree = JSON.parse(session.instanceTree)
+        // const instanceMap = getJSONableComponentGraph()
+        // const stateDiff = diff(oldInstanceTree, instanceMap)
+        // response.state = flattenChangeset(stateDiff)
 
-        const oldBodyString = session.renderedHtmlBody
-        const newBodyString = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
+        // const oldBodyString = session.renderedHtmlBody
+        // const newBodyString = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
 
-        if (oldBodyString) {
-            const dd = new DiffDOM()
-            const prevBody = stringToObj(oldBodyString!)
-            const newBody = stringToObj(newBodyString!)
-            const domDiff = dd.diff(prevBody, newBody)
-            response.dom = domDiff
-        }
+        // if (oldBodyString) {
+        //     const dd = new DiffDOM()
+        //     const prevBody = stringToObj(oldBodyString!)
+        //     const newBody = stringToObj(newBodyString!)
+        //     const domDiff = dd.diff(prevBody, newBody)
+        //     response.dom = domDiff
+        // }
 
-        session.renderedHtmlBody = newBodyString
-        session.instanceTree = JSON.stringify(instanceMap)
+        // session.renderedHtmlBody = newBodyString
+        // session.instanceTree = JSON.stringify(instanceMap)
 
-        deleteComponentGraph()
-        clearInjectables()
+        // deleteComponentGraph()
+        // clearInjectables()
 
-        res.send(JSON.stringify(response))
+        // res.send(JSON.stringify(response))
     })
 
     app.get('/facade/http/get-state', (req: any, res: any) => {
-        // const session = req.session as any
-        // const instanceTree = JSON.parse(session.instanceTree)
-        // res.send(instanceTree)
+        const session = req.session as any
+        const instanceTree = JSON.parse(session.instanceTree)
+        res.send(instanceTree.vertices)
     })
 
     app.get('/', async (_req: any, res: any) => {

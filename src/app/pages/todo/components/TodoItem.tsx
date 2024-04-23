@@ -1,4 +1,4 @@
-import { Component, AComponent } from 'facade/server'
+import { AComponent } from 'facade/server'
 
 class TodoItem extends AComponent<any, AComponent> {
     todo: any
@@ -16,11 +16,6 @@ class TodoItem extends AComponent<any, AComponent> {
 
     handleChange() {
         this.isCompleted = !this.isCompleted
-    }
-
-    test() {
-        // this.parent()!.test()
-        // console.log('Test Method TodoItem', this.todo.id, this.isCompleted)
     }
 
     static render(this: TodoItem) {

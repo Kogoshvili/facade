@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { Component, AComponent } from 'facade/server'
+import { AComponent } from 'facade/server'
 import TodoItem from './TodoItem'
 
 
@@ -24,14 +24,6 @@ class TodoList extends AComponent<any> {
         }
 
         this.inputValue = ''
-    }
-
-    test() {
-        console.log('Test Method', this.inputValue)
-    }
-
-    updateInput({ value }: any) {
-        this.inputValue = value
     }
 
     static render(this: TodoList) {
