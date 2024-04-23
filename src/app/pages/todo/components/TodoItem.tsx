@@ -27,7 +27,7 @@ class TodoItem extends AComponent<any, AComponent> {
         return (
             <li class="flex justify-between items-center bg-gray-100 p-2 rounded-md mb-2" style={{ backgroundColor: this.isClicked ? 'red' : undefined }}>
                 <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600" onChange={this.handleChange} checked={this.isCompleted} />
-                <div class="text-gray-700" onClick={() => this.isClicked = !this.isClicked}>{this.todo.title} {this.isClicked ? 'Clicked' : 'Not Clicked'}</div>
+                <div class="text-gray-700 cursor-pointer" onClick={() => this.isClicked = !this.isClicked}>{this.todo.title} {this.isClicked ? 'Clicked' : 'Not Clicked'}</div>
                 <button class="px-2 py-1 bg-red-500 text-white rounded" onClick={this.onRemove}>Delete</button>
             </li>
         )

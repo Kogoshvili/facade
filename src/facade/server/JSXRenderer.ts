@@ -45,7 +45,7 @@ export async function renderer(jsx: JSXInternal.Element | null, parent: ICompone
                 }
             } else if (typeof value === 'function') {
                 let functionName = value.name
-                const stringified = value.toString()
+                const stringified = value.toString().replace(/\s/g,'')
 
                 const isArrow = /(\w+=>)|(\((\w+(,\w+))?\))=>/.test(stringified)
 
