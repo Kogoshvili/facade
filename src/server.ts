@@ -3,16 +3,10 @@ import express from 'express'
 import session from 'express-session'
 import compression from 'compression'
 
-import { registerPages, registerComponents, facadeHTTP, facadeWS } from 'facade/server'
-import ProductCard from 'pages/shop/components/ProductCard'
-import ProductList from 'pages/shop/components/ProductList'
-import Modal from 'pages/shop/components/Modal'
-import TodoItem from 'pages/todo/components/TodoItem'
-import TodoList from 'pages/todo/components/TodoList'
+import { registerPages, facadeHTTP, facadeWS } from 'facade/server'
 
-import TodoPage from 'app/app/pages/todo'
-import ShopPage from 'app/app/pages/shop'
-import Wrapper from 'pages/shop/components/Wrapper'
+import TodoPage from 'pages/TodoPage'
+import ShopPage from 'pages/ShopPage'
 
 // @ts-ignore
 if (__dirname === undefined) {
@@ -32,15 +26,6 @@ const sessionParser = session({
     cookie: { secure: false } // Set secure to true if you're using HTTPS
 })
 app.use(sessionParser)
-
-registerComponents({
-    ProductCard,
-    ProductList,
-    Modal,
-    Wrapper,
-    TodoItem,
-    TodoList
-})
 
 registerPages({
     'index': TodoPage,

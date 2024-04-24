@@ -13,6 +13,8 @@
       "app/*": ["./*"],
       "facade/*": ["./facade/*"],
       "components/*": ["./app/components/*"],
+      "layouts/*": ["./app/layouts/*"],
+      "services/*": ["./app/services/*"],
       "pages/*": ["./app/pages/*"],
     },
     "module": "Preserve",

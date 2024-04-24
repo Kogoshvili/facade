@@ -1,6 +1,6 @@
-import { IComponentDeclaration } from './Interfaces'
+import { AComponent } from './Component'
 
-const Components = new Map<string, IComponentDeclaration>()
+const Components = new Map<string, (new () => AComponent)>()
 
 let currentComponent: any = null
 
@@ -9,24 +9,15 @@ export function getCurrentComponent() {
 }
 
 export function registerComponent(name: string, declaration: any) {
-    Components.set(name, {
-        name,
-        declaration
-    })
+    Components.set(name, declaration)
 }
 
-export function registerComponents(components: Record<string, any>) {
-    for (const key in components) {
-        registerComponent(key, components[key])
-    }
-}
-
-export function getComponent(name: string) {
-    return Components.get(name)
+export function getComponentDeclaration(name: string): (new () => AComponent) {
+    return Components.get(name)!
 }
 
 export function buildComponent(name: string) {
-    return callWithContext(name, () => new (Components.get(name)!.declaration)())
+    return callWithContext(name, () => new (getComponentDeclaration(name))())
 }
 
 export async function callWithContextAsync(name: string, f: any) {

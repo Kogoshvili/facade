@@ -1,6 +1,6 @@
 import { makeSureInstancesExist } from './ComponentGraph'
 import { getCurrentComponent } from './ComponentRegistry'
-import { currentInjectable } from './decorators/Injection';
+import { currentInjectable } from './Injection'
 
 export interface ISignal<T> {
     (v?: T | (() => T)): T;

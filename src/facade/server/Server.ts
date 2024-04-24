@@ -1,8 +1,7 @@
 import { DiffDOM, stringToObj } from 'diff-dom'
 import { diff, flattenChangeset } from 'json-diff-ts'
 import { WebSocketServer } from 'ws'
-// import { getJSONableComponentGraph, executeMethodOnGraph, recreateComponentGraph, deleteComponentGraph } from './ComponentManager'
-import { clearInjectables } from './decorators/Injection'
+import { clearInjectables } from './Injection'
 import { renderer } from './JSXRenderer'
 import { clearComponentGraph, deserializeGraph, serializableGraph, executeOnGraph } from './ComponentGraph'
 

@@ -2,7 +2,7 @@ import { JSXInternal } from 'preact/src/jsx'
 import { rebuildInstance, getComponentNode, makeComponentNode } from './ComponentGraph'
 import { isEqual } from 'lodash'
 import { IComponentNode } from './Interfaces'
-import { callWithContext, callWithContextAsync, getComponent } from './ComponentRegistry'
+import { callWithContext, callWithContextAsync, getComponentDeclaration, registerComponent } from './ComponentRegistry'
 
 export async function renderer(jsx: JSXInternal.Element | null, parent: IComponentNode | null = null, parentXPath: string = '', index: number | null = null): Promise<string> {
     if (shouldIgnore(jsx)) {
@@ -51,7 +51,7 @@ export async function renderer(jsx: JSXInternal.Element | null, parent: ICompone
 
                 if (isArrow) {
                     const parentNode = parent as IComponentNode
-                    const component = getComponent(parentNode.name)!.declaration as any
+                    const component = getComponentDeclaration(parentNode.name) as any
                     component._anonymous[parentNode.name] = component._anonymous[parentNode.name] || []
                     const anonymousMethods = component._anonymous[parentNode.name]
                     const index = anonymousMethods.findIndex((i: string) => i === stringified)
@@ -125,6 +125,7 @@ export async function renderer(jsx: JSXInternal.Element | null, parent: ICompone
 
     // Custom component
     if (isClass(elementType)) {
+        registerComponent(elementType.name, elementType)
         const props = { ...jsx.props, key: jsx.key ?? null }
         const xpath = `${parentXPath}/${elementType.name}${props.key ? `[${props.key}]` : ''}`
         let componentNode = getComponentNode(elementType.name, xpath)

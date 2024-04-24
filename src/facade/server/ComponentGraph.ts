@@ -2,8 +2,8 @@ import GraphConstructor from './Graph'
 import { IComponentNode } from './Interfaces'
 import { nanoid } from 'nanoid'
 import { signal } from './Signals'
-import { buildComponent, callWithContext, callWithContextAsync, getComponent } from './ComponentRegistry'
-import { getInjectable, Inject } from './decorators/Injection'
+import { buildComponent, callWithContext, callWithContextAsync, getComponentDeclaration } from './ComponentRegistry'
+import { getInjectable, Inject } from './Injection'
 
 const Graph = new GraphConstructor<string, IComponentNode>()
 const Roots = new Set<string>()
@@ -126,7 +126,7 @@ export async function executeOnGraph(componentName: string, componentId: string,
 
     // check if it is an anonymous function
     if (!isNaN(property as any)) {
-        const component = getComponent(componentName)!.declaration
+        const component = getComponentDeclaration(componentName) as any
         const stringifiedAnon = component._anonymous[componentName][property]
         const anonToFun = `(function(){(${stringifiedAnon})(...arguments)})`
         eval(anonToFun).call(instance, parameters)
