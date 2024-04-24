@@ -30,7 +30,7 @@ function debouncedRequest(componentName: string, componentId: string, property: 
     const key = `${componentName}.${componentId}.${property}.${event}.${mode}`
 
     if (!facade.requests[key]) {
-        facade.requests[key] = debounce(request, timeout)
+        facade.requests[key] = debounce(facade.request, timeout)
     }
 
     facade.requests[key](componentName, componentId, property, parameters, event, mode)
@@ -43,16 +43,26 @@ facade.event = function (e: any, path: string) {
     debouncedRequest(componentName, componentId, property, parameters, event, mode)
 }
 
-function request(componentName: string, componentId: string, property: string, parameters: any, event?: string, mode?: string) {
+facade.request = async function (componentName: string, componentId: string, property: string, parameters: any, event?: string, mode?: string) {
     const page = window.location.pathname.split('/').pop()
 
     if (facade.config.protocol === 'http') {
         // @ts-ignore
-        facade.methods.handleUpdateHttp(page, componentName, componentId, property, parameters, event, mode)
+        return await facade.methods.handleUpdateHttp(page, componentName, componentId, property, parameters, event, mode)
     } else {
         // @ts-ignore
         const request = JSON.stringify({ page, componentName, componentId, property, parameters, event, mode })
-        facade.socket.send(request)
+
+        return new Promise((resolve, _reject) => {
+            facade.socket.send(request)
+            facade.socket.onmessage = (event: any) => {
+                const { dom, state, result } = JSON.parse(event.data)
+                if (dom) facade.methods.updateDOM(dom)
+                if (state) facade.methods.updateState(state)
+                if (result) resolve(result)
+                resolve()
+            }
+        })
     }
 }
 
@@ -62,11 +72,6 @@ facade.init = function () {
     this.socket = new WebSocket(`ws://${window.location.host}/`)
     this.socket.onopen = () => {
         console.log('Facade Connected')
-    }
-    this.socket.onmessage = (event: any) => {
-        const { dom, state } = JSON.parse(event.data)
-        if (dom) this.methods.updateDOM(dom)
-        if (state) this.methods.updateState(state)
     }
 
     addEventListener('facade:state:updated', () => {
@@ -108,22 +113,31 @@ facade.methods = {
                 .then(state => {
                     facade.state = state
                     document.body.style.visibility = 'visible'
+                    const event = new CustomEvent(facade.events.stateUpdated, {
+                        detail: {
+                            updatedProperties: null
+                        },
+                    })
+                    dispatchEvent(event)
                 })
         }
     },
-    handleUpdateHttp(page: string, componentName: string, componentId: string, property: string, parameters: any, event?: string, mode?: string) {
-        fetch(`${facade.config.url}?page=${page}&component=${componentName}&id=${componentId}&property=${property}&event=${event}&mode=${mode}`, {
+    async handleUpdateHttp(page: string, componentName: string, componentId: string, property: string, parameters: any, event?: string, mode?: string) {
+        const responseRaw = await fetch(`${facade.config.url}?page=${page}&component=${componentName}&id=${componentId}&property=${property}&event=${event}&mode=${mode}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({ parameters })
         })
-            .then(res => res.json())
-            .then(({ dom, state }) => {
-                if (dom) this.updateDOM(dom)
-                if (state) this.updateState(state)
-            })
+
+        const response = await responseRaw.json()
+        const { dom, state, result } = response
+
+        if (dom) this.updateDOM(dom)
+        if (state) this.updateState(state)
+
+        return result
     },
     updateDOM(domDiff: any) {
         const dd = new DiffDOM({
@@ -244,6 +258,7 @@ addEventListener('beforeunload', (_event) => {
 addEventListener('facade:state:updated', ({
     detail: { updatedProperties }
 }: any) => {
+    if (!updatedProperties) return
     updatedProperties.forEach(
         ({ componentName, componentId, property, newValue }: IUpdatedProperties) => {
             const search = `[oninput="facade.event(event, '${componentName}.${componentId}.${property}.input.bind')"]`

@@ -2,7 +2,7 @@ import { DiffDOM, stringToObj } from 'diff-dom'
 import { diff, flattenChangeset } from 'json-diff-ts'
 import { WebSocketServer } from 'ws'
 import { clearInjectables } from './Injection'
-import { renderer } from './JSXRenderer'
+import { clearScripts, getScripts, renderer } from './JSXRenderer'
 import { clearComponentGraph, deserializeGraph, serializableGraph, executeOnGraph } from './ComponentGraph'
 
 const pages: Record<string, any> = {}
@@ -23,12 +23,18 @@ function getJSONDiff(oldInstanceTree: any, newInstanceTree: any) {
 
 async function RenderDOM(page: string) {
     const rendered = await renderer(pages[page], null, page, null)
-    return `<!DOCTYPE html> <html> ${rendered} </html>`
+    const scripts = getScripts()
+    clearScripts()
+
+    return rendered.replace(
+        '</body>',
+        `${scripts}</body>`
+    )
 }
 
 async function process(session: any, page: string, componentName: string, componentId: string, property: string, parameters: any, mode: string) {
     deserializeGraph(session.instanceTree)
-    const successful = await executeOnGraph(componentName, componentId, property, parameters)
+    const [successful, result] = await executeOnGraph(componentName, componentId, property, parameters)
 
     if (!successful) {
         return { error: `Method/Property ${property} not found on component ${componentName}` }
@@ -40,12 +46,13 @@ async function process(session: any, page: string, componentName: string, compon
         session.instanceTree = JSON.stringify(newInstanceTree)
 
         return {
-            state: getJSONDiff(oldInstanceTree.vertices, newInstanceTree.vertices)
+            state: getJSONDiff(oldInstanceTree.vertices, newInstanceTree.vertices),
+            result
         }
     }
 
     const rendered = await RenderDOM(page)
-    const response: any = {}
+    const response: any = { result }
 
     const newInstanceTree = serializableGraph()
     const oldInstanceTree = JSON.parse(session.instanceTree)
@@ -189,6 +196,7 @@ export function facadeHTTP(app: any) {
         clearComponentGraph()
         clearInjectables()
 
+        res.setHeader('Content-Type', 'text/html; charset=utf-8')
         res.send(rendered)
     })
 }

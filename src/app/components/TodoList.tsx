@@ -14,6 +14,10 @@ class TodoList extends AComponent<any> {
         this.todos = data.slice(0, 1)
     }
 
+    callback() {
+        console.log('Server side TodoList')
+    }
+
     handleRemove(id: number) {
         this.todos = this.todos.filter((todo) => todo.id !== id)
     }

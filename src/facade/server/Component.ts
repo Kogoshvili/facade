@@ -66,6 +66,8 @@ abstract class AComponent<P = {}, D = any > {
         // Depends on input
     }
 
+    static clinet() {}
+
     // Executes every time the component is rendered
     static render(this: any): preact.JSX.Element | null {
         return null

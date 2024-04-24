@@ -13,6 +13,7 @@ export interface IComponentNode {
     instance: AComponent | null
     props: Record<string, any>
     properties: Record<string, any>
+    methods: string[]
     needsRender: boolean
     haveRendered: boolean
     prevRender: string | null

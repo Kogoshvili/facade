@@ -14,9 +14,11 @@ export function clearComponentGraph() {
 
 export function serializableGraph() {
     return Graph.toJSONable((_, value) => {
+        const properties = value.instance ? getProperties(value.instance).properties : value.properties
+
         return {
             ...value,
-            properties: value.instance ? { ...value.instance } : value.properties,
+            properties,
             instance: null,
         }
     })
@@ -78,20 +80,25 @@ export function getComponentNode(name: string, xpath: string): IComponentNode | 
 
 export async function makeComponentNode(name: string, xpath: string, props: Record<string, any>, parent?: IComponentNode | null): Promise<IComponentNode> {
     const instance = buildComponent(name)
+
+    instance._id = nanoid(10)
+    instance._name = name
+    instance._key = props.key ?? null
+
     callWithContext(name, () => instance.recived(props))
     await callWithContextAsync(name, () => instance.created())
 
-    const properties = Object.getOwnPropertyNames(instance)
-        .reduce((acc, prop) => ({ ...acc, [prop]: instance[prop] }), {})
+    const { properties, methods } = getProperties(instance)
 
     const vertex: IComponentNode = {
         name,
-        id: nanoid(10),
+        id: instance._id,
         key: props.key ?? null,
         xpath,
         instance,
         props,
         properties,
+        methods,
         needsRender: true,
         haveRendered: false,
         prevRender: null
@@ -114,14 +121,15 @@ export async function makeComponentNode(name: string, xpath: string, props: Reco
 export async function executeOnGraph(componentName: string, componentId: string, property: string, parameters: any) {
     const vertexIds = getVertexIds({ name: componentName, id: componentId })
     const vertex = Graph.getVertexValue(vertexIds.any)
+    const result = [false, undefined] as [boolean, any]
 
-    if (!vertex) return false
+    if (!vertex) return result
 
     const instance = vertex.instance ?? rebuildInstance(vertex).instance!
 
     // check if property exists on the instance
     if (!(property in instance) && isNaN(property as any)) {
-        return false
+        return result
     }
 
     // check if it is an anonymous function
@@ -129,17 +137,18 @@ export async function executeOnGraph(componentName: string, componentId: string,
         const component = getComponentDeclaration(componentName) as any
         const stringifiedAnon = component._anonymous[componentName][property]
         const anonToFun = `(function(){(${stringifiedAnon})(...arguments)})`
-        eval(anonToFun).call(instance, parameters)
-    }
-
-    if (typeof instance[property] !== 'function') {
+        result[1] = eval(anonToFun).call(instance, parameters)
+    } else if (typeof instance[property] !== 'function') {
         instance[property] = parameters
     } else {
-        await instance[property](parameters)
+        result[1] = await instance[property](parameters)
     }
 
+    result[0] = true
+
     vertex.needsRender = true
-    return true
+
+    return result
 }
 
 export function makeSureInstancesExist(componentName: string) {
@@ -164,4 +173,30 @@ function getVertexIds({ name, id, xpath }: { name: string | null, id?: string | 
         ...keys,
         any: (keys.id || keys.xpath) as string
     }
+}
+
+const hiddenProperties = [
+    'constructor', 'setState', 'forceUpdate', 'render',
+    'context', 'props', 'state',
+    '_parent', '_parentInstance', '_isMounted',
+]
+
+function getProperties(obj: any): { properties: Record<string, any>, methods: string[] } {
+    const properties: Record<string, any> = {}
+    const methods: string[] = []
+
+    const proto = Object.getOwnPropertyNames(Object.getPrototypeOf(obj))
+        .map((key) => [key, obj[key]])
+    const props = Object.entries(obj).concat(proto as [string, any][])
+
+    props.forEach(([key, value]) => {
+        if (hiddenProperties.includes(key)) return
+        if (typeof value !== 'function') {
+            properties[key] = value
+        } else {
+            methods.push(key)
+        }
+    })
+
+    return { properties, methods }
 }

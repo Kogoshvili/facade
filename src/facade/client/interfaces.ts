@@ -8,6 +8,7 @@ interface Facade {
         url: string
     },
     events: Record<string, string>
+    request: (componentName: string, componentId: string, property: string, parameters: any, event?: string, mode?: string) => void
     init: () => void
     mount: () => void
     rendered: () => void

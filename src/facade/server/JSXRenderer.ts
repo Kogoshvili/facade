@@ -4,6 +4,16 @@ import { isEqual } from 'lodash'
 import { IComponentNode } from './Interfaces'
 import { callWithContext, callWithContextAsync, getComponentDeclaration, registerComponent } from './ComponentRegistry'
 
+let scripts = ''
+
+export function getScripts() {
+    return scripts
+}
+
+export function clearScripts() {
+    scripts = ''
+}
+
 export async function renderer(jsx: JSXInternal.Element | null, parent: IComponentNode | null = null, parentXPath: string = '', index: number | null = null): Promise<string> {
     if (shouldIgnore(jsx)) {
         return ''
@@ -125,6 +135,7 @@ export async function renderer(jsx: JSXInternal.Element | null, parent: ICompone
 
     // Custom component
     if (isClass(elementType)) {
+        const declaration = (elementType as any)
         registerComponent(elementType.name, elementType)
         const props = { ...jsx.props, key: jsx.key ?? null }
         const xpath = `${parentXPath}/${elementType.name}${props.key ? `[${props.key}]` : ''}`
@@ -143,10 +154,52 @@ export async function renderer(jsx: JSXInternal.Element | null, parent: ICompone
             instance = componentNode.instance
         }
 
+        const script = declaration?.client?.toString()
+        if (script) {
+            const code = script.slice(15, -1)
+            const wrapperd = `
+                <script type="text/javascript">
+                    addEventListener('facade:state:updated', ({
+                        detail: { updatedProperties }
+                    }) => {
+                        const component = facade.state.find(
+                            s => s.key === '${componentNode.name}/${componentNode.id}'
+                        ).value
+
+                        const methods = component.methods.reduce((acc, method) => {
+                            acc[method] = async function() {
+                                return await facade.request(
+                                    '${componentNode.name}',
+                                    '${componentNode.id}',
+                                    method,
+                                    arguments
+                                )
+                            }
+                            return acc
+                        }, {})
+
+                        const thisMock = {
+                            ...component.properties,
+                            ...methods
+                        }
+
+                        if (updatedProperties === null || updatedProperties.some(i => i.componentName === '${componentNode.name}' && i.componentId === '${componentNode.id}'))
+                        {
+                            (async function client_${componentNode.name}() {
+                                    ${code}
+                            }).call(thisMock)
+                        }
+                    })
+                </script>
+            `
+            scripts += wrapperd
+        }
+
+
         await callWithContextAsync(componentNode.name, () => instance?.mounted())
 
         componentNode.haveRendered = true
-        const template = (elementType as any).render.call(instance!)
+        const template = declaration.render.call(instance!)
         let subResult = await renderer(template, componentNode, xpath)
         subResult = subResult.replace(/<(\w+)/, defineComponent(componentNode.name, componentNode.id, componentNode.key))
         componentNode.prevRender = subResult

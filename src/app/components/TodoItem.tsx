@@ -3,7 +3,6 @@ import { AComponent } from 'facade/server'
 class TodoItem extends AComponent<any, AComponent> {
     todo: any
     isCompleted: boolean = false
-    isClicked: boolean = false
 
     recived(props: any): void {
         this.todo = props.todo
@@ -18,11 +17,23 @@ class TodoItem extends AComponent<any, AComponent> {
         this.isCompleted = !this.isCompleted
     }
 
+    callbackTest() {
+        // this.parent()!.callback()
+        console.log('Server side')
+        return 123
+    }
+
+    static async client(this: TodoItem) {
+        const res = await this.callbackTest()
+        console.log('Result', res)
+        console.log('Client side', this._id, this._name, this._key, this.todo.title)
+    }
+
     static render(this: TodoItem) {
         return (
-            <li class="flex justify-between items-center bg-gray-100 p-2 rounded-md mb-2" style={{ backgroundColor: this.isClicked ? 'red' : undefined }}>
-                <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600" onChange={this.handleChange} checked={this.isCompleted} />
-                <div class="text-gray-700 cursor-pointer" onClick={() => this.isClicked = !this.isClicked}>{this.todo.title} {this.isClicked ? 'Clicked' : 'Not Clicked'}</div>
+            <li class="flex justify-between items-center bg-gray-100 p-2 rounded-md mb-2" style={{ backgroundColor: this.isCompleted ? 'aqua' : undefined }}>
+                <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 cursor-pointer" onChange={this.handleChange} checked={this.isCompleted} />
+                <div class="text-gray-700">{this.todo.title}</div>
                 <button class="px-2 py-1 bg-red-500 text-white rounded" onClick={this.onRemove}>Delete</button>
             </li>
         )
