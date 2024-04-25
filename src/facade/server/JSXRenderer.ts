@@ -5,66 +5,79 @@ import { IComponentNode } from './Interfaces'
 import { callWithContext, callWithContextAsync, getComponentDeclaration, registerComponent } from './ComponentRegistry'
 import { AComponent } from './Component'
 import { parse } from 'node-html-parser'
+import { getGraph, getRoots } from './ComponentGraph'
+import { DiffDOM, stringToObj } from 'diff-dom'
 
-let scripts = ''
+let scripts: string = ''
 let dom: any | null = null
 
-export function getScripts() {
-    return scripts
-}
+export function getScripts() { return scripts }
+export function clearScripts() { scripts = '' }
 
-export function clearScripts() {
-    scripts = ''
-}
+export function getDOM() { return dom }
+export function setDOM(pastDom: string) { dom = parse(pastDom) }
+export function clearDOM() { dom = null }
 
-export function setDOM(pastDom: string) {
-    dom = parse(pastDom)
-}
+export async function rerenderModifiedComponents() {
+    const [root] = getRoots()
+    const graph = getGraph()
+    const nodes: IComponentNode[] = []
 
-export function clearDOM() {
-    dom = null
-}
+    graph.traverseDfs(root, async (_, node) => {
+        if (node.needsRender && !node.haveRendered) {
+            nodes.push(node)
+        }
+    })
 
-export function getDOM() {
-    return dom
+    const nodePromises = nodes.map(async (node) => {
+        const declaration = getComponentDeclaration(node.name)
+        node.instance = node.instance ?? rebuildInstance(node).instance
+        const result = await renderComponent(declaration, node, node.xpath ?? '')
+        const idToFind = `${node.name}.${node.id}`
+        const oldElement = getElementById(idToFind).outerHTML
+
+        const dd = new DiffDOM()
+        const prevBody = stringToObj(oldElement)
+        const newBody = stringToObj(result!)
+        const domDiff = dd.diff(prevBody, newBody)
+
+        replaceElementById(idToFind, result)
+
+        return {
+            id: node.id,
+            name: node.name,
+            diff: domDiff
+        }
+    })
+
+    return await Promise.all(nodePromises)
 }
 
 export async function renderer(jsx: JSXInternal.Element | null, parent: IComponentNode | null = null, parentXPath: string = '', index: number | null = null): Promise<string> {
-    if (shouldIgnore(jsx)) {
-        return ''
-    }
-
-    if (isPrimitive(jsx)) {
-        return jsx as any
-    }
+    if (shouldIgnore(jsx)) return ''
+    if (isPrimitive(jsx))  return jsx as any
 
     jsx = jsx as JSXInternal.Element
 
-    if (jsx.type === undefined) {
-        return ''
-    }
-
-    const elementType = jsx.type
+    if (jsx.type === undefined) return ''
 
     // Normal HTML element
-    if (typeof elementType === 'string') {
-        return await renderNormalHTML(elementType, jsx, parent, parentXPath, index)
+    if (typeof jsx.type === 'string') {
+        return await renderNormalHTML(jsx.type, jsx, parent, parentXPath, index)
     }
 
     // Custom component
-    if (isClass(elementType)) {
-        return await renderComponentHTML(elementType, jsx, parent, parentXPath)
+    if (isClass(jsx.type)) {
+        return await renderComponentHTML(jsx.type, jsx, parent, parentXPath)
     }
 
-    // @ts-ignore
-    const functionName = elementType.name
-    const functionResult = (elementType as any)(jsx.props)
+    const functionName = jsx.type.name
+    const functionResult = (jsx.type as any)(jsx.props)
 
     let xpath = `${parentXPath}/${functionName ?? 'fragment'}`
 
     if (Array.isArray(functionResult)) {
         if (index !== null) xpath += `[${index}]`
-
         const promises = functionResult.map(async (child, index) => await renderer(child, parent, xpath, index))
         return (await Promise.all(promises)).join('')
     } else {
@@ -135,69 +148,7 @@ async function renderNormalHTML(elementType: string, jsx: JSXInternal.Element, p
 
     // if keys have bind and onInput or oninput remove onInput
     const keys = Object.keys(props)
-
-    keys.forEach((key) => {
-        // Render element attributes
-        const value = props[key]
-
-        if (typeof value === 'boolean') {
-            // Render boolean attribute without a value if it is true
-            if (value) {
-                result += ` ${key}`
-            }
-        } else if (typeof value === 'function') {
-            let functionName = value.name
-            const stringified = value.toString().replace(/\s/g,'')
-
-            const isArrow = /(\w+=>)|(\((\w+(,\w+))?\))=>/.test(stringified)
-
-            if (isArrow) {
-                const parentNode = parent as IComponentNode
-                const component = getComponentDeclaration(parentNode.name) as any
-                component._anonymous[parentNode.name] = component._anonymous[parentNode.name] || []
-                const anonymousMethods = component._anonymous[parentNode.name]
-                const index = anonymousMethods.findIndex((i: string) => i === stringified)
-
-                if (index === -1) {
-                    const length = anonymousMethods.push(stringified)
-                    functionName = `${length!-1}`
-                } else {
-                    functionName = `${index}`
-                }
-            }
-
-            // Event handler
-            const [event, mode = 'default'] = key.split(':')
-            const eventName = event.startsWith('on') ? event.toLowerCase().slice(2) : event
-
-            result += ` ${event}="facade.event(event, '${parent!.name}.${parent!.id}.${functionName}.${eventName}.${mode}')"`
-        } else if (typeof value === 'object' && value !== null) {
-            // Render style attribute
-            if (key === 'style') {
-                let style = '' as string
-                for (const styleKey in value) {
-                    // turn camelCase to kebab-case
-                    if (value[styleKey] === null || value[styleKey] === undefined) continue
-                    const actualStyleKey = styleKey.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase()
-                    style += `${actualStyleKey}: ${value[styleKey]};`
-                }
-
-                if (style !== '') {
-                    result += ` style="${style}"`
-                }
-            } else {
-                // Render attribute with an object value
-                result += ` ${key}="${JSON.stringify(value)}"`
-            }
-        } else {
-            if (key.includes(':bind')) {
-                result += ` oninput="facade.event(event, '${parent!.name}.${parent!.id}.${value.replace('this.', '')}.input.bind')"`
-            } else {
-                // Render attribute with a value
-                result += ` ${key}="${value}"`
-            }
-        }
-    })
+    keys.forEach((key) => result += renderAttributes(key, props, parent))
 
     // Check if the element is self-closing
     const isSelfClosing = !children || (Array.isArray(children) && children.length === 0)
@@ -229,6 +180,71 @@ async function renderNormalHTML(elementType: string, jsx: JSXInternal.Element, p
     return result
 }
 
+function renderAttributes(key: any, props: any, parent: IComponentNode | null) {
+    let result = '' as string
+    // Render element attributes
+    const value = props[key]
+
+    if (typeof value === 'boolean') {
+        // Render boolean attribute without a value if it is true
+        if (value) {
+            result += ` ${key}`
+        }
+    } else if (typeof value === 'function') {
+        let functionName = value.name
+        const stringified = value.toString().replace(/\s/g, '')
+
+        const isArrow = /(\w+=>)|(\((\w+(,\w+))?\))=>/.test(stringified)
+
+        if (isArrow) {
+            const parentNode = parent as IComponentNode
+            const component = getComponentDeclaration(parentNode.name) as any
+            component._anonymous[parentNode.name] = component._anonymous[parentNode.name] || []
+            const anonymousMethods = component._anonymous[parentNode.name]
+            const index = anonymousMethods.findIndex((i: string) => i === stringified)
+
+            if (index === -1) {
+                const length = anonymousMethods.push(stringified)
+                functionName = `${length! - 1}`
+            } else {
+                functionName = `${index}`
+            }
+        }
+
+        // Event handler
+        const [event, mode = 'default'] = key.split(':')
+        const eventName = event.startsWith('on') ? event.toLowerCase().slice(2) : event
+
+        result += ` ${event}="facade.event(event, '${parent!.name}.${parent!.id}.${functionName}.${eventName}.${mode}')"`
+    } else if (typeof value === 'object' && value !== null) {
+        // Render style attribute
+        if (key === 'style') {
+            let style = '' as string
+            for (const styleKey in value) {
+                // turn camelCase to kebab-case
+                if (value[styleKey] === null || value[styleKey] === undefined) continue
+                const actualStyleKey = styleKey.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase()
+                style += `${actualStyleKey}: ${value[styleKey]};`
+            }
+
+            if (style !== '') {
+                result += ` style="${style}"`
+            }
+        } else {
+            // Render attribute with an object value
+            result += ` ${key}="${JSON.stringify(value)}"`
+        }
+    } else {
+        if (key.includes(':bind')) {
+            result += ` oninput="facade.event(event, '${parent!.name}.${parent!.id}.${value.replace('this.', '')}.input.bind')"`
+        } else {
+            // Render attribute with a value
+            result += ` ${key}="${value}"`
+        }
+    }
+
+    return result
+}
 
 export async function renderComponent(declaration: any, componentNode: IComponentNode, xpath: string) {
     const script = declaration?.client?.toString()

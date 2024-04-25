@@ -1,11 +1,8 @@
-import { DiffDOM, stringToObj } from 'diff-dom'
 import { diff, flattenChangeset } from 'json-diff-ts'
 import { WebSocketServer } from 'ws'
 import { clearInjectables } from './Injection'
-import { clearDOM, clearScripts, getDOM, getScripts, renderer, setDOM } from './JSXRenderer'
+import { clearDOM, clearScripts, getDOM, getScripts, renderer, setDOM, rerenderModifiedComponents } from './JSXRenderer'
 import { clearComponentGraph, deserializeGraph, serializableGraph, executeOnGraph } from './ComponentGraph'
-
-import { render } from './Render'
 
 const pages: Record<string, any> = {}
 
@@ -57,15 +54,13 @@ async function process(session: any, page: string, componentName: string, compon
 
     const response: any = { result }
 
-    const renderResult = await render()
-    response.diffs = renderResult
+    response.diffs = await rerenderModifiedComponents()
 
     const newInstanceTree = serializableGraph()
     const oldInstanceTree = JSON.parse(session.instanceTree)
     response.state = getJSONDiff(oldInstanceTree.vertices, newInstanceTree.vertices)
 
-    const newBodyString = getDOM()
-    session.renderedHtmlBody = newBodyString
+    session.renderedHtmlBody = getDOM().toString()
     session.instanceTree = JSON.stringify(newInstanceTree)
 
     clearComponentGraph()
