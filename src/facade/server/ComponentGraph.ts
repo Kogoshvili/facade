@@ -75,6 +75,8 @@ export function rebuildInstance(vertex: IComponentNode) {
         vertex.instance!._parent = { name: parent.split('/')[0], id: parent.split('/')[1] }
     }
 
+    vertex.instance!.mounted()
+
     return vertex
 }
 

@@ -251,7 +251,7 @@ export async function renderComponent(declaration: any, componentNode: IComponen
     if (script) appendScripts(script, componentNode)
 
     const template = declaration.render.call(componentNode.instance!)
-    const subResult = await renderer(template, componentNode, xpath)
+    const subResult = await renderer(template, componentNode, xpath) || '<div></div>'
     return subResult.replace(/<(\w+)/, defineComponent(componentNode.name, componentNode.id, componentNode.key))
 }
 

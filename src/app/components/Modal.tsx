@@ -5,7 +5,7 @@ class Modal extends AComponent<any> {
     content: any | null = null
     modalService = Inject<ModalService>(ModalService)
 
-    async mounted() {
+    mounted() {
         effect(() => {
             this.content = this.modalService().modal()
         })

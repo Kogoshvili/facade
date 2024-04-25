@@ -47,7 +47,7 @@ abstract class AComponent<P = {}, D = any > {
     // async propsChanged() {}
 
     // Executes before render if rendering is needed
-    async mounted() {
+    mounted() {
         // Depends on input
     }
 
