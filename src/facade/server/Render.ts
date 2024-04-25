@@ -10,7 +10,7 @@ export async function render() {
     const nodes: IComponentNode[] = []
 
     graph.traverseDfs(root, async (_, node) => {
-        if (node.needsRender) {
+        if (node.needsRender && !node.haveRendered) {
             nodes.push(node)
         }
     })

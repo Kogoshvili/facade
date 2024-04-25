@@ -177,10 +177,14 @@ async function renderNormalHTML(elementType: string, jsx: JSXInternal.Element, p
                 let style = '' as string
                 for (const styleKey in value) {
                     // turn camelCase to kebab-case
+                    if (value[styleKey] === null || value[styleKey] === undefined) continue
                     const actualStyleKey = styleKey.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase()
                     style += `${actualStyleKey}: ${value[styleKey]};`
                 }
-                result += ` style="${style}"`
+
+                if (style !== '') {
+                    result += ` style="${style}"`
+                }
             } else {
                 // Render attribute with an object value
                 result += ` ${key}="${JSON.stringify(value)}"`
