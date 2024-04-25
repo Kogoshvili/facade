@@ -2,8 +2,10 @@ import { DiffDOM, stringToObj } from 'diff-dom'
 import { diff, flattenChangeset } from 'json-diff-ts'
 import { WebSocketServer } from 'ws'
 import { clearInjectables } from './Injection'
-import { clearScripts, getScripts, renderer } from './JSXRenderer'
+import { clearDOM, clearScripts, getDOM, getScripts, renderer, setDOM } from './JSXRenderer'
 import { clearComponentGraph, deserializeGraph, serializableGraph, executeOnGraph } from './ComponentGraph'
+
+import { render } from './Render'
 
 const pages: Record<string, any> = {}
 
@@ -18,7 +20,7 @@ export function registerPage(path: string, jsx: any) {
 function getJSONDiff(oldInstanceTree: any, newInstanceTree: any) {
     const stateDiff = diff(oldInstanceTree, newInstanceTree)
     return flattenChangeset(stateDiff)
-        .filter((i: any) => !(i.key === 'prevRender' || i.key === 'template'))
+        .filter((i: any) => !(i.key === 'pastRender'))
 }
 
 async function RenderDOM(page: string) {
@@ -51,29 +53,24 @@ async function process(session: any, page: string, componentName: string, compon
         }
     }
 
-    const rendered = await RenderDOM(page)
+    setDOM(session.renderedHtmlBody)
+
     const response: any = { result }
+
+    const renderResult = await render()
+    response.diffs = renderResult
 
     const newInstanceTree = serializableGraph()
     const oldInstanceTree = JSON.parse(session.instanceTree)
     response.state = getJSONDiff(oldInstanceTree.vertices, newInstanceTree.vertices)
 
-    const oldBodyString = session.renderedHtmlBody
-    const newBodyString = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
-
-    if (oldBodyString) {
-        const dd = new DiffDOM()
-        const prevBody = stringToObj(oldBodyString!)
-        const newBody = stringToObj(newBodyString!)
-        const domDiff = dd.diff(prevBody, newBody)
-        response.dom = domDiff
-    }
-
+    const newBodyString = getDOM()
     session.renderedHtmlBody = newBodyString
     session.instanceTree = JSON.stringify(newInstanceTree)
 
     clearComponentGraph()
     clearInjectables()
+    clearDOM()
 
     return response
 }
@@ -184,11 +181,6 @@ export function facadeHTTP(app: any) {
         }
 
         const session = req.session as any
-
-        if (session.instanceTree) {
-            deserializeGraph(session.instanceTree)
-        }
-
         const rendered = await RenderDOM(page)
         session.renderedHtmlBody = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
 

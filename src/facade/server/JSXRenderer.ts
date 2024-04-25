@@ -3,8 +3,11 @@ import { rebuildInstance, getComponentNode, makeComponentNode } from './Componen
 import { isEqual } from 'lodash'
 import { IComponentNode } from './Interfaces'
 import { callWithContext, callWithContextAsync, getComponentDeclaration, registerComponent } from './ComponentRegistry'
+import { AComponent } from './Component'
+import { parse } from 'node-html-parser'
 
 let scripts = ''
+let dom: any | null = null
 
 export function getScripts() {
     return scripts
@@ -12,6 +15,18 @@ export function getScripts() {
 
 export function clearScripts() {
     scripts = ''
+}
+
+export function setDOM(pastDom: string) {
+    dom = parse(pastDom)
+}
+
+export function clearDOM() {
+    dom = null
+}
+
+export function getDOM() {
+    return dom
 }
 
 export async function renderer(jsx: JSXInternal.Element | null, parent: IComponentNode | null = null, parentXPath: string = '', index: number | null = null): Promise<string> {
@@ -33,178 +48,12 @@ export async function renderer(jsx: JSXInternal.Element | null, parent: ICompone
 
     // Normal HTML element
     if (typeof elementType === 'string') {
-        let result = `<${elementType}`
-
-        if (jsx.key) {
-            result += ` key="${jsx.key}"`
-        }
-
-        const { children, ...props } = jsx.props
-
-        // if keys have bind and onInput or oninput remove onInput
-        const keys = Object.keys(props)
-
-        keys.forEach((key) => {
-            // Render element attributes
-            const value = props[key]
-
-            if (typeof value === 'boolean') {
-                // Render boolean attribute without a value if it is true
-                if (value) {
-                    result += ` ${key}`
-                }
-            } else if (typeof value === 'function') {
-                let functionName = value.name
-                const stringified = value.toString().replace(/\s/g,'')
-
-                const isArrow = /(\w+=>)|(\((\w+(,\w+))?\))=>/.test(stringified)
-
-                if (isArrow) {
-                    const parentNode = parent as IComponentNode
-                    const component = getComponentDeclaration(parentNode.name) as any
-                    component._anonymous[parentNode.name] = component._anonymous[parentNode.name] || []
-                    const anonymousMethods = component._anonymous[parentNode.name]
-                    const index = anonymousMethods.findIndex((i: string) => i === stringified)
-
-                    if (index === -1) {
-                        const length = anonymousMethods.push(stringified)
-                        functionName = `${length!-1}`
-                    } else {
-                        functionName = `${index}`
-                    }
-                }
-
-                // Event handler
-                const [event, mode = 'default'] = key.split(':')
-                const eventName = event.startsWith('on') ? event.toLowerCase().slice(2) : event
-
-                result += ` ${event}="facade.event(event, '${parent!.name}.${parent!.id}.${functionName}.${eventName}.${mode}')"`
-            } else if (typeof value === 'object' && value !== null) {
-                // Render style attribute
-                if (key === 'style') {
-                    let style = '' as string
-                    for (const styleKey in value) {
-                        // turn camelCase to kebab-case
-                        const actualStyleKey = styleKey.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase()
-                        style += `${actualStyleKey}: ${value[styleKey]};`
-                    }
-                    result += ` style="${style}"`
-                } else {
-                    // Render attribute with an object value
-                    result += ` ${key}="${JSON.stringify(value)}"`
-                }
-            } else {
-                if (key.includes(':bind')) {
-                    result += ` oninput="facade.event(event, '${parent!.name}.${parent!.id}.${value.replace('this.', '')}.input.bind')"`
-                } else {
-                    // Render attribute with a value
-                    result += ` ${key}="${value}"`
-                }
-            }
-        })
-
-        // Check if the element is self-closing
-        const isSelfClosing = !children || (Array.isArray(children) && children.length === 0)
-
-        if (isSelfClosing) {
-            result += ` ></${elementType}>`
-        } else {
-            result += '>'
-
-            if (children) {
-                let xpath = `${parentXPath}/${elementType}`
-                if (index !== null) xpath += `[${index}]`
-
-                if (typeof children === 'string') {
-                    result += children
-                } else if (Array.isArray(children)) {
-                    const promises = children.map(async (child, index) => await renderer(child, parent, xpath))
-                    result += (await Promise.all(promises)).join('')
-                } else if (typeof children === 'function') {
-                    result += await renderer(children(), parent, xpath)
-                } else {
-                    result += await renderer(children, parent, xpath)
-                }
-            }
-
-            result += `</${elementType}>`
-        }
-
-        return result
+        return await renderNormalHTML(elementType, jsx, parent, parentXPath, index)
     }
 
     // Custom component
     if (isClass(elementType)) {
-        const declaration = (elementType as any)
-        registerComponent(elementType.name, elementType)
-        const props = { ...jsx.props, key: jsx.key ?? null }
-        const xpath = `${parentXPath}/${elementType.name}${props.key ? `[${props.key}]` : ''}`
-        let componentNode = getComponentNode(elementType.name, xpath)
-        let instance
-
-        if (componentNode) {
-            instance = componentNode.instance ?? rebuildInstance(componentNode).instance
-
-            if (!isEqual(componentNode.props, props)) {
-                callWithContext(componentNode.name, () => instance!.recived(props))
-
-            }
-        } else {
-            componentNode = await makeComponentNode(elementType.name, xpath, props, parent)
-            instance = componentNode.instance
-        }
-
-        const script = declaration?.client?.toString()
-        if (script) {
-            const code = script.slice(15, -1)
-            const wrapperd = `
-                <script type="text/javascript">
-                    addEventListener('facade:state:updated', ({
-                        detail: { updatedProperties }
-                    }) => {
-                        const component = facade.state.find(
-                            s => s.key === '${componentNode.name}/${componentNode.id}'
-                        ).value
-
-                        const methods = component.methods.reduce((acc, method) => {
-                            acc[method] = async function() {
-                                return await facade.request(
-                                    '${componentNode.name}',
-                                    '${componentNode.id}',
-                                    method,
-                                    arguments
-                                )
-                            }
-                            return acc
-                        }, {})
-
-                        const thisMock = {
-                            ...component.properties,
-                            ...methods
-                        }
-
-                        if (updatedProperties === null || updatedProperties.some(i => i.componentName === '${componentNode.name}' && i.componentId === '${componentNode.id}'))
-                        {
-                            (async function client_${componentNode.name}() {
-                                    ${code}
-                            }).call(thisMock)
-                        }
-                    })
-                </script>
-            `
-            scripts += wrapperd
-        }
-
-
-        await callWithContextAsync(componentNode.name, () => instance?.mounted())
-
-        componentNode.haveRendered = true
-        const template = declaration.render.call(instance!)
-        let subResult = await renderer(template, componentNode, xpath)
-        subResult = subResult.replace(/<(\w+)/, defineComponent(componentNode.name, componentNode.id, componentNode.key))
-        componentNode.prevRender = subResult
-
-        return subResult
+        return await renderComponentHTML(elementType, jsx, parent, parentXPath)
     }
 
     // @ts-ignore
@@ -221,6 +70,209 @@ export async function renderer(jsx: JSXInternal.Element | null, parent: ICompone
     } else {
         return await renderer(functionResult, parent, xpath)
     }
+}
+
+async function renderComponentHTML(elementType: any, jsx: JSXInternal.Element, parent: IComponentNode | null, parentXPath: string) {
+    if (parent) parent.hasChildren = true
+
+    const declaration = (elementType as any)
+    registerComponent(elementType.name, elementType)
+    const props = { ...jsx.props, key: jsx.key ?? null }
+    const xpath = `${parentXPath}/${elementType.name}${props.key ? `[${props.key}]` : ''}`
+    let componentNode = getComponentNode(elementType.name, xpath)
+    let instance: AComponent | null = null
+    let result = ''
+
+    if (!componentNode || componentNode.needsRender) {
+        if (!componentNode) {
+            componentNode = await makeComponentNode(elementType.name, xpath, props, parent)
+            instance = componentNode.instance
+        }
+
+        instance = componentNode.instance ?? rebuildInstance(componentNode).instance
+
+        await callWithContextAsync(componentNode.name, () => instance?.mounted())
+
+        if (!isEqual(componentNode.props, props)) {
+            callWithContext(componentNode.name, () => instance!.recived(props))
+        }
+
+        componentNode.haveRendered = true
+
+        result = await renderComponent(declaration, componentNode, xpath)
+        const idToFind = `${componentNode.name}.${componentNode.id}`
+
+        if (dom) replaceElementById(idToFind, result)
+
+        return result
+    }
+
+    componentNode.haveRendered = true
+
+    const idToFind = `${componentNode.name}.${componentNode.id}`
+
+    return getElementById(idToFind)
+}
+
+export function replaceElementById(idToFind: string, replacement: string) {
+    const element = dom!.getElementById(idToFind)
+    if (!element) return
+    element.replaceWith(parse(replacement))
+}
+
+export function getElementById(idToFind: string) {
+    return dom!.getElementById(idToFind)
+}
+
+async function renderNormalHTML(elementType: string, jsx: JSXInternal.Element, parent: IComponentNode | null, parentXPath: string, index: number | null) {
+    let result = `<${elementType}`
+
+    if (jsx.key) {
+        result += ` key="${jsx.key}"`
+    }
+
+    const { children, ...props } = jsx.props
+
+    // if keys have bind and onInput or oninput remove onInput
+    const keys = Object.keys(props)
+
+    keys.forEach((key) => {
+        // Render element attributes
+        const value = props[key]
+
+        if (typeof value === 'boolean') {
+            // Render boolean attribute without a value if it is true
+            if (value) {
+                result += ` ${key}`
+            }
+        } else if (typeof value === 'function') {
+            let functionName = value.name
+            const stringified = value.toString().replace(/\s/g,'')
+
+            const isArrow = /(\w+=>)|(\((\w+(,\w+))?\))=>/.test(stringified)
+
+            if (isArrow) {
+                const parentNode = parent as IComponentNode
+                const component = getComponentDeclaration(parentNode.name) as any
+                component._anonymous[parentNode.name] = component._anonymous[parentNode.name] || []
+                const anonymousMethods = component._anonymous[parentNode.name]
+                const index = anonymousMethods.findIndex((i: string) => i === stringified)
+
+                if (index === -1) {
+                    const length = anonymousMethods.push(stringified)
+                    functionName = `${length!-1}`
+                } else {
+                    functionName = `${index}`
+                }
+            }
+
+            // Event handler
+            const [event, mode = 'default'] = key.split(':')
+            const eventName = event.startsWith('on') ? event.toLowerCase().slice(2) : event
+
+            result += ` ${event}="facade.event(event, '${parent!.name}.${parent!.id}.${functionName}.${eventName}.${mode}')"`
+        } else if (typeof value === 'object' && value !== null) {
+            // Render style attribute
+            if (key === 'style') {
+                let style = '' as string
+                for (const styleKey in value) {
+                    // turn camelCase to kebab-case
+                    const actualStyleKey = styleKey.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase()
+                    style += `${actualStyleKey}: ${value[styleKey]};`
+                }
+                result += ` style="${style}"`
+            } else {
+                // Render attribute with an object value
+                result += ` ${key}="${JSON.stringify(value)}"`
+            }
+        } else {
+            if (key.includes(':bind')) {
+                result += ` oninput="facade.event(event, '${parent!.name}.${parent!.id}.${value.replace('this.', '')}.input.bind')"`
+            } else {
+                // Render attribute with a value
+                result += ` ${key}="${value}"`
+            }
+        }
+    })
+
+    // Check if the element is self-closing
+    const isSelfClosing = !children || (Array.isArray(children) && children.length === 0)
+
+    if (isSelfClosing) {
+        result += ` ></${elementType}>`
+    } else {
+        result += '>'
+
+        if (children) {
+            let xpath = `${parentXPath}/${elementType}`
+            if (index !== null) xpath += `[${index}]`
+
+            if (typeof children === 'string') {
+                result += children
+            } else if (Array.isArray(children)) {
+                const promises = children.map(async (child, index) => await renderer(child, parent, xpath))
+                result += (await Promise.all(promises)).join('')
+            } else if (typeof children === 'function') {
+                result += await renderer(children(), parent, xpath)
+            } else {
+                result += await renderer(children, parent, xpath)
+            }
+        }
+
+        result += `</${elementType}>`
+    }
+
+    return result
+}
+
+
+export async function renderComponent(declaration: any, componentNode: IComponentNode, xpath: string) {
+    const script = declaration?.client?.toString()
+    if (script) appendScripts(script, componentNode)
+
+    const template = declaration.render.call(componentNode.instance!)
+    const subResult = await renderer(template, componentNode, xpath)
+    return subResult.replace(/<(\w+)/, defineComponent(componentNode.name, componentNode.id, componentNode.key))
+}
+
+function appendScripts(script: string, componentNode: IComponentNode) {
+    const code = script.slice(15, -1)
+    const wrapperd = `
+        <script type="text/javascript">
+            addEventListener('facade:state:updated', ({
+                detail: { updatedProperties }
+            }) => {
+                const component = facade.state.find(
+                    s => s.key === '${componentNode.name}/${componentNode.id}'
+                ).value
+
+                const methods = component.methods.reduce((acc, method) => {
+                    acc[method] = async function() {
+                        return await facade.request(
+                            '${componentNode.name}',
+                            '${componentNode.id}',
+                            method,
+                            arguments
+                        )
+                    }
+                    return acc
+                }, {})
+
+                const thisMock = {
+                    ...component.properties,
+                    ...methods
+                }
+
+                if (updatedProperties === null || updatedProperties.some(i => i.componentName === '${componentNode.name}' && i.componentId === '${componentNode.id}'))
+                {
+                    (async function client_${componentNode.name}() {
+                            ${code}
+                    }).call(thisMock)
+                }
+            })
+        </script>
+    `
+    scripts += wrapperd
 }
 
 function isPrimitive(jsx: any) {
@@ -245,7 +297,7 @@ function isClass(fn: any) {
 }
 
 const defineComponent = (name: string | null, id: string | null, key?: string | number | null) => (_match: string, tag: string) => {
-    let definition = `<${tag} facade="${name}.${id}"`
+    let definition = `<${tag} id="${name}.${id}"`
 
     if (key) {
         definition += ` key="${key}"`

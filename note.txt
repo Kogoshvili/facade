@@ -1,3 +1,6 @@
+
+`<([a-z]+)([^>]*?)id=["']${idToFind}["'](.*?)>(.*?)</\\1>`, 'is'
+
 features:
 
 webTransport

@@ -16,6 +16,7 @@ interface Facade {
     methods: {
         syncState: () => void
         handleUpdateHttp: (componentName: string, componentId: string, method: string, parameters: any, event?: string, mode?: string) => void
+        updateElement: (diff: any) => void
         updateDOM: (domDiff: any) => void
         updateState: (stateDiff: any) => void
         updateObjectByPath: (obj: any, jsonPath: string, actionObj: { action: string, value: any }) => any

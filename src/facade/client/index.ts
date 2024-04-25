@@ -56,8 +56,16 @@ facade.request = async function (componentName: string, componentId: string, pro
         return new Promise((resolve, _reject) => {
             facade.socket.send(request)
             facade.socket.onmessage = (event: any) => {
-                const { dom, state, result } = JSON.parse(event.data)
-                if (dom) facade.methods.updateDOM(dom)
+                const { dom, diffs, state, result } = JSON.parse(event.data)
+
+                if (diffs) {
+                    diffs.forEach((diff: any) => {
+                        facade.methods.updateElement(diff)
+                    })
+                } else if (dom) {
+                    facade.methods.updateDOM(dom)
+                }
+
                 if (state) facade.methods.updateState(state)
                 if (result) resolve(result)
                 resolve()
@@ -138,6 +146,19 @@ facade.methods = {
         if (state) this.updateState(state)
 
         return result
+    },
+    updateElement({ id, name, diff }: any) {
+        const dd = new DiffDOM({
+            preDiffApply: function (info) {
+                if (info.diff.action === 'modifyChecked' && info.diff.newValue === undefined) {
+                    info.diff.newValue = info.diff.oldValue
+                }
+                return false
+            },
+        })
+        const prevBody = document.getElementById(`${name}.${id}`)!
+        dd.apply(prevBody, diff)
+        dispatchEvent(new CustomEvent(facade.events.domUpdated))
     },
     updateDOM(domDiff: any) {
         const dd = new DiffDOM({

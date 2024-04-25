@@ -23,11 +23,11 @@ class TodoItem extends AComponent<any, AComponent> {
         return 123
     }
 
-    static async client(this: TodoItem) {
-        const res = await this.callbackTest()
-        console.log('Result', res)
-        console.log('Client side', this._id, this._name, this._key, this.todo.title)
-    }
+    // static async client(this: TodoItem) {
+    //     const res = await this.callbackTest()
+    //     console.log('Result', res)
+    //     console.log('Client side', this._id, this._name, this._key, this.todo.title)
+    // }
 
     static render(this: TodoItem) {
         return (

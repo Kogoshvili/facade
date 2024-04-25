@@ -104,6 +104,19 @@ class Graph<K = string, V = any> extends BaseGraph<string | number, V> {
         return result
     }
 
+    getChildVertices(key: K) {
+        const realKey = this.getRealKey(key) ?? key
+        if (!this._edges.has(realKey)) return []
+
+        const result = []
+        this._edges.get(realKey).forEach((w, k) => {
+            if (w === EdgeType.Child) {
+                result.push(k)
+            }
+        })
+        return result
+    }
+
     getConnectedVertices(key: K) {
         const realKey = this.getRealKey(key) ?? key
         if (!this._edges.has(realKey)) return []

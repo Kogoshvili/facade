@@ -16,5 +16,5 @@ export interface IComponentNode {
     methods: string[]
     needsRender: boolean
     haveRendered: boolean
-    prevRender: string | null
+    hasChildren: boolean
 }

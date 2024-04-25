@@ -8,6 +8,14 @@ import { getInjectable, Inject } from './Injection'
 const Graph = new GraphConstructor<string, IComponentNode>()
 const Roots = new Set<string>()
 
+export function getRoots() {
+    return Roots
+}
+
+export function getGraph() {
+    return Graph
+}
+
 export function clearComponentGraph() {
     Graph.clear()
 }
@@ -20,6 +28,8 @@ export function serializableGraph() {
             ...value,
             properties,
             instance: null,
+            haveRendered: false,
+            needsRender: false
         }
     })
 }
@@ -59,6 +69,7 @@ export function rebuildInstance(vertex: IComponentNode) {
     Object.assign(instance, vertex.properties)
 
     vertex.instance = instance
+    vertex.needsRender = true
 
     if (parent) {
         vertex.instance!._parent = { name: parent.split('/')[0], id: parent.split('/')[1] }
@@ -101,7 +112,7 @@ export async function makeComponentNode(name: string, xpath: string, props: Reco
         methods,
         needsRender: true,
         haveRendered: false,
-        prevRender: null
+        hasChildren: false,
     }
 
     const vertexIds = getVertexIds(vertex)
