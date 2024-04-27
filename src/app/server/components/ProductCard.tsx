@@ -1,5 +1,5 @@
 import { AComponent, Inject } from 'facade/server'
-import ModalService from 'services/ModalService'
+import ModalService from 'server/services/ModalService'
 
 class ProductCard extends AComponent<any> {
     product: any

@@ -14,6 +14,7 @@ interface Facade {
     rendered: () => void
     event: (e: any, path: string, event?: string, mode?: string) => void
     methods: {
+        pushState: (state: any) => Promise<void>
         syncState: () => void
         handleUpdateHttp: (componentName: string, componentId: string, method: string, parameters: any, event?: string, mode?: string) => void
         updateElement: (diff: any) => void

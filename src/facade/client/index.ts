@@ -94,6 +94,22 @@ facade.init = function () {
 facade.mount = function () {}
 
 facade.methods = {
+    async pushState(newState: any) {
+        facade.state = { ...facade.state, ...newState }
+
+        const response = await fetch(`${facade.config.url}/set-state`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: facade.state
+        })
+
+        const { dom, state } = await response.json()
+
+        this.updateDOM(dom)
+        this.updateState(state)
+    },
     syncState() {
         // check if local storage has state
         const state = localStorage.getItem('facade-state')

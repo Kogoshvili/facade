@@ -5,8 +5,8 @@ import compression from 'compression'
 
 import { registerPages, facadeHTTP, facadeWS } from 'facade/server'
 
-import TodoPage from 'pages/TodoPage'
-import ShopPage from 'pages/ShopPage'
+import TodoPage from 'server/pages/TodoPage'
+import ShopPage from 'server/pages/ShopPage'
 
 // @ts-ignore
 if (__dirname === undefined) {

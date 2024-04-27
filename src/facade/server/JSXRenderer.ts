@@ -68,13 +68,22 @@ export async function renderer(jsx: JSXInternal.Element | null, parent: ICompone
 
     // Custom component
     if (isClass(jsx.type)) {
-        return await renderComponentHTML(jsx.type, jsx, parent, parentXPath)
+        return await renderComponentClass(jsx.type, jsx, parent, parentXPath)
     }
 
-    const functionName = jsx.type.name
-    const functionResult = (jsx.type as any)(jsx.props)
+    const isFragment = jsx.type.name === 'b'
 
-    let xpath = `${parentXPath}/${functionName ?? 'fragment'}`
+    if (isFragment) {
+        return await renderFragment(jsx.type, jsx.props, parent, parentXPath, index)
+    }
+
+    return await renderFunction(jsx.type, jsx.props, parent, parentXPath, index)
+}
+
+async function renderFragment(fn: any, props: any, parent: IComponentNode | null = null, parentXPath: string = '', index: number | null = null): Promise<string> {
+    const functionResult = fn(props)
+
+    let xpath = `${parentXPath}/fragment`
 
     if (Array.isArray(functionResult)) {
         if (index !== null) xpath += `[${index}]`
@@ -85,7 +94,74 @@ export async function renderer(jsx: JSXInternal.Element | null, parent: ICompone
     }
 }
 
-async function renderComponentHTML(elementType: any, jsx: JSXInternal.Element, parent: IComponentNode | null, parentXPath: string) {
+async function renderFunction(fn: any, props: any, parent: IComponentNode | null = null, parentXPath: string = '', index: number | null = null): Promise<string> {
+    const functionName = fn.name
+    const isFacade = fn.name === 'Facade'
+
+    // for (const key in props) {
+    //     if (typeof props[key] === 'function') {
+    //         const functionName = props[key].name
+    //         properties[key] = `facade.event(event, '${parent!.name}.${parent!.id}.${functionName}.${key}.${mode}')`
+
+    //     } else {
+    //         properties[key] = props[key]
+    //     }
+    // }
+
+
+    if (!isFacade && parent) parent.hasChildren = true
+
+    if (isFacade) {
+        const properties: any = {
+            xpath: `${parentXPath}-facade`
+        }
+
+        const keys = Object.keys(props)
+        keys.forEach((key) => {
+            properties[key] = props[key]
+
+            if (typeof props[key] === 'function') {
+                let functionName = props[key].name
+                const stringified = props[key].toString().replace(/\s/g, '')
+
+                const isArrow = /(\w+=>)|(\((\w+(,\w+))?\))=>/.test(stringified)
+
+                if (isArrow) {
+                    const parentNode = parent as IComponentNode
+                    const component = getComponentDeclaration(parentNode.name) as any
+                    component._anonymous[parentNode.name] = component._anonymous[parentNode.name] || []
+                    const anonymousMethods = component._anonymous[parentNode.name]
+                    const index = anonymousMethods.findIndex((i: string) => i === stringified)
+
+                    if (index === -1) {
+                        const length = anonymousMethods.push(stringified)
+                        functionName = `${length! - 1}`
+                    } else {
+                        functionName = `${index}`
+                    }
+                }
+
+                // Event handler
+                const [event, mode = 'default'] = key.split(':')
+                const eventName = event.startsWith('on') ? event.toLowerCase().slice(2) : event
+
+                properties[key] = `facade.event(event, '${parent!.name}.${parent!.id}.${functionName}.${eventName}.${mode}')`
+            }
+        })
+
+        const functionResult = fn(properties)
+        const xpath = `${parentXPath}/${functionName}`
+
+        return await renderer(functionResult, parent, xpath, index)
+    }
+
+    const functionResult = fn(props)
+    const xpath = `${parentXPath}/${functionName}`
+
+    return await renderer(functionResult, parent, xpath, index)
+}
+
+async function renderComponentClass(elementType: any, jsx: JSXInternal.Element, parent: IComponentNode | null, parentXPath: string) {
     if (parent) parent.hasChildren = true
 
     const declaration = (elementType as any)

@@ -31,17 +31,17 @@ module.exports = (env, argv) => {
         }
     }
 
-    const clientContext = path.resolve(__dirname, 'src/facade/client')
-
     return [
         {
             ...sharedConfig,
             target: 'web',
-            context: clientContext,
-            entry: './index.ts',
+            entry: {
+                facade: './src/facade/client/index.ts',
+                client: './src/app/client/index.ts'
+            },
             output: {
                 path: path.resolve(__dirname, 'public'),
-                filename: 'client.js',
+                filename: '[name].js',
             },
             plugins: [
                 // new CopyPlugin({
@@ -57,44 +57,44 @@ module.exports = (env, argv) => {
                         test: /\.([cm]?ts|tsx)$/,
                         loader: 'ts-loader',
                         options: {
-                            context: clientContext,
-                        }
-                    },
-                ]
-            },
-        },
-        {
-            ...sharedConfig,
-            entry: './src/server.ts',
-            target: 'node18',
-            output: {
-                path: path.resolve(__dirname, 'dist'),
-                filename: 'server.js',
-                library: {
-                    type: 'commonjs',
-                },
-                globalObject: 'this',
-            },
-            node: {
-                __dirname: false,
-                __filename: false,
-            },
-            externalsPresets: { node: true },
-            externals: [
-                'utf-8-validate',
-                'bufferutil',
-            ],
-            module: {
-                rules: [
-                    {
-                        test: /\.([cm]?ts|tsx)$/,
-                        loader: 'ts-loader',
-                        options: {
                             transpileOnly: true,
                         }
                     },
                 ]
             },
-        }
+        },
+        // {
+        //     ...sharedConfig,
+        //     entry: './src/server.ts',
+        //     target: 'node18',
+        //     output: {
+        //         path: path.resolve(__dirname, 'dist'),
+        //         filename: 'server.js',
+        //         library: {
+        //             type: 'commonjs',
+        //         },
+        //         globalObject: 'this',
+        //     },
+        //     node: {
+        //         __dirname: false,
+        //         __filename: false,
+        //     },
+        //     externalsPresets: { node: true },
+        //     externals: [
+        //         'utf-8-validate',
+        //         'bufferutil',
+        //     ],
+        //     module: {
+        //         rules: [
+        //             {
+        //                 test: /\.([cm]?ts|tsx)$/,
+        //                 loader: 'ts-loader',
+        //                 options: {
+        //                     transpileOnly: true,
+        //                 }
+        //             },
+        //         ]
+        //     },
+        // }
     ]
 }

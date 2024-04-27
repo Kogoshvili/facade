@@ -12,10 +12,8 @@
     "paths": {
       "app/*": ["./*"],
       "facade/*": ["./facade/*"],
-      "components/*": ["./app/components/*"],
-      "layouts/*": ["./app/layouts/*"],
-      "services/*": ["./app/services/*"],
-      "pages/*": ["./app/pages/*"],
+      "client/*": ["./app/client/*"],
+      "server/*": ["./app/server/*"],
     },
     "module": "Preserve",
     "moduleResolution": "Node",

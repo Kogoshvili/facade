@@ -1,5 +1,5 @@
 import { AComponent, effect, Inject } from 'facade/server'
-import ModalService from 'services/ModalService'
+import ModalService from 'server/services/ModalService'
 
 class Modal extends AComponent<any> {
     content: any | null = null
