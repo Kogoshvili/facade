@@ -18,7 +18,7 @@
             "type": "node",
             "request": "launch",
             // Debug current file in VSCode
-            "program": "${workspaceFolder}/src/server.ts",
+            "program": "${workspaceFolder}/t.tsx",
             // "program": "${workspaceFolder}/test1.ts",
             /*
             Path to tsx binary

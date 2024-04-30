@@ -2,11 +2,12 @@ import { JSXInternal } from 'preact/src/jsx'
 import { rebuildInstance, getComponentNode, makeComponentNode } from './ComponentGraph'
 import { isEqual } from 'lodash'
 import { IComponentNode } from './Interfaces'
-import { callWithContext, callWithContextAsync, getComponentDeclaration, registerComponent } from './ComponentRegistry'
+import { getComponentDeclaration, registerComponent } from './ComponentRegistry'
 import { AComponent } from './Component'
 import { parse } from 'node-html-parser'
 import { getGraph, getRoots } from './ComponentGraph'
 import { DiffDOM, stringToObj } from 'diff-dom'
+import { callWithContext, callWithContextAsync } from './Context'
 
 let scripts: string = ''
 let dom: any | null = null
@@ -149,13 +150,13 @@ async function renderFunction(fn: any, props: any, parent: IComponentNode | null
             }
         })
 
-        const functionResult = fn(properties)
+        const functionResult = callWithContext(fn.name, () => fn(properties))
         const xpath = `${parentXPath}/${functionName}`
 
         return await renderer(functionResult, parent, xpath, index)
     }
 
-    const functionResult = fn(props)
+    const functionResult = callWithContext(fn.name, () => fn(props))
     const xpath = `${parentXPath}/${functionName}`
 
     return await renderer(functionResult, parent, xpath, index)

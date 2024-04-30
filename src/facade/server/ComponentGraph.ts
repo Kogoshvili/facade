@@ -2,7 +2,8 @@ import GraphConstructor from './Graph'
 import { IComponentNode } from './Interfaces'
 import { nanoid } from 'nanoid'
 import { signal } from './Signals'
-import { buildComponent, callWithContext, callWithContextAsync, getComponentDeclaration } from './ComponentRegistry'
+import { buildComponent, getComponentDeclaration } from './ComponentRegistry'
+import { callWithContext, callWithContextAsync } from './Context'
 import { getInjectable, Inject } from './Injection'
 
 const Graph = new GraphConstructor<string, IComponentNode>()

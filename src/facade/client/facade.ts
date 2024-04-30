@@ -1,5 +1,7 @@
 import { createElement, render } from 'preact'
 import 'preact/hooks'
+import { renderer } from '../server/JSXRenderer'
+import { callWithContext } from '../server/Context'
 
 const components: any = {}
 
@@ -16,15 +18,19 @@ export function initialize() {
     function mountComponents() {
         for (const key in components) {
             const elements = document.querySelectorAll(`[data-component="${key}"]`)
-            elements.forEach((element) => {
+            elements.forEach(async (element) => {
                 const xpath = element.getAttribute('data-xpath') || ''
 
                 const rawProps = element.getAttribute('data-props') || '{}'
                 const props = JSON.parse(rawProps)
                 const component = components[key]
                 console.log('TEST')
+                let jsx: any = null
 
-                render(createElement(component, props), element)
+                callWithContext(component.name, () => jsx = component(props))
+
+                render(jsx, element)
+
             })
         }
     }

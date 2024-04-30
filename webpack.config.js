@@ -60,6 +60,14 @@ module.exports = (env, argv) => {
                             transpileOnly: true,
                         }
                     },
+                    {
+                        test: /\.([cm]?ts|tsx)$/,
+                        use: [
+                            {
+                                loader: path.resolve('./loader.cjs'),
+                            },
+                        ],
+                    },
                 ]
             },
         },

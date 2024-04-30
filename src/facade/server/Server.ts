@@ -32,6 +32,7 @@ async function RenderDOM(page: string) {
 }
 
 async function process(session: any, page: string, componentName: string, componentId: string, property: string, parameters: any, mode: string) {
+    console.time('process')
     deserializeGraph(session.instanceTree)
     const [successful, result] = await executeOnGraph(componentName, componentId, property, parameters)
 
@@ -67,6 +68,8 @@ async function process(session: any, page: string, componentName: string, compon
     clearInjectables()
     clearDOM()
 
+
+    console.timeEnd('process')
     return response
 }
 

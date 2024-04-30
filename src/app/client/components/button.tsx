@@ -1,18 +1,18 @@
-import { useState } from 'preact/hooks'
+import { signal } from 'app/facade/server/Signals-fe'
 
-function Button({ text, onClick }: any)
-{
-    const [counter, setCounter] = useState(0)
+function Button({ text, onClick }: any) {
+    const counter = signal(0)
 
     const handleClick = () => {
-        setCounter(counter + 1)
-        if (counter >= 10) {
+        counter(counter() + 1)
+        console.log(counter())
+        if (counter() >= 10) {
             eval(onClick)
         }
     }
 
     return (
-        <button onClick={handleClick}>{text}{counter}</button>
+        <button onClick={handleClick}>{text}{counter()}</button>
     )
 }
 

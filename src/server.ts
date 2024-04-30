@@ -8,6 +8,17 @@ import { registerPages, facadeHTTP, facadeWS } from 'facade/server'
 import TodoPage from 'server/pages/TodoPage'
 import ShopPage from 'server/pages/ShopPage'
 
+globalThis.fFragment = function Fragment(props) {
+	return props.children;
+}
+
+globalThis.fElement = function createElement(type, props, ...children) {
+    return {
+        type,
+        props: { ...props, children },
+    }
+}
+
 // @ts-ignore
 if (__dirname === undefined) {
     // eslint-disable-next-line no-global-assign

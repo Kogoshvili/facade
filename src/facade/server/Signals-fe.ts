@@ -1,23 +1,10 @@
-import { makeSureInstancesExist } from './ComponentGraph'
-import { getCurrentContext } from './Context';
-import { currentInjectable } from './Injection'
+import { getCurrentContext } from './Context'
 
-export interface ISignal<T> {
-    (v?: T | (() => T)): T;
-    _value: T
-    _subscribers: (() => void)[]
-    _owner: null | { prototype: { _dependants: Set<string> }}
-    set(v: any): boolean
-    get(): any
-    subscribe(fn: (v?: any) => void): void
-    unsubscribe(fn: (v?: any) => void): void
-    notify(): void
-}
+const signals: Record<string, Signal[]> = {}
 
 class Signal {
     _value: any
     _subscribers: (() => void)[] = []
-    _owner: null | { prototype: { _dependants: Set<string> }} = null
 
     options: any = {
         comparer: (a: any, b: any) => a === b
@@ -43,14 +30,6 @@ class Signal {
             : this._value
     }
 
-    addDependant(dep: string) {
-        this._owner?.prototype._dependants.add(dep)
-    }
-
-    removeDependant(dep: string) {
-        this._owner?.prototype._dependants.delete(dep)
-    }
-
     subscribe(fn: any) {
         this._subscribers.push(fn)
     }
@@ -61,15 +40,26 @@ class Signal {
     }
 
     notify() {
-        this._owner?.prototype._dependants.forEach((d: string) => makeSureInstancesExist(d))
         this._subscribers.forEach((fn: any) => fn(this.get()))
     }
 }
 
-
 function signal(input: any) {
-    const ref = new Signal(input)
-    ref._owner = currentInjectable
+    const context = getCurrentContext()!
+
+    if (!signals[context.name]) {
+        signals[context.name] = []
+    }
+
+    context.index++
+
+    let ref: Signal
+
+    if (!signals[context.name][context.index]) {
+        ref = signals[context.name][context.index] = new Signal(input)
+    } else {
+        ref = signals[context.name][context.index]
+    }
 
     function callback(...args: any) {
         currentEffectDeps?.push(ref)
@@ -88,8 +78,7 @@ function signal(input: any) {
     return new Proxy(callback, {
         get: (target: any, p: string | symbol, _receiver: any): any => {
             if (target.prototype[p]) return target.prototype[p]
-            return (ref as any)[p]
-        },
+            return (ref as any)[p]        },
     })
 }
 
@@ -105,7 +94,7 @@ function effect(fn: (v?: any) => void) {
 
     deps.forEach((dep) => {
         dep.subscribe(fn)
-        dep.addDependant(component?.name)
+        dep.addDependant(component)
     })
 
     const result = {

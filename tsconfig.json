@@ -19,8 +19,9 @@
     "moduleResolution": "Node",
     "experimentalDecorators": true,
     "target": "ES2022",
-    "jsx": "react-jsx",
-    "jsxImportSource": "preact",
+    "jsx": "react",
+    "jsxFactory": "fElement",
+    "jsxFragmentFactory": "fFragment",
   },
   "exclude": ["dist", "webpack.config.js", "**/hide"]
 }
