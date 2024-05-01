@@ -29,7 +29,7 @@ class TodoItem extends AComponent<any, AComponent> {
     //     console.log('Client side', this._id, this._name, this._key, this.todo.title)
     // }
 
-    static render(this: TodoItem) {
+    render() {
         return (
             <li class="flex justify-between items-center bg-gray-100 p-2 rounded-md mb-2" style={{ backgroundColor: this.isCompleted ? 'aqua' : undefined }}>
                 <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 cursor-pointer" onChange={this.handleChange} checked={this.isCompleted} />

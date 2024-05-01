@@ -72,7 +72,7 @@ export async function renderer(jsx: JSXInternal.Element | null, parent: ICompone
         return await renderComponentClass(jsx.type, jsx, parent, parentXPath)
     }
 
-    const isFragment = jsx.type.name === 'b'
+    const isFragment = jsx.type.name === 'Fragment'
 
     if (isFragment) {
         return await renderFragment(jsx.type, jsx.props, parent, parentXPath, index)
@@ -156,7 +156,8 @@ async function renderFunction(fn: any, props: any, parent: IComponentNode | null
         return await renderer(functionResult, parent, xpath, index)
     }
 
-    const functionResult = callWithContext(fn.name, () => fn(props))
+    let functionResult = ''
+    callWithContext(fn.name, () => functionResult = fn(props))
     const xpath = `${parentXPath}/${functionName}`
 
     return await renderer(functionResult, parent, xpath, index)
@@ -242,7 +243,7 @@ async function renderNormalHTML(elementType: string, jsx: JSXInternal.Element, p
             if (typeof children === 'string') {
                 result += children
             } else if (Array.isArray(children)) {
-                const promises = children.map(async (child, index) => await renderer(child, parent, xpath))
+                const promises = children.flat().map(async (child, index) => await renderer(child, parent, xpath))
                 result += (await Promise.all(promises)).join('')
             } else if (typeof children === 'function') {
                 result += await renderer(children(), parent, xpath)
@@ -327,7 +328,7 @@ export async function renderComponent(declaration: any, componentNode: IComponen
     const script = declaration?.client?.toString()
     if (script) appendScripts(script, componentNode)
 
-    const template = declaration.render.call(componentNode.instance!)
+    const template = componentNode.instance.render()
     const subResult = await renderer(template, componentNode, xpath) || '<div></div>'
     return subResult.replace(/<(\w+)/, defineComponent(componentNode.name, componentNode.id, componentNode.key))
 }

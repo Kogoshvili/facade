@@ -1,6 +1,6 @@
 import { signal } from 'app/facade/server/Signals-fe'
 
-function Button({ text, onClick }: any) {
+function Button({ text, onClick }) {
     const counter = signal(0)
 
     const handleClick = () => {

@@ -60,6 +60,39 @@ module.exports = (env, argv) => {
                             transpileOnly: true,
                         }
                     },
+                ]
+            },
+        },
+        {
+            ...sharedConfig,
+            entry: './src/server.ts',
+            target: 'node18',
+            output: {
+                path: path.resolve(__dirname, 'dist'),
+                filename: 'server.js',
+                library: {
+                    type: 'commonjs',
+                },
+                globalObject: 'this',
+            },
+            node: {
+                __dirname: false,
+                __filename: false,
+            },
+            externalsPresets: { node: true },
+            externals: [
+                'utf-8-validate',
+                'bufferutil',
+            ],
+            module: {
+                rules: [
+                    {
+                        test: /\.([cm]?ts|tsx)$/,
+                        loader: 'ts-loader',
+                        options: {
+                            transpileOnly: true,
+                        }
+                    },
                     {
                         test: /\.([cm]?ts|tsx)$/,
                         use: [
@@ -70,39 +103,6 @@ module.exports = (env, argv) => {
                     },
                 ]
             },
-        },
-        // {
-        //     ...sharedConfig,
-        //     entry: './src/server.ts',
-        //     target: 'node18',
-        //     output: {
-        //         path: path.resolve(__dirname, 'dist'),
-        //         filename: 'server.js',
-        //         library: {
-        //             type: 'commonjs',
-        //         },
-        //         globalObject: 'this',
-        //     },
-        //     node: {
-        //         __dirname: false,
-        //         __filename: false,
-        //     },
-        //     externalsPresets: { node: true },
-        //     externals: [
-        //         'utf-8-validate',
-        //         'bufferutil',
-        //     ],
-        //     module: {
-        //         rules: [
-        //             {
-        //                 test: /\.([cm]?ts|tsx)$/,
-        //                 loader: 'ts-loader',
-        //                 options: {
-        //                     transpileOnly: true,
-        //                 }
-        //             },
-        //         ]
-        //     },
-        // }
+        }
     ]
 }

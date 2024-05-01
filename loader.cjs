@@ -28,7 +28,7 @@ module.exports = function (source, map) {
   // Create a new class declaration
   const classDeclaration = t.classDeclaration(
     t.identifier(className),
-    null,
+    t.identifier('AComponent'),
     t.classBody([]),
     []
   );
@@ -36,14 +36,17 @@ module.exports = function (source, map) {
   // Visit each node in the AST
   babel.traverse(ast, {
     VariableDeclaration(path) {
-      // Convert variable declarations to class properties
-      const declarations = path.node.declarations.map((declaration) =>
-        t.classProperty(
-          t.identifier(declaration.id.name),
-          declaration.init
-        )
-      );
-      classDeclaration.body.body.push(...declarations);
+      // Check if the variable declaration is not inside a function
+      if (!path.findParent((parent) => parent.isFunction())) {
+        // Convert variable declarations to class properties
+        const declarations = path.node.declarations.map((declaration) =>
+          t.classProperty(
+            t.identifier(declaration.id.name),
+            declaration.init
+          )
+        );
+        classDeclaration.body.body.push(...declarations);
+      }
     },
     FunctionDeclaration(path) {
       // Convert function declarations to class methods
@@ -51,13 +54,17 @@ module.exports = function (source, map) {
         'method',
         t.identifier(path.node.id.name),
         path.node.params,
-        path.node.body
+        path.node.body,
+        path.node.computed,
+        path.node.static,
+        path.node.generator,
+        path.node.async // Preserve the async keyword
       );
       classDeclaration.body.body.push(method);
     },
   });
 
-  // Add the render method to the class
+  // Add the static render method to the class with 'this' parameter
   const renderMethod = t.classMethod(
     'method',
     t.identifier('render'),
@@ -70,7 +77,9 @@ module.exports = function (source, map) {
           [t.jsxText(template)]
         )
       ),
-    ])
+    ]),
+    false,
+    false
   );
   classDeclaration.body.body.push(renderMethod);
 
@@ -86,7 +95,7 @@ module.exports = function (source, map) {
   // Replace the <template> and <script> sections with the compiled code
   const finalCode = source
     .replace(templateMatch[0], '')
-    .replace(scriptMatch[0], componentCode.code + `\n\nexport default ${className};\n`);
+    .replace(scriptMatch[0], `import { AComponent } from 'facade/server';\n\n` + componentCode.code + `\n\nexport default ${className};\n`);
 
   // Generate the source map
   const sourceMap = componentCode.map;

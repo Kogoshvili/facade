@@ -8,7 +8,7 @@ abstract class AComponent<P = {}, D = any > {
     context: any = {}
     setState: (state: any) => void = () => {}
     forceUpdate: () => void = () => {}
-    render: () => preact.JSX.Element | null = () => null
+    // render: () => preact.JSX.Element | null = () => null
     // #endregion
 
     _name: string | null = null

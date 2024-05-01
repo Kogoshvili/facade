@@ -11,5 +11,6 @@
         "recived",
         "smol",
         "templater"
-    ]
+    ],
+    "typescript.tsdk": "node_modules/typescript/lib"
 }

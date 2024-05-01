@@ -1,7 +1,7 @@
 import { AComponent } from 'app/facade/server'
 
 class NavBar extends AComponent {
-    showSubmenu = false
+    showSubmenu: string = false
 
     handleMouseOver() {
         this.showSubmenu = !this.showSubmenu
