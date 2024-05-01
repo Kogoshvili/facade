@@ -10,7 +10,7 @@ module.exports = (env, argv) => {
     const isAnalyze = !!argv.analyze
 
     const sharedConfig = {
-        mode: mode,
+        mode,
         devtool: isProd ? false : 'source-map',
         resolve: {
             extensions: ['.ts', '.tsx', '.js'],
@@ -21,10 +21,7 @@ module.exports = (env, argv) => {
             },
             plugins: [new TsconfigPathsPlugin()],
         },
-        plugins: [new ProgressPlugin(true)],
-        optimization: {
-            minimizer: [new TerserPlugin()],
-        }
+        plugins: [new ProgressPlugin(true)]
     }
 
     return [
@@ -32,7 +29,6 @@ module.exports = (env, argv) => {
             ...sharedConfig,
             target: 'web',
             entry: {
-                facade: './src/facade/client/index.ts',
                 client: './src/app/client/index.ts'
             },
             output: {
@@ -61,9 +57,14 @@ module.exports = (env, argv) => {
                     },
                 ]
             },
+            optimization: {
+                minimize: false,
+                minimizer: [new TerserPlugin()],
+            }
         },
         {
             ...sharedConfig,
+            mode: 'development',
             entry: './src/server.ts',
             target: 'node18',
             output: {
@@ -102,6 +103,10 @@ module.exports = (env, argv) => {
                     },
                 ]
             },
+            optimization: {
+                minimize: false,
+                nodeEnv: 'development'
+            }
         }
     ]
 }

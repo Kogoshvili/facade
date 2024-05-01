@@ -41,7 +41,6 @@ class Signal {
     }
 
     notify() {
-        console.log('owner', this._owner)
         this._subscribers.forEach((fn: any) => fn(this.get()))
     }
 }

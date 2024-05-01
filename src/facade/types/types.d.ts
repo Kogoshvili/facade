@@ -20,3 +20,10 @@ export namespace JSXInternal {
                     [key: string]: any;
                 }
 }
+
+declare global {
+    interface Window {
+        fFragment: (props: { children: any }) => any
+        fElement: (type: any, props: any, ...children: any) => any
+    }
+}

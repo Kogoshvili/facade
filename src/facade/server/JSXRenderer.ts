@@ -9,11 +9,9 @@ import { getGraph, getRoots } from './ComponentGraph'
 import { DiffDOM, stringToObj } from 'diff-dom'
 import { callWithContext, callWithContextAsync } from './Context'
 
-let isClinet = window !== undefined
+const isClinet = !(typeof process === 'object')
 let scripts: string = ''
 let dom: any | null = null
-
-export function setClient() { isClinet = true }
 
 export function getScripts() { return scripts }
 export function clearScripts() { scripts = '' }
@@ -44,9 +42,8 @@ export async function rerenderModifiedComponents() {
     })
 
     const nodePromises = nodes.map(async (node) => {
-        const declaration = getComponentDeclaration(node.name)
         node.instance ??= rebuildInstance(node).instance
-        const result = await renderComponent(declaration, node, node.xpath ?? '')
+        const result = await renderComponent(node, node.xpath ?? '')
         const idToFind = `${node.name}.${node.id}`
         const oldElement = getElementById(idToFind).outerHTML
 
@@ -89,7 +86,7 @@ async function renderHTML(jsx: JSXInternal.Element, parent: IComponentNode | nul
         result += ` key="${jsx.key}"`
     }
 
-    const { children, ...props } = jsx.props
+    const { children, ...props } = jsx.props ?? { children: [], key: null }
 
     Object.keys(props)
         .forEach((key) => result += renderAttribute(key, props[key], parent))
@@ -196,8 +193,8 @@ async function renderClass(jsx: JSXInternal.Element, parent: IComponentNode | nu
 
     registerComponent(declaration.name, declaration)
 
-    const { children, ...initProps } = jsx.props
-    const props = { ...initProps, key: jsx.props.key ?? null }
+    const { children, ...initProps } = jsx.props ?? { children: [], key: null }
+    const props = { ...initProps, key: jsx.props?.key ?? null }
 
     const xpath = `${parentXPath}/${declaration.name}${props.key ? `[${props.key}]` : ''}`
 
@@ -362,7 +359,7 @@ function isClass(jsx: any) {
 }
 
 function hasChildren(jsx: JSXInternal.Element) {
-    const { children } = jsx.props
+    const { children } = jsx.props ?? {}
     return (children && Array.isArray(children) && children.length > 0)
 }
 
