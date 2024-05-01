@@ -9,7 +9,7 @@ import { getGraph, getRoots } from './ComponentGraph'
 import { DiffDOM, stringToObj } from 'diff-dom'
 import { callWithContext, callWithContextAsync } from './Context'
 
-let isClinet = false
+let isClinet = window !== undefined
 let scripts: string = ''
 let dom: any | null = null
 
@@ -25,9 +25,11 @@ export function clearDOM() { dom = null }
 export async function rerenderComponent(componentName: string, componentId: string) {
     const componentNode = getComponentNode(componentName, componentId)!
     const result = await renderComponent(componentNode, componentNode.xpath ?? '')
-    const element = document.getElementById(`${componentName}.${componentId}`)
-    const parsed = parse(result)
-    element!.innerHTML = parsed.firstChild.innerHTML
+    const element = document.getElementById(`${componentName}.${componentId}`)!
+    // const dd = new DiffDOM()
+    // const diff = dd.diff(element, result)
+    // dd.apply(element, diff)
+    element.outerHTML = result
 }
 
 export async function rerenderModifiedComponents() {

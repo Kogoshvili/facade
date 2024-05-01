@@ -6,7 +6,7 @@ import { buildComponent, getComponentDeclaration } from './ComponentRegistry'
 import { callWithContext, callWithContextAsync } from './Context'
 import { getInjectable, Inject } from './Injection'
 
-const Graph = window.Graph ??= new GraphConstructor<string, IComponentNode>()
+const Graph: GraphConstructor<string, IComponentNode> = globalThis.Graph ??= new GraphConstructor<string, IComponentNode>()
 const Roots = new Set<string>()
 
 export function getRoots() {

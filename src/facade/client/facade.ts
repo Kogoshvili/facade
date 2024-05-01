@@ -1,7 +1,5 @@
-import { renderer, setClient } from '../server/JSXRenderer'
-import { callWithContext } from '../server/Context'
+import { renderer } from '../server/JSXRenderer'
 
-setClient()
 window.fFragment = function Fragment(props) {
 	return props.children;
 }
