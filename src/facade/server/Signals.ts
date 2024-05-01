@@ -69,7 +69,7 @@ class Signal {
 
 function signal(input: any) {
     const ref = new Signal(input)
-    ref._owner = currentInjectable
+    ref._owner = getCurrentContext()?.declaration
 
     function callback(...args: any) {
         currentEffectDeps?.push(ref)

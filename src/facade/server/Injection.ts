@@ -1,6 +1,6 @@
-const INJECTABLES = new Map<string, { declaration: any, instance: any }>()
+import { callWithContext } from "./Context"
 
-export let currentInjectable: any | null = null
+const INJECTABLES = new Map<string, { declaration: any, instance: any }>()
 
 export function getInjectable(name: string) {
     return INJECTABLES.get(name)
@@ -36,9 +36,10 @@ export function Inject<T>(serviceIdentifier: any): (() => T) {
             }
 
             if (!injectable.instance) {
-                currentInjectable = ref._class
-                injectable.instance = new injectable.declaration()
-                currentInjectable = null
+                injectable.instance = callWithContext(
+                    () => new injectable.declaration(),
+                    ref._name, ref._class
+                )
             }
 
             ref._instance = injectable.instance

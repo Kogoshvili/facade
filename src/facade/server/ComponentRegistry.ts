@@ -12,6 +12,7 @@ export function getComponentDeclaration(name: string): (new () => AComponent) {
 }
 
 export function buildComponent(name: string) {
-    return callWithContext(name, () => new (getComponentDeclaration(name))())
+    const declaration = getComponentDeclaration(name)
+    return callWithContext(() => new declaration(), name, declaration)
 }
 

@@ -1,19 +1,22 @@
 import { signal } from 'app/facade/server/Signals-fe'
 
-function Button({ text, onClick }) {
+<script>
     const counter = signal(0)
 
-    const handleClick = () => {
-        counter(counter() + 1)
-        console.log(counter())
-        if (counter() >= 10) {
-            eval(onClick)
-        }
+    function recived(props) {
+        this.onClick = props.onClick
+        this.text = props.text
     }
 
-    return (
-        <button onClick={handleClick}>{text}{counter()}</button>
-    )
-}
+    function handleClick() {
+        this.counter(this.counter() + 1)
+        console.log(this.counter())
+        if (this.counter() >= 10) {
+            eval(this.onClick)
+        }
+    }
+</script>
 
-export default Button
+<template>
+    <button onClick={this.handleClick}>{this.text}{this.counter()}</button>
+</template>

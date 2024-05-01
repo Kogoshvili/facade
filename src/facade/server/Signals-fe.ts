@@ -5,6 +5,7 @@ const signals: Record<string, Signal[]> = {}
 class Signal {
     _value: any
     _subscribers: (() => void)[] = []
+    _owner: any | null = null
 
     options: any = {
         comparer: (a: any, b: any) => a === b
@@ -40,28 +41,24 @@ class Signal {
     }
 
     notify() {
+        console.log('owner', this._owner)
         this._subscribers.forEach((fn: any) => fn(this.get()))
     }
 }
 
 function signal(input: any) {
     const context = getCurrentContext()!
-
-    if (!signals[context.name]) {
-        signals[context.name] = []
-    }
-
     context.index++
 
-    let ref: Signal
-
-    if (!signals[context.name][context.index]) {
-        ref = signals[context.name][context.index] = new Signal(input)
-    } else {
-        ref = signals[context.name][context.index]
-    }
+    let ref: Signal = new Signal(input)
 
     function callback(...args: any) {
+        const context = getCurrentContext()
+
+        if (context && !ref._owner) {
+            ref._owner = context
+        }
+
         currentEffectDeps?.push(ref)
         if (args.length === 0) return ref.get()
         const isSuccessful = ref.set(args[0])

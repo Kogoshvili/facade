@@ -1,10 +1,7 @@
 const path = require('path');
 const TerserPlugin = require('terser-webpack-plugin');
-const CopyPlugin = require('copy-webpack-plugin');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
-const nodeExternals = require('webpack-node-externals');
-const options = require('preact').options;
 var ProgressPlugin = require('progress-webpack-plugin')
 
 module.exports = (env, argv) => {
@@ -26,7 +23,6 @@ module.exports = (env, argv) => {
         },
         plugins: [new ProgressPlugin(true)],
         optimization: {
-            minimize: false,
             minimizer: [new TerserPlugin()],
         }
     }
@@ -44,11 +40,6 @@ module.exports = (env, argv) => {
                 filename: '[name].js',
             },
             plugins: [
-                // new CopyPlugin({
-                //     patterns: [
-                //         { from: './index.html', to: './index.html' },
-                //     ],
-                // }),
                 ...(isAnalyze ? [new BundleAnalyzerPlugin.BundleAnalyzerPlugin()] : [])
             ],
             module: {

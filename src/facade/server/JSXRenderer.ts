@@ -9,8 +9,11 @@ import { getGraph, getRoots } from './ComponentGraph'
 import { DiffDOM, stringToObj } from 'diff-dom'
 import { callWithContext, callWithContextAsync } from './Context'
 
+let isClinet = false
 let scripts: string = ''
 let dom: any | null = null
+
+export function setClient() { isClinet = true }
 
 export function getScripts() { return scripts }
 export function clearScripts() { scripts = '' }
@@ -18,6 +21,14 @@ export function clearScripts() { scripts = '' }
 export function getDOM() { return dom }
 export function setDOM(pastDom: string) { dom = parse(pastDom) }
 export function clearDOM() { dom = null }
+
+export async function rerenderComponent(componentName: string, componentId: string) {
+    const componentNode = getComponentNode(componentName, componentId)!
+    const result = await renderComponent(componentNode, componentNode.xpath ?? '')
+    const element = document.getElementById(`${componentName}.${componentId}`)
+    const parsed = parse(result)
+    element!.innerHTML = parsed.firstChild.innerHTML
+}
 
 export async function rerenderModifiedComponents() {
     const [root] = getRoots()
@@ -144,7 +155,7 @@ function renderAttribute(key: any, value: any, parent: IComponentNode | null) {
         const [event, mode = 'default'] = key.split(':')
         const eventName = event.startsWith('on') ? event.toLowerCase().slice(2) : event
 
-        return ` ${event}="facade.event(event, '${parent!.name}.${parent!.id}.${functionName}.${eventName}.${mode}')"`
+        return ` ${event}="facade.event(event, '${parent!.name}.${parent!.id}.${functionName}.${eventName}.${mode}', ${isClinet})"`
     }
 
     if (isObject(value)) {
@@ -183,7 +194,8 @@ async function renderClass(jsx: JSXInternal.Element, parent: IComponentNode | nu
 
     registerComponent(declaration.name, declaration)
 
-    const props = { ...jsx.props, key: jsx.props.key ?? null }
+    const { children, ...initProps } = jsx.props
+    const props = { ...initProps, key: jsx.props.key ?? null }
 
     const xpath = `${parentXPath}/${declaration.name}${props.key ? `[${props.key}]` : ''}`
 
@@ -197,18 +209,18 @@ async function renderClass(jsx: JSXInternal.Element, parent: IComponentNode | nu
         componentNode.instance ??= rebuildInstance(componentNode).instance
         const instance = componentNode.instance as AComponent
 
-        await callWithContextAsync(componentNode.name, () => instance?.mounted())
+        await callWithContextAsync(() => instance?.mounted(), componentNode.name, null, instance)
 
         if (!isEqual(componentNode.props, props)) {
-            callWithContext(componentNode.name, () => instance!.recived(props))
+            callWithContext(() => instance!.recived(props), componentNode.name, null, instance)
         }
 
         componentNode.haveRendered = true
 
-        const result: string = await renderComponent(declaration, componentNode, xpath)
+        const result: string = await renderComponent(componentNode, xpath)
         const idToFind = `${componentNode.name}.${componentNode.id}`
 
-        if (dom) replaceElementById(idToFind, result)
+        replaceElementById(idToFind, result)
 
         return result as string
     }
@@ -217,24 +229,26 @@ async function renderClass(jsx: JSXInternal.Element, parent: IComponentNode | nu
     return getElementById(idToFind) as string
 }
 
-export async function renderComponent(declaration: any, componentNode: IComponentNode, xpath: string) {
+export async function renderComponent(componentNode: IComponentNode, xpath: string) {
     // const script = declaration?.client?.toString()
     // if (script) appendScripts(script, componentNode)
 
-    const template = componentNode.instance!.render()
+    const template = callWithContext(() => componentNode.instance!.render(), componentNode.name, null, componentNode.instance)
     const subResult = await renderer(template, componentNode, xpath) || '<div></div>'
     return subResult.replace(/<(\w+)/, defineComponent(componentNode.name, componentNode.id, componentNode.key))
 }
 
 export function replaceElementById(idToFind: string, replacement: string) {
-    const element = dom!.getElementById(idToFind)
+    if (!dom) return
+    const element = dom.getElementById(idToFind)
     if (element) {
         element.replaceWith(parse(replacement))
     }
 }
 
 export function getElementById(idToFind: string) {
-    return dom!.getElementById(idToFind)
+    if (!dom) return
+    return dom.getElementById(idToFind)
 }
 
 async function renderFunction(jsx: any, parent: IComponentNode | null = null, parentXPath: string = '', index: number | null = null): Promise<string> {
@@ -248,7 +262,7 @@ async function renderFunction(jsx: any, parent: IComponentNode | null = null, pa
 
     if (parent) parent.hasChildren = true
 
-    const functionResult = callWithContext(jsx.type.name, () => jsx.type(jsx.props))
+    const functionResult = callWithContext(() => jsx.type(jsx.props), jsx.type.name)
     const xpath = `${parentXPath}/${jsx.type.name}`
     return await renderer(functionResult, parent, xpath, index)
 }
@@ -288,12 +302,11 @@ async function renderFacade(jsx: any, parent: IComponentNode | null = null, pare
             // Event handler
             const [event, mode = 'default'] = key.split(':')
             const eventName = event.startsWith('on') ? event.toLowerCase().slice(2) : event
-
             properties[key] = `facade.event(event, '${parent!.name}.${parent!.id}.${functionName}.${eventName}.${mode}')`
         }
     })
 
-    const functionResult = callWithContext(jsx.type.name, () => jsx.type(properties))
+    const functionResult = callWithContext(() => jsx.type(properties), jsx.type.name)
     const xpath = `${parentXPath}/${jsx.type.name}`
     return await renderer(functionResult, parent, xpath, index)
 }

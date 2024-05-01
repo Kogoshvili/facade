@@ -1,6 +1,7 @@
-import { renderer } from '../server/JSXRenderer'
+import { renderer, setClient } from '../server/JSXRenderer'
 import { callWithContext } from '../server/Context'
 
+setClient()
 window.fFragment = function Fragment(props) {
 	return props.children;
 }
@@ -33,11 +34,7 @@ export function initialize() {
                 const rawProps = element.getAttribute('data-props') || '{}'
                 const props = JSON.parse(rawProps)
                 const component = components[key]
-                console.log('TEST')
-                let jsx: any = null
-                callWithContext(component.name, () => jsx = component(props))
-
-                render(jsx, element)
+                element.outerHTML = await renderer(fElement(component, props), null, xpath)
             })
         }
     }

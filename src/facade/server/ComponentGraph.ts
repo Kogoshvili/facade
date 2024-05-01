@@ -6,7 +6,7 @@ import { buildComponent, getComponentDeclaration } from './ComponentRegistry'
 import { callWithContext, callWithContextAsync } from './Context'
 import { getInjectable, Inject } from './Injection'
 
-const Graph = new GraphConstructor<string, IComponentNode>()
+const Graph = window.Graph ??= new GraphConstructor<string, IComponentNode>()
 const Roots = new Set<string>()
 
 export function getRoots() {
@@ -99,8 +99,8 @@ export async function makeComponentNode(name: string, xpath: string, props: Reco
     instance._name = name
     instance._key = props.key ?? null
 
-    callWithContext(name, () => instance.recived(props))
-    await callWithContextAsync(name, () => instance.created())
+    callWithContext(() => instance.recived(props), name, null, instance)
+    await callWithContextAsync(() => instance.created(), name, null, instance)
 
     const { properties, methods } = getProperties(instance)
 

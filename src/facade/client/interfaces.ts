@@ -12,7 +12,7 @@ interface Facade {
     init: () => void
     mount: () => void
     rendered: () => void
-    event: (e: any, path: string, event?: string, mode?: string) => void
+    event: (e: any, path: string, isClient?: boolean) => void
     methods: {
         pushState: (state: any) => Promise<void>
         syncState: () => void

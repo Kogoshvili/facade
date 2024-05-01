@@ -2,15 +2,6 @@ import { getNode, rebuildInstance } from './ComponentGraph'
 
 // eslint-disable-next-line @typescript-eslint/ban-types
 abstract class AComponent<P = {}, D = any > {
-    // #region preact.Component
-    props: any = {}
-    state: any = {}
-    context: any = {}
-    setState: (state: any) => void = () => {}
-    forceUpdate: () => void = () => {}
-    // render: () => preact.JSX.Element | null = () => null
-    // #endregion
-
     _name: string | null = null
     _id: string | null = null
     _key: string | null = null

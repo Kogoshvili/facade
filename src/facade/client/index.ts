@@ -1,6 +1,8 @@
 import { DiffDOM } from 'diff-dom'
 import Facade, { IUpdatedProperties } from './interfaces'
 import debounce from 'lodash/debounce'
+import { executeOnGraph } from '../server/ComponentGraph'
+import { rerenderComponent } from '../server/JSXRenderer'
 
 declare global {
     // eslint-disable-next-line no-var
@@ -36,11 +38,18 @@ function debouncedRequest(componentName: string, componentId: string, property: 
     facade.requests[key](componentName, componentId, property, parameters, event, mode)
 }
 
-facade.event = function (e: any, path: string) {
+facade.event = async function (e: any, path: string, isClient = false) {
     const [componentName, componentId, property, event, mode] = path.split('.')
     const parameters = mode === 'bind' ? e.target.value : { value: e.target.value }
 
-    debouncedRequest(componentName, componentId, property, parameters, event, mode)
+    if (!isClient) {
+        debouncedRequest(componentName, componentId, property, parameters, event, mode)
+    } else {
+        const [successful, result] = await executeOnGraph(componentName, componentId, property, parameters)
+        if (successful) {
+            rerenderComponent(componentName, componentId)
+        }
+    }
 }
 
 facade.request = async function (componentName: string, componentId: string, property: string, parameters: any, event?: string, mode?: string) {
