@@ -14,7 +14,7 @@ module.exports = (env, argv) => {
 
     const sharedConfig = {
         mode: mode,
-        devtool: isProd ? false : 'inline-source-map',
+        devtool: isProd ? false : 'source-map',
         resolve: {
             extensions: ['.ts', '.tsx', '.js'],
             extensionAlias: {
@@ -59,6 +59,14 @@ module.exports = (env, argv) => {
                         options: {
                             transpileOnly: true,
                         }
+                    },
+                    {
+                        test: /\.([cm]?ts|tsx)$/,
+                        use: [
+                            {
+                                loader: path.resolve('./loader.cjs'),
+                            },
+                        ],
                     },
                 ]
             },

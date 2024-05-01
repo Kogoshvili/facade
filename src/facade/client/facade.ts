@@ -1,7 +1,16 @@
-import { createElement, render } from 'preact'
-import 'preact/hooks'
 import { renderer } from '../server/JSXRenderer'
 import { callWithContext } from '../server/Context'
+
+window.fFragment = function Fragment(props) {
+	return props.children;
+}
+
+window.fElement = function createElement(type, props, ...children) {
+    return {
+        type,
+        props: { ...props, children },
+    }
+}
 
 const components: any = {}
 
@@ -26,11 +35,9 @@ export function initialize() {
                 const component = components[key]
                 console.log('TEST')
                 let jsx: any = null
-
                 callWithContext(component.name, () => jsx = component(props))
 
                 render(jsx, element)
-
             })
         }
     }

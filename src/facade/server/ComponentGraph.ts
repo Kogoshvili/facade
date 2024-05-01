@@ -139,10 +139,10 @@ export async function executeOnGraph(componentName: string, componentId: string,
 
     if (!vertex) return result
 
-    const instance = vertex.instance ?? rebuildInstance(vertex).instance!
+    vertex.instance ??= rebuildInstance(vertex).instance!
 
     // check if property exists on the instance
-    if (!(property in instance) && isNaN(property as any)) {
+    if (!(property in vertex.instance) && isNaN(property as any)) {
         return result
     }
 
@@ -151,11 +151,11 @@ export async function executeOnGraph(componentName: string, componentId: string,
         const component = getComponentDeclaration(componentName) as any
         const stringifiedAnon = component._anonymous[componentName][property]
         const anonToFun = `(function(){(${stringifiedAnon})(...arguments)})`
-        result[1] = eval(anonToFun).call(instance, parameters)
-    } else if (typeof instance[property] !== 'function') {
-        instance[property] = parameters
+        result[1] = eval(anonToFun).call(vertex.instance, parameters)
+    } else if (typeof vertex.instance[property] !== 'function') {
+        vertex.instance[property] = parameters
     } else {
-        result[1] = await instance[property](parameters)
+        result[1] = await vertex.instance[property](parameters)
     }
 
     result[0] = true
