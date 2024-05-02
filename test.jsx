@@ -3,34 +3,36 @@ import TodoItem from './TodoItem'
 import { nanoid } from 'nanoid'
 import Facade from 'facade/server/Facade'
 
-<script>
-    const todos: any[] = [];
-    const inputValue = '';
+import { AComponent } from 'facade/server';
 
-    async function created() {
-        const { data } = await axios.get('https://jsonplaceholder.typicode.com/todos');
-        this.todos = data.slice(0, 1);
+class TodoList extends AComponent {
+  todos = [];
+  inputValue = '';
+  async created() {
+    const {
+      data
+    } = await axios.get('https://jsonplaceholder.typicode.com/todos');
+    this.todos = data.slice(0, 1);
+  }
+  callback() {
+    console.log('Server side TodoList');
+  }
+  handleRemove(id) {
+    this.todos = this.todos.filter(todo => todo.id !== id);
+  }
+  handleAdd(e) {
+    const newTodo = this.inputValue || e.value;
+    if (newTodo) {
+      this.todos = [...this.todos, {
+        id: nanoid(5),
+        title: newTodo,
+        completed: false
+      }];
     }
-
-    function callback() {
-        console.log('Server side TodoList');
-    }
-
-    function handleRemove(id) {
-        this.todos = this.todos.filter((todo) => todo.id !== id);
-    }
-
-    function handleAdd(e) {
-        const newTodo = this.inputValue || e.value;
-        if (newTodo) {
-            this.todos = [...this.todos, { id: nanoid(5), title: newTodo, completed: false }];
-        }
-
-        this.inputValue = '';
-    }
-</script>
-
-<template>
+    this.inputValue = '';
+  }
+  render() {
+    return <>
     <div class="p-5">
         <h1 class="text-2xl font-bold mb-4">Todo List</h1>
         <div class="mb-4">
@@ -48,4 +50,8 @@ import Facade from 'facade/server/Facade'
             }
         </ul>
     </div>
-</template>
+    </>;
+  }
+}
+
+export default TodoList;

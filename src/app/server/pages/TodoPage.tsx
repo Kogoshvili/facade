@@ -1,6 +1,6 @@
 import Header from 'server/layouts/header'
 import Body from 'server/layouts/body'
-import TodoList from 'server/components/TodoList'
+import TodoList from 'server/components/TodoList.facade'
 
 function TodoPage() {
     return (

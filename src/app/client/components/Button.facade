@@ -1,7 +1,11 @@
 import { signal } from 'app/facade/server/Signals-fe'
 
+function facade() {
+    this.callback = null
+}
+
 <script>
-    const counter = signal(0)
+    const counter: string = signal(0)
 
     function recived(props) {
         this.onClick = props.onClick

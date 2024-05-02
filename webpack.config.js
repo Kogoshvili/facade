@@ -13,9 +13,9 @@ module.exports = (env, argv) => {
         mode,
         devtool: isProd ? false : 'source-map',
         resolve: {
-            extensions: ['.ts', '.tsx', '.js'],
+            extensions: ['.ts', '.tsx', '.js', '.facade'],
             extensionAlias: {
-                '.js': ['.js', '.ts'],
+                '.js': ['.js', '.ts', '.facade'],
                 '.cjs': ['.cjs', '.cts'],
                 '.mjs': ['.mjs', '.mts']
             },
@@ -48,8 +48,25 @@ module.exports = (env, argv) => {
                         }
                     },
                     {
-                        test: /\.([cm]?ts|tsx)$/,
+                        test: /\.(facade)$/,
+                        enforce: 'pre',
                         use: [
+                            {
+                                loader: "babel-loader",
+                                options: {
+                                    presets: [
+                                        [
+                                            '@babel/preset-react',
+                                            {
+                                                runtime: 'classic',
+                                                throwIfNamespace: false,
+                                                pragma: 'fElement',
+                                                pragmaFrag: 'fFragment',
+                                            }
+                                        ],
+                                    ],
+                                }
+                            },
                             {
                                 loader: path.resolve('./loader.cjs'),
                             },
@@ -94,8 +111,25 @@ module.exports = (env, argv) => {
                         }
                     },
                     {
-                        test: /\.([cm]?ts|tsx)$/,
+                        test: /\.(facade)$/,
+                        enforce: 'pre',
                         use: [
+                            {
+                                loader: "babel-loader",
+                                options: {
+                                    presets: [
+                                        [
+                                            '@babel/preset-react',
+                                            {
+                                                runtime: 'classic',
+                                                throwIfNamespace: false,
+                                                pragma: 'fElement',
+                                                pragmaFrag: 'fFragment',
+                                            }
+                                        ],
+                                    ],
+                                }
+                            },
                             {
                                 loader: path.resolve('./loader.cjs'),
                             },
