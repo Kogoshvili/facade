@@ -16,9 +16,15 @@ module.exports = function (source, map) {
   const scriptMatch = source.match(/<script>([\s\S]*?)<\/script>/);
   const scriptContent = scriptMatch ? scriptMatch[1] : '';
 
+  // Check if the script is TypeScript or JavaScript
+  // path.extname(this.resourcePath).includes('ts')
+  //scriptMatch[0].includes('lang="ts"');
+  const isTypeScript = true;
+
   // Parse the script content into an AST
   const ast = babel.parseSync(scriptContent, {
     sourceType: 'module',
+    plugins: isTypeScript ? ['@babel/plugin-syntax-typescript'] : [],
   });
 
   // Get the filename and class name
@@ -89,6 +95,7 @@ module.exports = function (source, map) {
     {
       sourceMaps: true,
       sourceFileName: this.resourcePath,
+      // presets: isTypeScript ? [typescript] : [],
     }
   );
 
@@ -101,8 +108,6 @@ module.exports = function (source, map) {
   const sourceMap = componentCode.map;
   sourceMap.sources = [this.resourcePath];
   sourceMap.sourcesContent = [source];
-
-  // console.log(finalCode);
 
   // Pass the generated code and source map to the next loader
   this.callback(null, finalCode, sourceMap);

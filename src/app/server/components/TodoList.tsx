@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid'
 import Facade from 'facade/server/Facade'
 
 <script>
-    const todos = [];
+    const todos: any[] = [];
     const inputValue = '';
 
     async function created() {
