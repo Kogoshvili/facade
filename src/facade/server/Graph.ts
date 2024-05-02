@@ -126,6 +126,12 @@ class Graph<K = string, V = any> extends BaseGraph<string | number, V> {
         return result
     }
 
+    forEach(callback: (key: K, value: V) => void) {
+        this._vertices.forEach((value, key) => {
+            callback(key, value)
+        })
+    }
+
     toJSONable(callback?: (key: K, value: V) => any) {
         const vertices = [...this._vertices.entries()]
             .map(([key, value]) => callback ? { key, value: callback(key, value) } : { key, value })

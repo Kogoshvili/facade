@@ -31,11 +31,10 @@ export async function rerenderComponent(componentName: string, componentId: stri
 }
 
 export async function rerenderModifiedComponents() {
-    const [root] = getRoots()
     const graph = getGraph()
     const nodes: IComponentNode[] = []
 
-    graph.traverseDfs(root, (_, node) => {
+    graph.forEach((_, node) => {
         if (node.needsRender && !node.haveRendered) {
             nodes.push(node)
         }
