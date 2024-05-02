@@ -11,7 +11,7 @@ import { signal } from 'app/facade/server/Signals-fe'
     function handleClick() {
         this.counter(this.counter() + 1)
         if (this.counter() >= 10) {
-            eval(this.onClick)
+            facade.callback(this.onClick)
         }
     }
 </script>

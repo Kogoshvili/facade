@@ -102,6 +102,11 @@ facade.event = async function (e: any, path: string, isClient = false) {
     }
 }
 
+facade.callback = async function (path: string, parameters: any) {
+    const [componentName, componentId, property, event, mode] = path.split('.')
+    debouncedRequest(componentName, componentId, property, parameters, event, mode)
+}
+
 facade.request = async function (componentName: string, componentId: string, property: string, parameters: any, event?: string, mode?: string) {
     const page = window.location.pathname.split('/').pop()
 

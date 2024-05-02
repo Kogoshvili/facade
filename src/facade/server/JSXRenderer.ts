@@ -301,7 +301,7 @@ async function renderFacade(jsx: any, parent: IComponentNode | null = null, pare
             // Event handler
             const [event, mode = 'default'] = key.split(':')
             const eventName = event.startsWith('on') ? event.toLowerCase().slice(2) : event
-            properties[key] = `facade.event(event, '${parent!.name}.${parent!.id}.${functionName}.${eventName}.${mode}')`
+            properties[key] = `${parent!.name}.${parent!.id}.${functionName}.${eventName}.${mode}`
         }
     })
 
