@@ -1,9 +1,5 @@
 import { signal } from 'app/facade/server/Signals-fe'
 
-function facade() {
-    this.callback = null
-}
-
 <script>
     const counter: string = signal(0)
 
