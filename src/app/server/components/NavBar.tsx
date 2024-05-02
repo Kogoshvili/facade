@@ -7,7 +7,7 @@ class NavBar extends AComponent {
         this.showSubmenu = !this.showSubmenu
     }
 
-    static render(this: any) {
+    render() {
         return (
             <div onMouseOver={this.handleMouseOver}>
                 <h1>NavBar</h1>

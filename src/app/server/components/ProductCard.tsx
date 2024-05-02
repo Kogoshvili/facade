@@ -14,7 +14,7 @@ class ProductCard extends AComponent<any> {
         this.modalService().openModal(this.product)
     }
 
-    static render(this: ProductCard) {
+    render() {
         return (
             <div class="max-w-sm rounded overflow-hidden shadow-lg m-2" onClick={this.openModal}>
                 <img class="w-full" src={this.product.image} alt={this.product.title} />

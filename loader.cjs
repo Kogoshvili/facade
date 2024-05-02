@@ -109,7 +109,7 @@ module.exports = function (source, map) {
   sourceMap.sources = [this.resourcePath];
   sourceMap.sourcesContent = [source];
 
-  console.log(finalCode)
+  // console.log(finalCode)
 
   // Pass the generated code and source map to the next loader
   this.callback(null, finalCode, sourceMap);

@@ -10,7 +10,7 @@ class ProductList extends AComponent<any> {
         this.products = data.slice(0, 6)
     }
 
-    static render(this: ProductList) {
+    render() {
         return (
             <div class="p-5">
                 <h1 class="text-2xl font-bold mb-4">Product List</h1>

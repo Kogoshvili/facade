@@ -40,7 +40,7 @@ app.use(sessionParser)
 
 registerPages({
     'index': TodoPage,
-    // 'shop': ShopPage
+    'shop': ShopPage
 })
 
 facadeHTTP(app)

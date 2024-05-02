@@ -15,7 +15,7 @@ class Modal extends AComponent<any> {
         this.modalService().closeModal()
     }
 
-    static render(this: Modal) {
+    render() {
         if (!this.content) return null
 
         return (
