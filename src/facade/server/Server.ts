@@ -1,6 +1,6 @@
 import { diff, flattenChangeset } from 'json-diff-ts'
 import { WebSocketServer } from 'ws'
-import { clearInjectables } from './Injection'
+import { clearInjectables, getJSONableInjectables, parseInjectables } from './Injection'
 import { clearDOM, clearScripts, getDOM, getScripts, renderer, setDOM, rerenderModifiedComponents } from './JSXRenderer'
 import { clearComponentGraph, deserializeGraph, serializableGraph, executeOnGraph } from './ComponentGraph'
 
@@ -35,6 +35,8 @@ async function RenderDOM(page: string, props: any = {}) {
 async function process(session: any, page: string, componentName: string, componentId: string, property: string, parameters: any, mode: string) {
     console.time('process')
     deserializeGraph(session.instanceTree)
+    parseInjectables(session.injectables)
+
     const [successful, result] = await executeOnGraph(componentName, componentId, property, parameters, mode)
 
     if (!successful) {
@@ -64,6 +66,7 @@ async function process(session: any, page: string, componentName: string, compon
 
     session.renderedHtmlBody = getDOM().toString()
     session.instanceTree = JSON.stringify(newInstanceTree)
+    session.injectables = JSON.stringify(getJSONableInjectables())
 
     clearComponentGraph()
     clearInjectables()
@@ -184,9 +187,11 @@ export function facadeHTTP(app: any) {
 
         const session = req.session as any
         const rendered = await RenderDOM(page, { params: req.params, query: req.query })
-        session.renderedHtmlBody = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
 
+        session.renderedHtmlBody = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
         session.instanceTree = JSON.stringify(serializableGraph())
+        session.injectables = JSON.stringify(getJSONableInjectables())
+
         clearComponentGraph()
         clearInjectables()
 

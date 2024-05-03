@@ -16,7 +16,7 @@ function truncate(str, num) {
     }
 
     function openModal() {
-        this.modalService().openModal(this.product)
+        // this.modalService().openModal(this.product)
     }
 </script>
 

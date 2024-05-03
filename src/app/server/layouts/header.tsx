@@ -3,6 +3,8 @@ function Header({ name }: { name: string }) {
         <head>
             <title>{name}</title>
             <script src="https://cdn.tailwindcss.com"></script>
+            <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js"></script>
+            <link href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css" rel="stylesheet"></link>
             <script async src="./static/client.js" type="text/javascript"></script>
         </head>
     )

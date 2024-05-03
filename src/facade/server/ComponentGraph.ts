@@ -85,7 +85,7 @@ export function rebuildInstance(vertex: IComponentNode) {
         vertex.instance!._parent = { name: parent.split('/')[0], id: parent.split('/')[1] }
     }
 
-    vertex.instance!.mounted()
+    callWithContext(() => vertex.instance!.mounted(), vertex.name, null, vertex.instance)
 
     return vertex
 }
@@ -180,6 +180,8 @@ export function makeSureInstancesExist(componentName: string) {
     const vertices = Graph.getComponentVertices(componentName)
 
     for (const vertex of vertices) {
+        // component wasn't rendered before
+        if (!vertex) continue
         if (!vertex.instance) {
             rebuildInstance(vertex)
         }

@@ -154,6 +154,7 @@ class Graph<K = string, V = any> extends BaseGraph<string | number, V> {
     fromJSON(json: any, callback?: (key: K, value: V) => V) {
         this.clear()
         this.setKeyAliases(new Map(json.keyAliases))
+        this._componentVertices = new Map()
 
         for (const vertex of json.vertices) {
             this.addVertex(vertex.key, callback ? callback(vertex.key, vertex.value) : vertex.value)

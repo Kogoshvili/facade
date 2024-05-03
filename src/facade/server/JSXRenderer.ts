@@ -43,10 +43,14 @@ export async function rerenderModifiedComponents() {
     })
 
     const nodePromises = nodes.map(async (node) => {
+        const idToFind = `${node.name}.${node.id}`
+        const oldElement = getElementById(idToFind)?.outerHTML
+
+        // element was not rendered before
+        if (!oldElement) return { diff: [] }
+
         node.instance ??= rebuildInstance(node).instance
         const result = await renderComponent(node, node.xpath ?? '')
-        const idToFind = `${node.name}.${node.id}`
-        const oldElement = getElementById(idToFind).outerHTML
 
         const dd = new DiffDOM()
         const prevBody = stringToObj(oldElement)
@@ -62,7 +66,7 @@ export async function rerenderModifiedComponents() {
         }
     })
 
-    return await Promise.all(nodePromises)
+    return (await Promise.all(nodePromises)).filter(i => i.diff.length > 0)
 }
 
 export async function renderer(jsx: any, parent: IComponentNode | null = null, parentXPath: string = '', index: number | null = null) {
@@ -183,8 +187,18 @@ function renderAttribute(key: any, value: any, parent: IComponentNode | null) {
         return ` oninput="facade.event(event, '${parent!.name}.${parent!.id}.${value.replace('this.', '')}.input.bind')"`
     }
 
+    const attribute = key.toLowerCase()
+
+    if (attribute === 'classname') {
+        return ` class="${value}"`
+    }
+
+    if (attribute === 'htmlfor') {
+        return ` for="${value}"`
+    }
+
     // Render attribute with a value
-    return ` ${key.toLowerCase()}="${value}"`
+    return ` ${attribute}="${value}"`
 }
 
 async function renderClass(jsx: JSXInternal.Element, parent: IComponentNode | null, parentXPath: string, index: number | null = null) {
@@ -230,8 +244,8 @@ async function renderClass(jsx: JSXInternal.Element, parent: IComponentNode | nu
 }
 
 export async function renderComponent(componentNode: IComponentNode, xpath: string) {
-    // const script = declaration?.client?.toString()
-    // if (script) appendScripts(script, componentNode)
+    const script = componentNode.instance?.script?.toString()
+    if (script) appendScripts(script, componentNode)
 
     const template = callWithContext(() => componentNode.instance!.render(), componentNode.name, null, componentNode.instance)
     const subResult = await renderer(template, componentNode, xpath) || '<div></div>'
@@ -429,4 +443,46 @@ function cleanDiff(diff: {action: string, name?: string, value?: string, newValu
     });
 
     return result;
+}
+
+function appendScripts(script: string, componentNode: IComponentNode) {
+    const code = script.slice(15, -1)
+    const wrapperd = `
+        <script type="text/javascript">
+            addEventListener('facade:state:updated', ({
+                detail: { updatedProperties }
+            }) => {
+                const component = facade.state.find(
+                    s => s.key === '${componentNode.name}/${componentNode.id}'
+                ).value
+
+                const methods = component.methods.reduce((acc, method) => {
+                    acc[method] = async function() {
+                        return await facade.request(
+                            '${componentNode.name}',
+                            '${componentNode.id}',
+                            method,
+                            arguments
+                        )
+                    }
+                    return acc
+                }, {})
+
+                const thisMock = {
+                    ...component.properties,
+                    ...methods
+                }
+
+                const element = document.getElementById('${componentNode.name}.${componentNode.id}')
+
+                if (updatedProperties === null || updatedProperties.some(i => i.componentName === '${componentNode.name}' && i.componentId === '${componentNode.id}'))
+                {
+                    (async function client_${componentNode.name}() {
+                            ${code}
+                    }}).call(thisMock, element)
+                }
+            })
+        </script>
+    `
+    scripts += wrapperd
 }

@@ -7,6 +7,7 @@ import { registerPages, facadeHTTP, facadeWS } from 'facade/server'
 
 import ShopPage from 'server/pages/ShopPage'
 import PDP from 'server/pages/PDP'
+import PLP from 'server/pages/PLP'
 
 globalThis.fFragment = function Fragment(props) {
 	return props.children;
@@ -39,6 +40,7 @@ const sessionParser = session({
 app.use(sessionParser)
 
 registerPages({
+    'products': PLP,
     'product': PDP,
     'index': ShopPage
 })

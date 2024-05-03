@@ -33,7 +33,7 @@ import { signal } from 'app/facade/server/Signals-fe'
         />
         {
             this.showResults() && (
-                <div class="absolute w-full bg-white shadow-lg mt-2">
+                <div class="absolute w-full bg-white shadow-lg mt-2 z-10">
                     {
                         this.products().map((product, index) => (
                             <div key={index} class="p-2 border-b border-gray-200 hover:bg-gray-100">

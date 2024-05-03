@@ -44,11 +44,15 @@ class Signal {
     }
 
     addDependant(dep: string) {
-        this._owner?.prototype._dependants.add(dep)
+        if (this._owner?.prototype._dependants) {
+            this._owner?.prototype._dependants.add(dep)
+        }
     }
 
     removeDependant(dep: string) {
-        this._owner?.prototype._dependants.delete(dep)
+        if (this._owner?.prototype._dependants) {
+            this._owner?.prototype._dependants.delete(dep)
+        }
     }
 
     subscribe(fn: any) {
@@ -61,11 +65,12 @@ class Signal {
     }
 
     notify() {
-        this._owner?.prototype._dependants.forEach((d: string) => makeSureInstancesExist(d))
         this._subscribers.forEach((fn: any) => fn(this.get()))
+        if (this._owner?.prototype._dependants) {
+            this._owner?.prototype._dependants.forEach((d: string) => makeSureInstancesExist(d))
+        }
     }
 }
-
 
 function signal(input: any) {
     const ref = new Signal(input)
@@ -81,7 +86,7 @@ function signal(input: any) {
     callback.prototype.toJSON = function() {
         return {
             __type: 'signal',
-            value: ref.get()
+            value: ref._value,
         }
     }
 
