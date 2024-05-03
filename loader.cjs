@@ -4,7 +4,7 @@ const path = require('path');
 
 module.exports = function (source, map) {
   // if there is no <script> tag, return the source as is
-  if (!source.includes('<script>')) {
+  if (!source.includes('<script>') && !source.includes('<template>')) {
     return source;
   }
 
@@ -24,7 +24,7 @@ module.exports = function (source, map) {
   // Parse the script content into an AST
   const ast = babel.parseSync(scriptContent, {
     sourceType: 'module',
-    plugins: isTypeScript ? ['@babel/plugin-syntax-typescript'] : [],
+    plugins: ['@babel/plugin-syntax-typescript'],
   });
 
   // Get the filename and class name
@@ -95,7 +95,8 @@ module.exports = function (source, map) {
     {
       sourceMaps: true,
       sourceFileName: this.resourcePath,
-      // presets: isTypeScript ? [typescript] : [],
+      // presets: ['@babel/preset-typescript'],
+      // filename: this.resourcePath, // Set the filename option
     }
   );
 
@@ -109,8 +110,6 @@ module.exports = function (source, map) {
   sourceMap.sources = [this.resourcePath];
   sourceMap.sourcesContent = [source];
 
-  // console.log(finalCode)
-
-  // Pass the generated code and source map to the next loader
+  // Pass the generated JavaScript code and source map to the next loader
   this.callback(null, finalCode, sourceMap);
 };

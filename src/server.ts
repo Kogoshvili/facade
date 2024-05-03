@@ -5,8 +5,8 @@ import compression from 'compression'
 
 import { registerPages, facadeHTTP, facadeWS } from 'facade/server'
 
-import TodoPage from 'server/pages/TodoPage'
 import ShopPage from 'server/pages/ShopPage'
+import PDP from 'server/pages/PDP'
 
 globalThis.fFragment = function Fragment(props) {
 	return props.children;
@@ -39,8 +39,8 @@ const sessionParser = session({
 app.use(sessionParser)
 
 registerPages({
-    'index': TodoPage,
-    'shop': ShopPage
+    'product': PDP,
+    'index': ShopPage
 })
 
 facadeHTTP(app)

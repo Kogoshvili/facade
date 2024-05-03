@@ -1,0 +1,47 @@
+<script>
+    const id = null
+    const product = {
+        "id": 1,
+        "title": "iPhone 9",
+        "description": "An apple mobile which is nothing like apple",
+        "price": 549,
+        "discountPercentage": 12.96,
+        "rating": 4.69,
+        "stock": 94,
+        "brand": "Apple",
+        "category": "smartphones",
+        "thumbnail": "...",
+        "images": ["...", "...", "..."]
+    }
+
+    function recived(props){
+        this.id = props.id
+    }
+
+    async function created(){
+        const result = await fetch(`https://dummyjson.com/products/${this.id}`)
+        const data = await result.json()
+        this.product = data
+    }
+</script>
+
+<template>
+    <div class="flex flex-col items-center justify-center min-h-screen py-2">
+        <div class="flex flex-wrap bg-white shadow-md rounded-lg p-6">
+            <img class="w-1/2 h-64 object-cover" src={this.product.images[0]} alt="Product image" />
+            <div class="w-1/2 px-6">
+                <h2 class="text-xl font-semibold mb-2">{ this.product.title }</h2>
+                <p class="text-gray-700 mb-2">{ this.product.description }</p>
+                <p class="text-gray-700 mb-2">Brand: { this.product.brand }</p>
+                <p class="text-gray-700 mb-2">Category: { this.product.category }</p>
+                <p class="text-gray-700 mb-2">Stock: { this.product.stock }</p>
+                <p class="text-gray-700 mb-2">Rating: { this.product.rating }</p>
+                <p class="text-gray-700 mb-2">Price: ${ this.product.price }</p>
+                <p class="text-gray-700 mb-2">Discount: { this.product.discountPercentage }%</p>
+                <button class="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                    Add to Cart
+                </button>
+            </div>
+        </div>
+    </div>
+</template>

@@ -90,13 +90,13 @@ function debouncedRequest(componentName: string, componentId: string, property: 
 
 facade.event = async function (e: any, path: string, isClient = false) {
     const [componentName, componentId, property, event, mode] = path.split('.')
-    const parameters = mode === 'bind' ? e.target.value : { value: e.target.value }
 
     if (!isClient) {
+        const parameters = mode === 'bind' ? e.target.value : { value: e.target.value }
         debouncedRequest(componentName, componentId, property, parameters, event, mode)
     } else {
-        const [successful, result] = await executeOnGraph(componentName, componentId, property, parameters)
-        if (successful) {
+        const [successful, result] = await executeOnGraph(componentName, componentId, property, e, mode)
+        if (successful && mode !== 'defer') {
             rerenderComponent(componentName, componentId)
         }
     }

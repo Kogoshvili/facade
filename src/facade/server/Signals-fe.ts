@@ -1,4 +1,6 @@
+import { markToRender } from './ComponentGraph'
 import { getCurrentContext } from './Context'
+import { rerenderComponent } from './JSXRenderer'
 
 const signals: Record<string, Signal[]> = {}
 
@@ -41,6 +43,10 @@ class Signal {
     }
 
     notify() {
+        if (this._owner && this._owner.instance) {
+            // markToRender(this._owner.instance.name, this._owner.instance.id)
+            rerenderComponent(this._owner.instance._name, this._owner.instance._id)
+        }
         this._subscribers.forEach((fn: any) => fn(this.get()))
     }
 }

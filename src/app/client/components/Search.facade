@@ -1,0 +1,50 @@
+import { signal } from 'app/facade/server/Signals-fe'
+
+<script>
+    const value = ''
+    const showResults = signal(false)
+    const products = signal([])
+
+    async function getProducts() {
+        const response = await fetch(`https://dummyjson.com/products/search?q=${this.value}`);
+        const data = await response.json();
+        this.products(data.products.slice(0, 3))
+    }
+
+    function handleInput(e) {
+        this.value = e.target.value
+        console.log(this.value);
+        if (this.value.length > 2) {
+            this.getProducts()
+            this.showResults(true)
+        } else if (this.value.length === 0) {
+            this.showResults(false)
+        }
+    }
+</script>
+<template>
+    <div class="relative">
+        <input
+            type="text"
+            value={this.value}
+            placeholder="Search..."
+            class="w-full p-2 rounded-lg focus:outline-none"
+            onInput:defer={this.handleInput}
+        />
+        {
+            this.showResults() && (
+                <div class="absolute w-full bg-white shadow-lg mt-2">
+                    {
+                        this.products().map((product, index) => (
+                            <div key={index} class="p-2 border-b border-gray-200 hover:bg-gray-100">
+                                <a href={`/product?id=${product.id}`}>
+                                    <h1 class="text-lg font-bold">{product.title}</h1>
+                                </a>
+                            </div>
+                        ))
+                    }
+                </div>
+            )
+        }
+    </div>
+</template>

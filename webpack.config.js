@@ -2,7 +2,7 @@ const path = require('path');
 const TerserPlugin = require('terser-webpack-plugin');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
-var ProgressPlugin = require('progress-webpack-plugin')
+const ProgressPlugin = require('progress-webpack-plugin')
 
 module.exports = (env, argv) => {
     const mode = argv.mode || 'development'
@@ -49,7 +49,6 @@ module.exports = (env, argv) => {
                     },
                     {
                         test: /\.(facade)$/,
-                        enforce: 'pre',
                         use: [
                             {
                                 loader: "babel-loader",
@@ -64,9 +63,16 @@ module.exports = (env, argv) => {
                                                 pragmaFrag: 'fFragment',
                                             }
                                         ],
+                                        "@babel/preset-typescript",
                                     ],
                                 }
-                            },
+                            }
+                        ],
+                    },
+                    {
+                        test: /\.(facade)$/,
+                        enforce: 'pre',
+                        use: [
                             {
                                 loader: path.resolve('./loader.cjs'),
                             },

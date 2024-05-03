@@ -21,6 +21,15 @@ export function clearComponentGraph() {
     Graph.clear()
 }
 
+export function markToRender(componentName: string, componentId: string) {
+    const vertexIds = getVertexIds({ name: componentName, id: componentId })
+    const vertex = Graph.getVertexValue(vertexIds.any)
+
+    if (!vertex) return
+
+    vertex.needsRender = true
+}
+
 export function serializableGraph() {
     return Graph.toJSONable((_, value) => {
         const properties = value.instance ? getProperties(value.instance).properties : value.properties
@@ -132,7 +141,7 @@ export async function makeComponentNode(name: string, xpath: string, props: Reco
     return vertex
 }
 
-export async function executeOnGraph(componentName: string, componentId: string, property: string, parameters: any) {
+export async function executeOnGraph(componentName: string, componentId: string, property: string, parameters: any, mode: string) {
     const vertexIds = getVertexIds({ name: componentName, id: componentId })
     const vertex = Graph.getVertexValue(vertexIds.any)
     const result = [false, undefined] as [boolean, any]
@@ -160,7 +169,9 @@ export async function executeOnGraph(componentName: string, componentId: string,
 
     result[0] = true
 
-    vertex.needsRender = true
+    if (mode !== 'defer') {
+        vertex.needsRender = true
+    }
 
     return result
 }

@@ -6,7 +6,7 @@ import { getComponentDeclaration, registerComponent } from './ComponentRegistry'
 import { AComponent } from './Component'
 import { parse } from 'node-html-parser'
 import { getGraph, getRoots } from './ComponentGraph'
-import { DiffDOM, stringToObj } from 'diff-dom'
+import { DiffDOM, stringToObj, nodeToObj } from 'diff-dom'
 import { callWithContext, callWithContextAsync } from './Context'
 
 const isClinet = !(typeof process === 'object')
@@ -24,10 +24,12 @@ export async function rerenderComponent(componentName: string, componentId: stri
     const componentNode = getComponentNode(componentName, componentId)!
     const result = await renderComponent(componentNode, componentNode.xpath ?? '')
     const element = document.getElementById(`${componentName}.${componentId}`)!
-    // const dd = new DiffDOM()
-    // const diff = dd.diff(element, result)
-    // dd.apply(element, diff)
-    element.outerHTML = result
+    const dd = new DiffDOM({ valueDiffing: false }) as any //
+    const diff = dd.diff(element, result)
+    // console.log('Diff', diff, nodeToObj(element), stringToObj(result))
+    // const clearDiff = cleanDiff(diff as any)
+    dd.apply(element, diff)
+    // element.outerHTML = result
 }
 
 export async function rerenderModifiedComponents() {
@@ -153,7 +155,7 @@ function renderAttribute(key: any, value: any, parent: IComponentNode | null) {
         const [event, mode = 'default'] = key.split(':')
         const eventName = event.startsWith('on') ? event.toLowerCase().slice(2) : event
 
-        return ` ${event}="facade.event(event, '${parent!.name}.${parent!.id}.${functionName}.${eventName}.${mode}', ${isClinet})"`
+        return ` ${event.toLowerCase()}="facade.event(event, '${parent!.name}.${parent!.id}.${functionName}.${eventName}.${mode}', ${isClinet})"`
     }
 
     if (isObject(value)) {
@@ -182,7 +184,7 @@ function renderAttribute(key: any, value: any, parent: IComponentNode | null) {
     }
 
     // Render attribute with a value
-    return ` ${key}="${value}"`
+    return ` ${key.toLowerCase()}="${value}"`
 }
 
 async function renderClass(jsx: JSXInternal.Element, parent: IComponentNode | null, parentXPath: string, index: number | null = null) {
@@ -274,7 +276,8 @@ async function renderFacade(jsx: any, parent: IComponentNode | null = null, pare
 
     const keys = Object.keys(props)
     keys.forEach((key) => {
-        properties[key] = props[key]
+        const attributeName = key.toLowerCase()
+        properties[attributeName] = props[key]
 
         if (typeof props[key] === 'function') {
             let functionName = props[key].name
@@ -300,7 +303,7 @@ async function renderFacade(jsx: any, parent: IComponentNode | null = null, pare
             // Event handler
             const [event, mode = 'default'] = key.split(':')
             const eventName = event.startsWith('on') ? event.toLowerCase().slice(2) : event
-            properties[key] = `${parent!.name}.${parent!.id}.${functionName}.${eventName}.${mode}`
+            properties[attributeName] = `${parent!.name}.${parent!.id}.${functionName}.${eventName}.${mode}`
         }
     })
 
@@ -368,4 +371,62 @@ function isFragment(jsx: any) {
 
 function isFacade(jsx: any) {
     return (isFunction(jsx.type) && jsx.type.name === 'Facade')
+}
+
+/*
+[
+    {
+        "action": "removeAttribute",
+        "route": [],
+        "name": "oninput",
+        "value": "facade.event(event, 'Search.6E6jeAfmkL.handleInput.input.defer', true)"
+    },
+    {
+        "action": "modifyAttribute",
+        "route": [],
+        "name": "value",
+        "oldValue": "323",
+        "newValue": "3"
+    },
+    {
+        "action": "addAttribute",
+        "route": [],
+        "name": "onInput",
+        "value": "facade.event(event, 'Search.6E6jeAfmkL.handleInput.input.defer', true)"
+    },
+    {
+        "action": "modifyValue",
+        "oldValue": "3",
+        "newValue": "",
+        "route": []
+    }
+]
+*/
+
+function cleanDiff(diff: {action: string, name?: string, value?: string, newValue?: string, oldValue?: string}[]) {
+    const result = diff.filter((item, index, self) => {
+        if (item.action === 'removeAttribute' || item.action === 'addAttribute') {
+            const counterpartIndex = self.findIndex(i =>
+                (i.action === 'removeAttribute' || i.action === 'addAttribute') &&
+                i.action !== item.action &&
+                i.name === item.name &&
+                i.value === item.value
+            );
+            if (counterpartIndex !== -1) {
+                self[counterpartIndex] = {action: ''}; // mark for removal
+                return false;
+            }
+        } else if (item.action === 'modifyValue') {
+            const modifyAttributeIndex = self.findIndex(i =>
+                i.action === 'modifyAttribute' &&
+                i.name === 'value'
+            );
+            if (modifyAttributeIndex !== -1) {
+                return false;
+            }
+        }
+        return true;
+    });
+
+    return result;
 }
