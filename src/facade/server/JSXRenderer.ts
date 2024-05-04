@@ -22,7 +22,8 @@ export function clearDOM() { dom = null }
 
 export async function rerenderComponent(componentName: string, componentId: string) {
     const componentNode = getComponentNode(componentName, componentId)!
-    const result = await renderComponent(componentNode, componentNode.xpath ?? '')
+    const declaration = getComponentDeclaration(componentName)
+    const result = await renderComponent(componentNode, componentNode.xpath ?? '', declaration)
     const element = document.getElementById(`${componentName}.${componentId}`)!
     const dd = new DiffDOM({ valueDiffing: false }) as any //
     const diff = dd.diff(element, result)
@@ -49,8 +50,9 @@ export async function rerenderModifiedComponents() {
         // element was not rendered before
         if (!oldElement) return { diff: [] }
 
+        const declaration = getComponentDeclaration(node.name)
         node.instance ??= rebuildInstance(node).instance
-        const result = await renderComponent(node, node.xpath ?? '')
+        const result = await renderComponent(node, node.xpath ?? '', declaration)
 
         const dd = new DiffDOM()
         const prevBody = stringToObj(oldElement)
@@ -226,15 +228,15 @@ async function renderClass(jsx: JSXInternal.Element, parent: IComponentNode | nu
         componentNode.instance ??= rebuildInstance(componentNode).instance
         const instance = componentNode.instance as AComponent
 
-        await callWithContextAsync(() => instance?.mounted(), componentNode.name, null, instance)
+        await callWithContextAsync(() => instance?.mounted(), componentNode.name, declaration, instance)
 
         if (!isEqual(componentNode.props, props)) {
-            callWithContext(() => instance!.recived(props), componentNode.name, null, instance)
+            callWithContext(() => instance!.recived(props), componentNode.name, declaration, instance)
         }
 
         componentNode.haveRendered = true
 
-        const result: string = await renderComponent(componentNode, xpath)
+        const result: string = await renderComponent(componentNode, xpath, declaration)
         replaceElementById(idToFind, result)
         return result
     }
@@ -242,11 +244,11 @@ async function renderClass(jsx: JSXInternal.Element, parent: IComponentNode | nu
     return prevRender
 }
 
-export async function renderComponent(componentNode: IComponentNode, xpath: string) {
+export async function renderComponent(componentNode: IComponentNode, xpath: string, declaration?: any): Promise<string> {
     const script = componentNode.instance?.script?.toString()
     if (script) appendScripts(script, componentNode)
 
-    const template = callWithContext(() => componentNode.instance!.render(), componentNode.name, null, componentNode.instance)
+    const template = callWithContext(() => componentNode.instance!.render(), componentNode.name, declaration, componentNode.instance)
     const subResult = await renderer(template, componentNode, xpath) || '<div></div>'
     return subResult.replace(/<(\w+)/, defineComponent(componentNode.name, componentNode.id, componentNode.key))
 }

@@ -51,18 +51,19 @@ export function deserializeGraph(json: string) {
 export function rebuildInstance(vertex: IComponentNode) {
     const parent = Graph.getParentVertices(getVertexIds(vertex).any)[0]
     const instance = buildComponent(vertex.name)
+    const declaration = getComponentDeclaration(vertex.name)
     const propsOverwrites: any = {}
 
     if (vertex.properties) {
         Object.entries(vertex.properties).forEach(([key, value]) => {
             if (typeof value === 'object' && value !== null) {
                 if (value.__type === 'signal') {
-                    propsOverwrites[key] = signal(value.value)
+                    propsOverwrites[key] = callWithContext(() => signal(value.value), vertex.name, declaration, instance)
                     return
                 }
                 if (value.__type === 'inject') {
                     const injectable = getInjectable(value.value)!
-                    propsOverwrites[key] = Inject(injectable.declaration)
+                    propsOverwrites[key] = callWithContext(() => Inject(injectable.declaration), vertex.name, declaration, instance)
                     return
                 }
             }
@@ -73,13 +74,12 @@ export function rebuildInstance(vertex: IComponentNode) {
     Object.assign(instance, propsOverwrites)
 
     vertex.instance = instance
-    // vertex.needsRender = true
 
     if (parent) {
         vertex.instance!._parent = { name: parent.split('/')[0], id: parent.split('/')[1] }
     }
 
-    callWithContext(() => vertex.instance!.mounted(), vertex.name, null, vertex.instance)
+    callWithContext(() => vertex.instance!.mounted(), vertex.name, declaration, vertex.instance)
 
     return vertex
 }
@@ -97,13 +97,14 @@ export function getComponentNode(name: string, xpath: string): IComponentNode | 
 
 export async function makeComponentNode(name: string, xpath: string, props: Record<string, any>, parent?: IComponentNode | null): Promise<IComponentNode> {
     const instance = buildComponent(name)
+    const declaration = getComponentDeclaration(name)
 
     instance._id = nanoid(10)
     instance._name = name
     instance._key = props.key ?? null
 
-    callWithContext(() => instance.recived(props), name, null, instance)
-    await callWithContextAsync(() => instance.created(), name, null, instance)
+    callWithContext(() => instance.recived(props), name, declaration, instance)
+    await callWithContextAsync(() => instance.created(), name, declaration, instance)
 
     const { properties, methods } = getProperties(instance)
 

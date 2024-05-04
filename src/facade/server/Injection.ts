@@ -44,7 +44,7 @@ export function rebuildInjectables(name: string) {
                     if (oldProperty.__type === 'signal') {
                         injectable.instance[key] = callWithContext(
                             () => signal(oldProperty.value),
-                            injectable?.declaration.name, injectable?.declaration
+                            injectable?.declaration.name, injectable?.declaration, injectable.instance
                         )
                         return
                     }
@@ -53,7 +53,7 @@ export function rebuildInjectables(name: string) {
                         const injectable = INJECTABLES.get(oldProperty.value)!
                         injectable.instance[key] = callWithContext(
                             () => Inject(injectable.declaration),
-                            injectable?.declaration.name, injectable?.declaration
+                            injectable?.declaration.name, injectable?.declaration, injectable.instance
                         )
                         return
                     }
