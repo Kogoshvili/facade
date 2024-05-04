@@ -1,4 +1,4 @@
-import { makeSureInstancesExist } from './ComponentGraph'
+import { makeSureInstancesExist, markToRender } from './ComponentGraph'
 import { getCurrentContext } from './Context';
 import { currentInjectable } from './Injection'
 
@@ -17,7 +17,12 @@ export interface ISignal<T> {
 class Signal {
     _value: any
     _subscribers: (() => void)[] = []
-    _owner: null | { prototype: { _dependants: Set<string> }} = null
+    _owner: null | {
+        name?: string | undefined;
+        instance?: any;
+        declaration?: any;
+        index: number;
+    } = null
 
     options: any = {
         comparer: (a: any, b: any) => a === b
@@ -29,11 +34,13 @@ class Signal {
     }
 
     set(v: any) {
-        if (this.options.comparer(this._value, v)) {
+        const newValue = typeof v === 'function' ? v(this._value) : v
+
+        if (this.options.comparer(this._value, newValue)) {
             return false
         }
 
-        this._value = v
+        this._value = newValue
         return true
     }
 
@@ -44,14 +51,14 @@ class Signal {
     }
 
     addDependant(dep: string) {
-        if (this._owner?.prototype._dependants) {
-            this._owner?.prototype._dependants.add(dep)
+        if (this._owner?.declaration?.prototype._dependants) {
+            this._owner?.declaration?.prototype._dependants.add(dep)
         }
     }
 
     removeDependant(dep: string) {
-        if (this._owner?.prototype._dependants) {
-            this._owner?.prototype._dependants.delete(dep)
+        if (this._owner?.declaration?.prototype._dependants) {
+            this._owner?.declaration?.prototype._dependants.delete(dep)
         }
     }
 
@@ -65,31 +72,38 @@ class Signal {
     }
 
     notify() {
-        this._subscribers.forEach((fn: any) => fn(this.get()))
-        if (this._owner?.prototype._dependants) {
-            this._owner?.prototype._dependants.forEach((d: string) => makeSureInstancesExist(d))
+        if (this._owner?.instance) {
+            markToRender(this._owner?.instance?._name, this._owner?.instance?._id)
         }
+
+        if (this._owner?.declaration?.prototype._dependants) {
+            this._owner?.declaration?.prototype._dependants.forEach((d: string) => makeSureInstancesExist(d))
+        }
+
+        this._subscribers.forEach((fn: any) => fn(this.get()))
     }
 }
 
 function signal(input: any) {
     const ref = new Signal(input)
-    ref._owner = getCurrentContext()?.declaration
+    ref._owner = getCurrentContext()
 
-    function callback(...args: any) {
+    function signalF(...args: any) {
         currentEffectDeps?.push(ref)
+        ref._owner = getCurrentContext()
         if (args.length === 0) return ref.get()
         const isSuccessful = ref.set(args[0])
         if (isSuccessful) ref.notify()
     }
 
-    callback.prototype.toJSON = function() {
+    signalF.prototype.toJSON = function() {
         return {
             __type: 'signal',
             value: ref._value,
         }
     }
 
+    return signalF;
     return new Proxy(callback, {
         get: (target: any, p: string | symbol, _receiver: any): any => {
             if (target.prototype[p]) return target.prototype[p]
@@ -124,4 +138,6 @@ function effect(fn: (v?: any) => void) {
     return result
 }
 
-export { signal, effect }
+function compute(fn: any) {}
+
+export { signal, effect, compute }

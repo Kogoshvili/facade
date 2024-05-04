@@ -138,7 +138,7 @@ function renderAttribute(key: any, value: any, parent: IComponentNode | null) {
     if (isFunction(value)) {
         let functionName = value.name
         const stringified = value.toString().replace(/\s/g, '')
-        const isArrow = /(\w+=>)|(\((\w+(,\w+))?\))=>/.test(stringified)
+        const isArrow = /(\w+=>)|(\((\w+(,\w+))?\))=>/.test(stringified.split('{')[0])
 
         if (isArrow) {
             const parentNode = parent as IComponentNode
@@ -219,7 +219,10 @@ async function renderClass(jsx: JSXInternal.Element, parent: IComponentNode | nu
         componentNode = await makeComponentNode(declaration.name, xpath, props, parent)
     }
 
-    if (componentNode.needsRender) {
+    const idToFind = `${componentNode.name}.${componentNode.id}`
+    const prevRender = getElementById(idToFind)
+
+    if (componentNode.needsRender || !prevRender) {
         componentNode.instance ??= rebuildInstance(componentNode).instance
         const instance = componentNode.instance as AComponent
 
@@ -232,15 +235,11 @@ async function renderClass(jsx: JSXInternal.Element, parent: IComponentNode | nu
         componentNode.haveRendered = true
 
         const result: string = await renderComponent(componentNode, xpath)
-        const idToFind = `${componentNode.name}.${componentNode.id}`
-
         replaceElementById(idToFind, result)
-
-        return result as string
+        return result
     }
 
-    const idToFind = `${componentNode.name}.${componentNode.id}`
-    return getElementById(idToFind) as string
+    return prevRender
 }
 
 export async function renderComponent(componentNode: IComponentNode, xpath: string) {

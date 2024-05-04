@@ -8,7 +8,7 @@ import Cart from '../components/Cart.facade'
 <script>
     const cartService = Inject(CartService)
     const menu = []
-    let cartCount = 0
+    const cartCount = signal(0)
     const showCart = signal(false)
 
     async function created() {
@@ -21,7 +21,7 @@ import Cart from '../components/Cart.facade'
 
     function mounted() {
         effect(() => {
-            this.cartCount = this.cartService().cart().length
+            this.cartCount(this.cartService().cart().length)
         })
     }
 
@@ -37,6 +37,10 @@ import Cart from '../components/Cart.facade'
         });
         splide.mount();
     }
+
+    function handleClick() {
+        this.showCart((v) => !v)
+    }
 </script>
 <template>
     <nav class="">
@@ -48,11 +52,11 @@ import Cart from '../components/Cart.facade'
             <div class="flex-1 mx-4">
                 <Facade component="Search" />
             </div>
-            <button class="bg-white text-blue-600 p-2 rounded-lg relative" onClick={() => this.showCart(!this.showCart())}>
+            <button class="bg-white text-blue-600 p-2 rounded-lg relative" onClick={this.handleClick}>
                 {
-                    this.cartCount > 0 && (
+                    this.cartCount() > 0 && (
                         <div class="absolute top-0 right-0 bg-red-500 text-white rounded-full w-4 h-4 flex justify-center items-center">
-                            <span>{this.cartCount}</span>
+                            <span>{this.cartCount()}</span>
                         </div>
                     )
                 }

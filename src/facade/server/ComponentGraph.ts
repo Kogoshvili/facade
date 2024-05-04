@@ -45,41 +45,35 @@ export function serializableGraph() {
 }
 
 export function deserializeGraph(json: string) {
-    Graph.fromJSON(JSON.parse(json), (_key: string, value: IComponentNode) => {
-        const props: Record<string, any> = {}
-        const oldProps = value.properties
-
-        for (const key in oldProps) {
-            if (typeof oldProps[key] === 'object' && oldProps[key] !== null) {
-                if (oldProps[key].__type === 'signal') {
-                    const prevValue = oldProps[key].value
-                    props[key] = signal(prevValue._value)
-                    props[key]._dependants = prevValue._dependants
-                    continue
-                }
-                if (oldProps[key].__type === 'inject') {
-                    const injectable = getInjectable(oldProps[key].value)!
-                    props[key] = Inject(injectable.declaration)
-                    continue
-                }
-            }
-            props[key] = oldProps[key]
-        }
-
-        return {
-            ...value,
-            properties: props,
-        }
-    })
+    Graph.fromJSON(JSON.parse(json))
 }
 
 export function rebuildInstance(vertex: IComponentNode) {
     const parent = Graph.getParentVertices(getVertexIds(vertex).any)[0]
     const instance = buildComponent(vertex.name)
-    Object.assign(instance, vertex.properties)
+    const propsOverwrites: any = {}
+
+    if (vertex.properties) {
+        Object.entries(vertex.properties).forEach(([key, value]) => {
+            if (typeof value === 'object' && value !== null) {
+                if (value.__type === 'signal') {
+                    propsOverwrites[key] = signal(value.value)
+                    return
+                }
+                if (value.__type === 'inject') {
+                    const injectable = getInjectable(value.value)!
+                    propsOverwrites[key] = Inject(injectable.declaration)
+                    return
+                }
+            }
+            propsOverwrites[key] = value
+        })
+    }
+
+    Object.assign(instance, propsOverwrites)
 
     vertex.instance = instance
-    vertex.needsRender = true
+    // vertex.needsRender = true
 
     if (parent) {
         vertex.instance!._parent = { name: parent.split('/')[0], id: parent.split('/')[1] }
@@ -144,6 +138,7 @@ export async function makeComponentNode(name: string, xpath: string, props: Reco
 export async function executeOnGraph(componentName: string, componentId: string, property: string, parameters: any, mode: string) {
     const vertexIds = getVertexIds({ name: componentName, id: componentId })
     const vertex = Graph.getVertexValue(vertexIds.any)
+    const declaration = getComponentDeclaration(componentName)
     const result = [false, undefined] as [boolean, any]
 
     if (!vertex) return result
@@ -160,17 +155,19 @@ export async function executeOnGraph(componentName: string, componentId: string,
         const component = getComponentDeclaration(componentName) as any
         const stringifiedAnon = component._anonymous[componentName][property]
         const anonToFun = `(function(){(${stringifiedAnon})(...arguments)})`
-        result[1] = eval(anonToFun).call(vertex.instance, parameters)
+        result[1] = await callWithContextAsync(() => eval(anonToFun).call(vertex.instance, parameters),
+            componentName, declaration, vertex.instance)
     } else if (typeof vertex.instance[property] !== 'function') {
         vertex.instance[property] = parameters
     } else {
-        result[1] = await vertex.instance[property](parameters)
+        result[1] = await callWithContextAsync(() => vertex.instance![property](parameters),
+            componentName, declaration, vertex.instance)
     }
 
     result[0] = true
 
     if (mode !== 'defer') {
-        vertex.needsRender = true
+        // vertex.needsRender = true
     }
 
     return result
@@ -221,7 +218,11 @@ function getProperties(obj: any): { properties: Record<string, any>, methods: st
         if (typeof value !== 'function') {
             properties[key] = value
         } else {
-            methods.push(key)
+            if (value.name === 'signalF') {
+                properties[key] = value.prototype.toJSON()
+            } else {
+                methods.push(key)
+            }
         }
     })
 
