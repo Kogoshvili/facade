@@ -1,14 +1,14 @@
 import { Inject } from 'facade/server'
 import CartService from 'server/services/CartService'
-import { effect } from 'facade/server'
+import { effect, signal } from 'facade/server'
 
 <script>
     const cartService = Inject(CartService)
-    const cart = this.cartService().cart() ?? []
+    const cart = signal([])
 
     function mounted() {
         effect(() => {
-            this.cart = this.cartService().cart()
+            this.cart(this.cartService().cart())
         })
     }
 </script>
@@ -17,7 +17,7 @@ import { effect } from 'facade/server'
         <h1>Cart</h1>
         <ul>
             {
-                this.cart.map(item => (
+                this.cart().map(item => (
                     <li>{item.title} - {item.price}</li>
                 ))
             }

@@ -21,6 +21,7 @@ import Cart from '../components/Cart.facade'
 
     function mounted() {
         effect(() => {
+            console.log('Navbar Cart')
             this.cartCount(this.cartService().cart().length)
         })
     }

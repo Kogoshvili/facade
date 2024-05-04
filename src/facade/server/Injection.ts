@@ -1,6 +1,7 @@
 import { isObject } from "lodash"
 import { callWithContext } from "./Context"
 import { signal } from "./Signals"
+import { getProperties } from "./ComponentGraph"
 
 const INJECTABLES = new Map<string, { declaration: any, instance: any, properties: any }>()
 
@@ -72,7 +73,7 @@ export function getJSONableInjectables() {
 
     INJECTABLES.forEach((value, key) => {
         jsonable[key] = {
-            properties: {...value.instance}
+            properties: value.instance ? getProperties(value.instance).properties : value.properties
         }
     })
 

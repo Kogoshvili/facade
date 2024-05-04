@@ -72,6 +72,7 @@ class Signal {
     }
 
     notify() {
+        console.log('Notifying', this._owner?.instance?._name, this._owner?.declaration)
         if (this._owner?.instance) {
             markToRender(this._owner?.instance?._name, this._owner?.instance?._id)
         }
@@ -90,7 +91,13 @@ function signal(input: any) {
 
     function signalF(...args: any) {
         currentEffectDeps?.push(ref)
-        ref._owner = getCurrentContext()
+
+        ref._owner = {
+            index: 0,
+            ...ref._owner,
+            ...getCurrentContext(),
+        }
+
         if (args.length === 0) return ref.get()
         const isSuccessful = ref.set(args[0])
         if (isSuccessful) ref.notify()

@@ -9,7 +9,7 @@ export function getCurrentContext() {
     return currentContext
 }
 
-function setContext(name?: string, declaration: any = null, instance: any = null) {
+function setContext(name?: string, declaration?: any, instance?: any) {
     currentContext = {
         name,
         instance,

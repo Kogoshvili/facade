@@ -205,7 +205,7 @@ const hiddenProperties = [
     '_parent', '_parentInstance', '_isMounted',
 ]
 
-function getProperties(obj: any): { properties: Record<string, any>, methods: string[] } {
+export function getProperties(obj: any): { properties: Record<string, any>, methods: string[] } {
     const properties: Record<string, any> = {}
     const methods: string[] = []
 

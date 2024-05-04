@@ -7,6 +7,7 @@ class CartService {
     addToCart(item: any) {
         // @ts-ignore
         this.cart([...this.cart(), item])
+        console.log('Added to cart')
     }
 
     removeFromCart(item: any) {
