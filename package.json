@@ -8,7 +8,7 @@
     "build:prod": "npm run build:server -- --mode production && npm run build:client -- --mode production",
     "build:server": "webpack --config-name server",
     "build:client": "webpack --config-name client",
-    "watch": "concurrently \"npm run watch:client\" \"npm run watch:server\"",
+    "watch": "npm run watch:server && npm run watch:client",
     "watch:prod": "concurrently \"npm run watch:client -- --mode production\" \"npm run watch:server -- --mode production\"",
     "watch:server": "webpack --config-name server --watch",
     "watch:client": "webpack --config-name client --watch",

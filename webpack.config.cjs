@@ -103,6 +103,7 @@ module.exports = (env, argv) => {
             externals: [
                 'utf-8-validate',
                 'bufferutil',
+                'express'
             ],
             optimization: {
                 nodeEnv: 'development'
