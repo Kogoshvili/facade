@@ -66,57 +66,24 @@ module.exports = function (source, map) {
                 scriptFunctions.push(path.node);
                 path.remove();
 
-                const comment = {
-                    type: "CommentBlock",
-                    value: " webpackIgnore: true "
-                };
-
-                const importStatement = t.expressionStatement(
-                    t.callExpression(
-                        t.memberExpression(
-                            t.callExpression(
-                                t.identifier('import'),
-                                [
-                                    t.stringLiteral('./static/' + filename + '.js')
-                                ]
-                            ),
-                            t.identifier('then')
-                        ),
-                        [
-                            t.arrowFunctionExpression(
-                                [t.identifier('args')],
-                                t.blockStatement([
-                                    t.expressionStatement(
-                                        t.callExpression(
-                                            t.memberExpression(
-                                                t.identifier('console'),
-                                                t.identifier('log')
-                                            ),
-                                            [
-                                                // console log args.script
-                                                t.memberExpression(
-                                                    t.identifier('args'),
-                                                    t.identifier('default')
-                                                )
-                                            ]
-                                        )
-                                    )
-                                ])
-                            )
-                        ]
-                    )
-                );
-
-                // Add the comment to the string literal
-                const stringLiteral = importStatement.expression.callee.object.arguments[0];
-                stringLiteral.leadingComments = [comment];
-
-                // Convert function declarations to class methods
                 const method = t.classMethod(
                     'method',
                     identifier,
-                    [t.identifier('element')],
-                    t.blockStatement([importStatement])
+                    [],
+                    t.blockStatement([
+                        t.returnStatement(
+                            t.objectExpression([
+                                t.objectProperty(
+                                    t.identifier('name'),
+                                    t.stringLiteral(filename)
+                                ),
+                                t.objectProperty(
+                                    t.identifier('url'),
+                                    t.stringLiteral('./static/' + filename + '.js')
+                                )
+                            ])
+                        )
+                    ])
                 );
                 classDeclaration.body.body.push(method);
             } else {

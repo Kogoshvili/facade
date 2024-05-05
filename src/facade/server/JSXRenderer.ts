@@ -1,6 +1,6 @@
 import { JSXInternal } from 'preact/src/jsx'
 import { rebuildInstance, getComponentNode, makeComponentNode } from './ComponentGraph'
-import { isString, isBoolean, isFunction, isObject, isArray } from 'lodash'
+import { isString, isBoolean, isFunction, isObject, isArray } from 'lodash-es'
 import { IComponentNode } from './Interfaces'
 import { getComponentDeclaration, registerComponent } from './ComponentRegistry'
 import { AComponent } from './Component'
@@ -248,7 +248,7 @@ async function renderClass(jsx: JSXInternal.Element, parent: IComponentNode | nu
 }
 
 export async function renderComponent(componentNode: IComponentNode, xpath: string, declaration?: any): Promise<string> {
-    const script = componentNode.instance?.script?.toString()
+    const script = componentNode.instance?.script?.()
     if (script) appendScripts(script, componentNode)
 
     const template = callWithContext(() => componentNode.instance!.render(), componentNode.name, declaration, componentNode.instance)
@@ -449,9 +449,9 @@ function cleanDiff(diff: {action: string, name?: string, value?: string, newValu
     return result;
 }
 
-function appendScripts(script: string, componentNode: IComponentNode) {
-    const code = script.slice(20, -1)
+function appendScripts({ name, url } : { name: string, url: string }, componentNode: IComponentNode) {
     const wrapperd = `
+        <script type="module" src="${url}" id="${name}.${componentNode.id}"></script>
         <script type="text/javascript">
             addEventListener('facade:state:updated', ({
                 detail: { updatedProperties }
@@ -481,9 +481,7 @@ function appendScripts(script: string, componentNode: IComponentNode) {
 
                 if (updatedProperties === null || updatedProperties.some(i => i.componentName === '${componentNode.name}' && i.componentId === '${componentNode.id}'))
                 {
-                    (async function client_${componentNode.name}() {
-                            ${code}
-                    }).call(thisMock, element)
+                    FScripts['${name}'].script.call(thisMock, element)
                 }
             })
         </script>

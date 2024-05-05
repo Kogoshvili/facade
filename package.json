@@ -6,22 +6,18 @@
   "scripts": {
     "build": "npm run build:server && npm run build:client",
     "build:prod": "npm run build:server -- --mode production && npm run build:client -- --mode production",
-
     "build:server": "webpack --config-name server",
     "build:client": "webpack --config-name client",
-
     "watch": "concurrently \"npm run watch:client\" \"npm run watch:server\"",
     "watch:prod": "concurrently \"npm run watch:client -- --mode production\" \"npm run watch:server -- --mode production\"",
-
     "watch:server": "webpack --config-name server --watch",
     "watch:client": "webpack --config-name client --watch",
-
     "dev": "concurrently \"npm run watch\" \"npm run serve\"",
     "prod": "concurrently \"npm run watch:prod\" \"npm run serve\"",
-
     "serve": "nodemon ./dist/server.js --watch ./dist",
     "lint": "eslint . --ext .ts --fix",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package",
+    "build:analyze": "webpack --config-name client --mode production --analyze"
   },
   "keywords": [],
   "author": "",
@@ -40,6 +36,7 @@
     "html-entities": "^2.5.2",
     "json-diff-ts": "^2.2.1",
     "lodash": "^4.17.21",
+    "lodash-es": "^4.17.21",
     "nanoid": "^5.0.6",
     "node-html-parser": "^6.1.13",
     "nodemon": "^3.1.0",

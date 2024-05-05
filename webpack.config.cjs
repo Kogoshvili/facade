@@ -74,12 +74,11 @@ module.exports = (env, argv) => {
             },
             plugins: [
                 ...sharedConfig.plugins,
-                ...(isAnalyze ? [new BundleAnalyzerPlugin.BundleAnalyzerPlugin()] : [])
+                ...(isAnalyze ? [new BundleAnalyzerPlugin({
+                    analyzerMode: 'static',
+                })] : [])
             ],
             optimization: {
-                // splitChunks: {
-                //     chunks: 'all',
-                // },
                 minimizer: [new TerserPlugin()],
             }
         },

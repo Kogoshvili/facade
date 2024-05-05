@@ -1,4 +1,4 @@
-import { isObject } from "lodash"
+import isObject from "lodash/isObject"
 import { callWithContext } from "./Context"
 import { signal } from "./Signals"
 import { getProperties } from "./ComponentGraph"
