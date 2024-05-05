@@ -1,7 +1,7 @@
 import { signal } from 'app/facade/server/Signals-fe'
 
 <script>
-    const value = ''
+    const value: string = ''
     const showResults = signal(false)
     const products = signal([])
 

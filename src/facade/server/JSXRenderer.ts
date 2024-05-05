@@ -9,6 +9,7 @@ import { getGraph, getRoots } from './ComponentGraph'
 import { DiffDOM, stringToObj, nodeToObj } from 'diff-dom'
 import { deepEqual } from 'fast-equals';
 import { callWithContext, callWithContextAsync } from './Context'
+import Facade from './Facade'
 
 const isClinet = !(typeof process === 'object')
 let scripts: string = ''
@@ -224,10 +225,9 @@ async function renderClass(jsx: JSXInternal.Element, parent: IComponentNode | nu
 
     const idToFind = `${componentNode.name}.${componentNode.id}`
     const prevRender = getElementById(idToFind)
-    let propsChanged = false
-    const havePropsChanged = () => componentNode && (propsChanged = !deepEqual(componentNode.props, props))
 
-    if (componentNode.needsRender || !prevRender || havePropsChanged()) {
+    let propsChanged = false
+    if (componentNode.needsRender || !prevRender || (propsChanged = !deepEqual(componentNode.props, props))) {
         componentNode.instance ??= rebuildInstance(componentNode).instance
         const instance = componentNode.instance as AComponent
 
@@ -384,11 +384,11 @@ function hasChildren(jsx: JSXInternal.Element) {
 }
 
 function isFragment(jsx: any) {
-    return (isFunction(jsx.type) && jsx.type.name === 'Fragment')
+    return (isFunction(jsx.type) && jsx.type.name === globalThis.fFragment.name)
 }
 
 function isFacade(jsx: any) {
-    return (isFunction(jsx.type) && jsx.type.name === 'Facade')
+    return (isFunction(jsx.type) && jsx.type.name === Facade.name)
 }
 
 /*
@@ -450,7 +450,7 @@ function cleanDiff(diff: {action: string, name?: string, value?: string, newValu
 }
 
 function appendScripts(script: string, componentNode: IComponentNode) {
-    const code = script.slice(15, -1)
+    const code = script.slice(20, -1)
     const wrapperd = `
         <script type="text/javascript">
             addEventListener('facade:state:updated', ({
@@ -483,7 +483,7 @@ function appendScripts(script: string, componentNode: IComponentNode) {
                 {
                     (async function client_${componentNode.name}() {
                             ${code}
-                    }}).call(thisMock, element)
+                    }).call(thisMock, element)
                 }
             })
         </script>

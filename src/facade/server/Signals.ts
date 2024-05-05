@@ -85,43 +85,45 @@ class Signal {
     }
 }
 
-function signal(input: any) {
+export let SIGNAL_CALLBACK: string | null = null
+
+export function signal(input: any) {
     const ref = new Signal(input)
     ref._owner = getCurrentContext()
 
-    function signalF(...args: any) {
-        currentEffectDeps?.push(ref)
-
+    function signalCallback(...args: any) {
         ref._owner = {
             index: 0,
             ...ref._owner,
             ...getCurrentContext(),
         }
 
-        if (args.length === 0) return ref.get()
+        if (args.length === 0) {
+            currentEffectDeps?.push(ref)
+            return ref.get()
+        }
+
         const isSuccessful = ref.set(args[0])
         if (isSuccessful) ref.notify()
     }
 
-    signalF.prototype.toJSON = function() {
+    signalCallback.prototype.toJSON = function() {
         return {
             __type: 'signal',
             value: ref._value,
         }
     }
 
-    return signalF;
-    return new Proxy(callback, {
-        get: (target: any, p: string | symbol, _receiver: any): any => {
-            if (target.prototype[p]) return target.prototype[p]
-            return (ref as any)[p]
-        },
-    })
+    if (!SIGNAL_CALLBACK) {
+        SIGNAL_CALLBACK = signalCallback.name
+    }
+
+    return signalCallback;
 }
 
 let currentEffectDeps: any[] | null = null
 
-function effect(fn: (v?: any) => void) {
+export function effect(fn: (v?: any) => void) {
     currentEffectDeps = []
     const component = getCurrentContext()
 
@@ -145,6 +147,4 @@ function effect(fn: (v?: any) => void) {
     return result
 }
 
-function compute(fn: any) {}
-
-export { signal, effect, compute }
+export function compute(fn: any) {}

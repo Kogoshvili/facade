@@ -8,8 +8,6 @@ abstract class AComponent<P = {}, D = any > {
     _parent: { name: string, id: string } | null = null
     _parentInstance: AComponent | null = null
 
-    _isMounted = false
-
     static _anonymous: {[key: string]: ((...args: any) => void)[]} = {}
 
     parent(): D | null {

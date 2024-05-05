@@ -9,11 +9,11 @@ import ShopPage from 'server/pages/ShopPage'
 import PDP from 'server/pages/PDP'
 import PLP from 'server/pages/PLP'
 
-globalThis.fFragment = function Fragment(props) {
+globalThis.fFragment = function fFragment(props) {
 	return props.children;
 }
 
-globalThis.fElement = function createElement(type, props, ...children) {
+globalThis.fElement = function fElement(type, props, ...children) {
     return {
         type,
         props: { ...props, children },

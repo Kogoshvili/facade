@@ -5,11 +5,11 @@ import { executeOnGraph } from '../server/ComponentGraph'
 import { rerenderComponent } from '../server/JSXRenderer'
 import { renderer } from '../server/JSXRenderer'
 
-window.fFragment = function Fragment(props) {
+window.fFragment = function fFragment(props) {
 	return props.children;
 }
 
-window.fElement = function createElement(type, props, ...children) {
+window.fElement = function fFragment(type, props, ...children) {
     return {
         type,
         props: { ...props, children },

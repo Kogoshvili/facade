@@ -1,7 +1,7 @@
 import GraphConstructor from './Graph'
 import { IComponentNode } from './Interfaces'
 import { nanoid } from 'nanoid'
-import { signal } from './Signals'
+import { SIGNAL_CALLBACK, signal } from './Signals'
 import { buildComponent, getComponentDeclaration } from './ComponentRegistry'
 import { callWithContext, callWithContextAsync } from './Context'
 import { getInjectable, Inject } from './Injection'
@@ -167,10 +167,6 @@ export async function executeOnGraph(componentName: string, componentId: string,
 
     result[0] = true
 
-    if (mode !== 'defer') {
-        // vertex.needsRender = true
-    }
-
     return result
 }
 
@@ -219,7 +215,7 @@ export function getProperties(obj: any): { properties: Record<string, any>, meth
         if (typeof value !== 'function') {
             properties[key] = value
         } else {
-            if (value.name === 'signalF') {
+            if (value.name === SIGNAL_CALLBACK) {
                 properties[key] = value.prototype.toJSON()
             } else {
                 methods.push(key)

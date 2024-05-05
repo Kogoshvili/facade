@@ -4,6 +4,7 @@ import { Inject } from 'facade/server'
 import CartService from 'server/services/CartService'
 import { effect, signal } from 'facade/server'
 import Cart from '../components/Cart.facade'
+import { Splide } from '@splidejs/splide'
 
 <script>
     const cartService = Inject(CartService)
@@ -26,8 +27,8 @@ import Cart from '../components/Cart.facade'
         })
     }
 
-    function script(element) {
-        const splide = new Splide('.splide', {
+    function script() {
+        const splide: any = new Splide('.splide', {
             perPage: 6,
             arrows: false,
             pagination: false,

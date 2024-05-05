@@ -22,7 +22,7 @@ export namespace JSXInternal {
 }
 
 declare global {
-    interface Window {
+    interface globalThis {
         fFragment: (props: { children: any }) => any
         fElement: (type: any, props: any, ...children: any) => any
     }

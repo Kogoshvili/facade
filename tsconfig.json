@@ -15,13 +15,13 @@
       "client/*": ["./app/client/*"],
       "server/*": ["./app/server/*"],
     },
-    "module": "Preserve",
     "moduleResolution": "Node",
     "experimentalDecorators": true,
+    "module": "preserve",
     "target": "ES2022",
     "jsx": "react",
     "jsxFactory": "fElement",
     "jsxFragmentFactory": "fFragment",
   },
-  "exclude": ["dist", "webpack.config.js", "**/hide"]
+  "exclude": ["node_modules", "dist", "public", "patches"],
 }
