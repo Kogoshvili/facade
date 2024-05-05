@@ -1,12 +1,13 @@
 import { JSXInternal } from 'preact/src/jsx'
 import { rebuildInstance, getComponentNode, makeComponentNode } from './ComponentGraph'
-import { isEqual, isString, isBoolean, isFunction, isObject, isArray } from 'lodash'
+import { isString, isBoolean, isFunction, isObject, isArray } from 'lodash'
 import { IComponentNode } from './Interfaces'
 import { getComponentDeclaration, registerComponent } from './ComponentRegistry'
 import { AComponent } from './Component'
 import { parse } from 'node-html-parser'
 import { getGraph, getRoots } from './ComponentGraph'
 import { DiffDOM, stringToObj, nodeToObj } from 'diff-dom'
+import { deepEqual } from 'fast-equals';
 import { callWithContext, callWithContextAsync } from './Context'
 
 const isClinet = !(typeof process === 'object')
@@ -223,14 +224,16 @@ async function renderClass(jsx: JSXInternal.Element, parent: IComponentNode | nu
 
     const idToFind = `${componentNode.name}.${componentNode.id}`
     const prevRender = getElementById(idToFind)
+    let propsChanged = false
+    const havePropsChanged = () => componentNode && (propsChanged = !deepEqual(componentNode.props, props))
 
-    if (componentNode.needsRender || !prevRender) {
+    if (componentNode.needsRender || !prevRender || havePropsChanged()) {
         componentNode.instance ??= rebuildInstance(componentNode).instance
         const instance = componentNode.instance as AComponent
 
         await callWithContextAsync(() => instance?.mounted(), componentNode.name, declaration, instance)
 
-        if (!isEqual(componentNode.props, props)) {
+        if (propsChanged) {
             callWithContext(() => instance!.recived(props), componentNode.name, declaration, instance)
         }
 
