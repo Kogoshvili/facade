@@ -71,6 +71,7 @@ facade.config = facade.config || {
 
 facade.state = facade.state || {}
 facade.events = facade.events || {
+    ready: 'facade:ready',
     stateLoaded: 'facade:state:loaded',
     stateUpdated: 'facade:state:updated',
     domUpdated: 'facade:dom:updated'
@@ -119,7 +120,14 @@ facade.request = async function (componentName: string, componentId: string, pro
         const request = JSON.stringify({ page, componentName, componentId, property, parameters, event, mode })
 
         return new Promise((resolve, _reject) => {
-            facade.socket.send(request)
+            if (facade.socket.readyState !== WebSocket.OPEN) {
+                facade.socket.onopen = () => {
+                    facade.socket.send(request)
+                }
+            } else {
+                facade.socket.send(request)
+            }
+
             facade.socket.onmessage = (event: any) => {
                 const { dom, diffs, state, result } = JSON.parse(event.data)
 
