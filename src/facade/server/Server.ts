@@ -5,6 +5,13 @@ import { clearDOM, clearScripts, getDOM, getScripts, setDOM } from './Dom'
 import { renderer, rerenderModifiedComponents } from './JSXRenderer'
 import { clearComponentGraph, deserializeGraph, serializableGraph, executeOnGraph, clearComponentsToRerender } from './ComponentGraph'
 
+// requestType page or component
+let requestType = 'page'
+
+export function getRequestType() {
+    return requestType
+}
+
 const pages: Record<string, any> = {}
 
 export function registerPages(pages: Record<string, any>) {
@@ -32,6 +39,7 @@ async function RenderDOM(page: string, props: any = {}) {
 }
 
 async function process(session: any, page: string, componentName: string, componentId: string, property: string, parameters: any, mode: string) {
+    requestType = 'component'
     console.time('process')
 
     deserializeGraph(session.instanceTree)
@@ -182,10 +190,15 @@ export function facadeHTTP(app: any) {
             return
         }
 
+        requestType = 'page'
         const session = req.session as any
 
         if (session.injectables) {
             parseInjectables(session.injectables)
+        }
+
+        if (session.instanceTree) {
+            deserializeGraph(session.instanceTree)
         }
 
         const rendered = await RenderDOM(page, { params: req.params, query: req.query })

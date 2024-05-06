@@ -10,6 +10,7 @@ import { getGraph, getRoots } from './ComponentGraph'
 import { callWithContext, callWithContextAsync } from './Context'
 import Facade from 'facade/server/Facade'
 import { appendScripts, getElementById, replaceElementById } from './Dom';
+import { getRequestType } from './Server';
 
 const isClinet = !(typeof process === 'object')
 
@@ -217,6 +218,11 @@ async function renderClass(jsx: JSXInternal.Element, parent: IComponentNode | nu
 
     if (!componentNode) {
         componentNode = await makeComponentNode(declaration.name, xpath, props, parent)
+    } else {
+        const requestType = getRequestType()
+        if (requestType === 'page') {
+            componentNode = await makeComponentNode(declaration.name, xpath, props, parent, componentNode.id)
+        }
     }
 
     const idToFind = `${componentNode.name}.${componentNode.id}`

@@ -14,7 +14,7 @@
     "watch:client": "webpack --config-name client --watch",
     "dev": "concurrently \"npm run watch\" \"npm run serve\"",
     "prod": "concurrently \"npm run watch:prod\" \"npm run serve\"",
-    "serve": "nodemon ./dist/server.js --watch ./dist",
+    "serve": "nodemon ./dist/server.js --watch ./dist --watch ./public",
     "lint": "eslint . --ext .ts --fix",
     "postinstall": "patch-package",
     "build:analyze": "webpack --config-name client --analyze",

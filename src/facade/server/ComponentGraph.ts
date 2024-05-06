@@ -122,8 +122,8 @@ export function populateProps(instance: any, props: Record<string, any>) {
     instance?.recived(props)
 }
 
-export async function makeComponentNode(name: string, xpath: string, props: Record<string, any>, parent?: IComponentNode | null): Promise<IComponentNode> {
-    const id = nanoid(10)
+export async function makeComponentNode(name: string, xpath: string, props: Record<string, any>, parent?: IComponentNode | null, oldId?: string): Promise<IComponentNode> {
+    const id = oldId ?? nanoid(10)
     const instance = buildComponent(name, id)
     const declaration = getComponentDeclaration(name)
 

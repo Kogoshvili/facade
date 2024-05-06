@@ -14,6 +14,7 @@ interface Facade {
     mount: () => void
     execute: (componentName: string, componentId: string, method: string, args: any) => void
     rendered: () => void
+    loaded: (name: string, componentName: string, componentId: string) => void
     event: (e: any, path: string, isClient?: boolean) => void
     methods: {
         pushState: (state: any) => Promise<void>
