@@ -36,9 +36,6 @@ import { Splide } from '@splidejs/splide'
     }
 
     async function script() {
-        this.script_test()
-        const w = await this.serverTest();
-        console.log('response', w)
         const splide: any = new Splide('.splide', {
             perPage: 6,
             arrows: false,
@@ -49,6 +46,9 @@ import { Splide } from '@splidejs/splide'
             },
         });
         splide.mount();
+        this.script_test()
+        const w = await this.serverTest();
+        console.log('response', w)
     }
 
     function handleClick() {
