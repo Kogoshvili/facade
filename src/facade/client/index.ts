@@ -159,7 +159,7 @@ facade.init = function () {
 facade.mount = function () {}
 
 facade.execute = function(libraryName: string, componentName: string, componentId: string, method: string, args: any = []) {
-    if (!FScripts[componentName] || !FScripts[componentName][method]) return
+    if (!FScripts[libraryName] || !FScripts[libraryName][method]) return
 
     const element = document.getElementById(componentName + '.' + componentId)
 
