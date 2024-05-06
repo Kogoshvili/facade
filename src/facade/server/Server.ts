@@ -179,7 +179,6 @@ export function facadeHTTP(app: any) {
         console.time('Page Render')
         const page = req.params.page
         // const [page, ...props] = req.params[0].split('/')
-        console.log('Page', page)
 
         if (!pages[page]) {
             res.status(404).send('Page not found')

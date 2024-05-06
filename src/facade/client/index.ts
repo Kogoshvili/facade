@@ -27,22 +27,21 @@ export function registerComponents(componentsToRegister: any) {
 export function initialize() {
     mountComponents()
     addEventListener('DOMContentLoaded', mountComponents)
-
-    function mountComponents() {
-        for (const key in components) {
-            const elements = document.querySelectorAll(`[data-component="${key}"]`)
-            elements.forEach(async (element) => {
-                const xpath = element.getAttribute('data-xpath') || ''
-
-                const rawProps = element.getAttribute('data-props') || '{}'
-                const props = JSON.parse(rawProps)
-                const component = components[key]
-                element.outerHTML = await renderer(fElement(component, props), null, xpath)
-            })
-        }
-    }
-
     console.log('Client side facade')
+}
+
+function mountComponents() {
+    for (const key in components) {
+        const elements = document.querySelectorAll(`[data-component="${key}"]`)
+        elements.forEach(async (element) => {
+            const xpath = element.getAttribute('data-xpath') || ''
+
+            const rawProps = element.getAttribute('data-props') || '{}'
+            const props = JSON.parse(rawProps)
+            const component = components[key]
+            element.outerHTML = await renderer(fElement(component, props), null, xpath)
+        })
+    }
 }
 
 export function getState() {
@@ -57,6 +56,7 @@ export async function setState(newState: any) {
 declare global {
     // eslint-disable-next-line no-var
     var facade: Facade
+    var FScripts: any
 }
 
 if (!window.facade) {
@@ -71,6 +71,7 @@ facade.config = facade.config || {
 
 facade.state = facade.state || {}
 facade.events = facade.events || {
+    stateLoaded: 'facade:state:loaded',
     stateUpdated: 'facade:state:updated',
     domUpdated: 'facade:dom:updated'
 }
@@ -157,6 +158,33 @@ facade.init = function () {
 
 facade.mount = function () {}
 
+facade.execute = function(libraryName: string, componentName: string, componentId: string, method: string, args: any = []) {
+    if (!FScripts[componentName] || !FScripts[componentName][method]) return
+
+    const element = document.getElementById(componentName + '.' + componentId)
+
+    const component = facade.state.find((s: any) => s.key === (componentName + '/' + componentId)).value
+
+    const methods = component.methods.reduce((acc: any, method: any) => {
+        acc[method] = async function() {
+            return await facade.request(
+                componentName,
+                componentId,
+                method,
+                arguments
+            )
+        }
+        return acc
+    }, {} as any)
+
+    const thisMock = {
+        ...component.properties,
+        ...methods
+    }
+
+    FScripts[libraryName][method].call(thisMock, element, ...args)
+}
+
 facade.methods = {
     async pushState(newState: any) {
         facade.state = { ...facade.state, ...newState }
@@ -193,6 +221,7 @@ facade.methods = {
                 .then(({ dom, state }) => {
                     this.updateDOM(dom)
                     this.updateState(state)
+                    dispatchEvent(new CustomEvent(facade.events.stateLoaded))
                     document.body.style.visibility = 'visible'
                 })
         } else {
@@ -201,12 +230,7 @@ facade.methods = {
                 .then(state => {
                     facade.state = state
                     document.body.style.visibility = 'visible'
-                    const event = new CustomEvent(facade.events.stateUpdated, {
-                        detail: {
-                            updatedProperties: null
-                        },
-                    })
-                    dispatchEvent(event)
+                    dispatchEvent(new CustomEvent(facade.events.stateLoaded))
                 })
         }
     },

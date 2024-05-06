@@ -13,7 +13,6 @@ import { signal } from 'app/facade/server/Signals-fe'
 
     function handleInput(e) {
         this.value = e.target.value
-        console.log(this.value);
         if (this.value.length > 2) {
             this.getProducts()
             this.showResults(true)

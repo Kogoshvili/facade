@@ -12,6 +12,7 @@ interface Facade {
     callback: (path: string, parameters: any) => void
     init: () => void
     mount: () => void
+    execute: (componentName: string, componentId: string, method: string, args: any) => void
     rendered: () => void
     event: (e: any, path: string, isClient?: boolean) => void
     methods: {

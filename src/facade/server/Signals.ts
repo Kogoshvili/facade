@@ -72,7 +72,6 @@ class Signal {
     }
 
     notify() {
-        console.log('Notifying', this._owner?.instance?._name, this._owner?.declaration)
         if (this._owner?.instance) {
             markToRender(this._owner?.instance?._name, this._owner?.instance?._id)
         }

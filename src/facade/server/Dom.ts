@@ -1,4 +1,5 @@
 import { parse } from 'node-html-parser'
+import { IComponentNode } from './Interfaces'
 
 let dom: any | null = null
 let scripts: string = ''
@@ -24,41 +25,18 @@ export function getElementById(idToFind: string) {
 }
 
 export function appendScripts({ name, url } : { name: string, url: string }, componentNode: IComponentNode) {
-    const wrapperd = `
-        <script type="module" src="${url}" id="${name}.${componentNode.id}"></script>
+    scripts += `
+        <script type="module" src="${url}" id="${componentNode.name}.${componentNode.id}"></script>
         <script type="text/javascript">
-            addEventListener('facade:state:updated', ({
-                detail: { updatedProperties }
-            }) => {
-                const component = facade.state.find(
-                    s => s.key === '${componentNode.name}/${componentNode.id}'
-                ).value
+            addEventListener('facade:state:loaded', function () {
+                facade.execute('${name}', '${componentNode.name}', '${componentNode.id}', 'script')
+            })
 
-                const methods = component.methods.reduce((acc, method) => {
-                    acc[method] = async function() {
-                        return await facade.request(
-                            '${componentNode.name}',
-                            '${componentNode.id}',
-                            method,
-                            arguments
-                        )
-                    }
-                    return acc
-                }, {})
-
-                const thisMock = {
-                    ...component.properties,
-                    ...methods
-                }
-
-                const element = document.getElementById('${componentNode.name}.${componentNode.id}')
-
-                if (updatedProperties === null || updatedProperties.some(i => i.componentName === '${componentNode.name}' && i.componentId === '${componentNode.id}'))
-                {
-                    FScripts['${name}'].script.call(thisMock, element)
+            addEventListener('facade:state:updated', function ({ detail: { updatedProperties } }) {
+                if (updatedProperties && updatedProperties.some(i => i.componentName === '${componentNode.name}' && i.componentId === '${componentNode.id}')) {
+                    facade.execute('${name}', '${componentNode.name}', '${componentNode.id}', 'scriptOnState')
                 }
             })
         </script>
     `
-    scripts += wrapperd
 }
