@@ -233,21 +233,23 @@ async function renderClass(jsx: JSXInternal.Element, parent: IComponentNode | nu
         componentNode.haveRendered = true
 
         const result: string = await renderComponent(componentNode, xpath, declaration)
+
         if (!isClinet) {
             replaceElementById(idToFind, result)
+
+            if (!prevRender) {
+                const script = componentNode.instance?.script?.()
+                if (script) appendScripts(script, componentNode)
+            }
         }
+
         return result
     }
 
     return prevRender
 }
 
-export async function renderComponent(componentNode: IComponentNode, xpath: string, declaration?: any): Promise<string> {
-    if (!isClinet) {
-        const script = componentNode.instance?.script?.()
-        if (script) appendScripts(script, componentNode)
-    }
-
+export async function renderComponent(componentNode: IComponentNode, xpath: string, declaration: any): Promise<string> {
     const template = callWithContext(() => componentNode.instance!.render(), componentNode.name, declaration, componentNode.instance)
     const subResult = await renderer(template, componentNode, xpath) || '<div></div>'
     return subResult.replace(/<(\w+)/, defineComponent(componentNode.name, componentNode.id, componentNode.key))

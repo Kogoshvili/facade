@@ -165,14 +165,18 @@ facade.execute = function(libraryName: string, componentName: string, componentI
 
     const component = facade.state.find((s: any) => s.key === (componentName + '/' + componentId)).value
 
-    const methods = component.methods.reduce((acc: any, method: any) => {
-        acc[method] = async function() {
-            return await facade.request(
-                componentName,
-                componentId,
-                method,
-                arguments
-            )
+    const methods = component.methods.reduce((acc: any, m: any) => {
+        if (m.startsWith('script'))  {
+            acc[m] = FScripts[libraryName][m]
+        } else {
+            acc[m] = async function() {
+                return await facade.request(
+                    componentName,
+                    componentId,
+                    m,
+                    arguments
+                )
+            }
         }
         return acc
     }, {} as any)

@@ -27,7 +27,19 @@ import { Splide } from '@splidejs/splide'
         })
     }
 
-    function script() {
+    function serverTest() {
+        console.log('Navbar Server')
+        return 100;
+    }
+
+    function script_test() {
+        console.log('Navbar Script')
+    }
+
+    async function script() {
+        this.script_test()
+        const w = await this.serverTest();
+        console.log('response', w)
         const splide: any = new Splide('.splide', {
             perPage: 6,
             arrows: false,
