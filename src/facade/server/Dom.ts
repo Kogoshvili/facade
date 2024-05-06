@@ -28,9 +28,13 @@ export function appendScripts({ name, url } : { name: string, url: string }, com
     scripts += `
         <script type="module" src="${url}" id="${componentNode.name}.${componentNode.id}"></script>
         <script type="text/javascript">
-            addEventListener('facade:state:loaded', function () {
+            if (window.facade && window.facade.state && Object.keys(window.facade.state).length > 0) {
                 facade.execute('${name}', '${componentNode.name}', '${componentNode.id}', 'script')
-            })
+            } else {
+                addEventListener('facade:state:loaded', function () {
+                    facade.execute('${name}', '${componentNode.name}', '${componentNode.id}', 'script')
+                })
+            }
 
             addEventListener('facade:state:updated', function ({ detail: { updatedProperties } }) {
                 if (updatedProperties && updatedProperties.some(i => i.componentName === '${componentNode.name}' && i.componentId === '${componentNode.id}')) {

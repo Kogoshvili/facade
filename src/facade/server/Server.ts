@@ -3,7 +3,7 @@ import { WebSocketServer } from 'ws'
 import { clearInjectables, getJSONableInjectables, parseInjectables } from './Injection'
 import { clearDOM, clearScripts, getDOM, getScripts, setDOM } from './Dom'
 import { renderer, rerenderModifiedComponents } from './JSXRenderer'
-import { clearComponentGraph, deserializeGraph, serializableGraph, executeOnGraph } from './ComponentGraph'
+import { clearComponentGraph, deserializeGraph, serializableGraph, executeOnGraph, clearComponentsToRerender } from './ComponentGraph'
 
 const pages: Record<string, any> = {}
 
@@ -25,7 +25,6 @@ async function RenderDOM(page: string, props: any = {}) {
     const pageJSX = pages[page](props)
     const rendered = await renderer(pageJSX, null, page, null)
     const scripts = getScripts()
-    clearScripts()
 
     return rendered.replace(
         '</body>',
@@ -69,10 +68,7 @@ async function process(session: any, page: string, componentName: string, compon
     session.instanceTree = JSON.stringify(newInstanceTree)
     session.injectables = JSON.stringify(getJSONableInjectables())
 
-    clearComponentGraph()
-    clearInjectables()
-    clearDOM()
-
+    cleanup()
 
     console.timeEnd('process')
     return response
@@ -192,8 +188,7 @@ export function facadeHTTP(app: any) {
         session.instanceTree = JSON.stringify(serializableGraph())
         session.injectables = JSON.stringify(getJSONableInjectables())
 
-        clearComponentGraph()
-        clearInjectables()
+        cleanup()
 
         res.setHeader('Content-Type', 'text/html; charset=utf-8')
         console.timeEnd('Page Render')
@@ -201,3 +196,10 @@ export function facadeHTTP(app: any) {
     })
 }
 
+function cleanup() {
+    clearComponentGraph()
+    clearInjectables()
+    clearComponentsToRerender()
+    clearDOM()
+    clearScripts()
+}

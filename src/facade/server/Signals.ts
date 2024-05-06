@@ -1,12 +1,12 @@
 import { makeSureInstancesExist, markToRender } from './ComponentGraph'
-import { getCurrentContext } from './Context';
-import { currentInjectable } from './Injection'
+import { IContext, getCurrentContext } from './Context';
+import { rerenderComponent } from './JSXRenderer';
 
 export interface ISignal<T> {
     (v?: T | (() => T)): T;
     _value: T
     _subscribers: (() => void)[]
-    _owner: null | { prototype: { _dependants: Set<string> }}
+    _owner: null | IContext
     set(v: any): boolean
     get(): any
     subscribe(fn: (v?: any) => void): void
@@ -14,15 +14,12 @@ export interface ISignal<T> {
     notify(): void
 }
 
+const isClinet = !(typeof process === 'object')
+
 class Signal {
     _value: any
     _subscribers: (() => void)[] = []
-    _owner: null | {
-        name?: string | undefined;
-        instance?: any;
-        declaration?: any;
-        index: number;
-    } = null
+    _owner: null | IContext = null
 
     options: any = {
         comparer: (a: any, b: any) => a === b
@@ -73,7 +70,11 @@ class Signal {
 
     notify() {
         if (this._owner?.instance) {
-            markToRender(this._owner?.instance?._name, this._owner?.instance?._id)
+            if (isClinet) {
+                rerenderComponent(this._owner.instance._name, this._owner.instance._id)
+            } else {
+                markToRender(this._owner?.instance?._name, this._owner?.instance?._id)
+            }
         }
 
         if (this._owner?.declaration?.prototype._dependants) {
@@ -89,6 +90,7 @@ export let SIGNAL_CALLBACK: string | null = null
 export function signal(input: any) {
     const ref = new Signal(input)
     ref._owner = getCurrentContext()
+    if (ref._owner) ref._owner.index++
 
     function signalCallback(...args: any) {
         ref._owner = {

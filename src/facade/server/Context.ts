@@ -1,9 +1,11 @@
-let currentContext: {
-    name?: string,
-    instance?: any,
-    declaration?: any,
+export interface IContext {
+    name?: string
+    instance?: any
+    declaration?: any
     index: number
-} | null = null
+}
+
+let currentContext: IContext | null = null
 
 export function getCurrentContext() {
     return currentContext

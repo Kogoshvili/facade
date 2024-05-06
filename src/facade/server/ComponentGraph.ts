@@ -6,8 +6,18 @@ import { buildComponent, getComponentDeclaration } from './ComponentRegistry'
 import { callWithContext, callWithContextAsync } from './Context'
 import { getInjectable, Inject } from './Injection'
 
-const Graph: GraphConstructor<string, IComponentNode> = globalThis.Graph ??= new GraphConstructor<string, IComponentNode>()
+const Graph: GraphConstructor<string, IComponentNode> = new GraphConstructor<string, IComponentNode>()
 const Roots = new Set<string>()
+
+const componentsToRerender = new Set<string>()
+
+export function getComponentsToRerender() {
+    return componentsToRerender
+}
+
+export function clearComponentsToRerender() {
+    componentsToRerender.clear()
+}
 
 export function getRoots() {
     return Roots
@@ -23,6 +33,7 @@ export function clearComponentGraph() {
 
 export function markToRender(componentName: string, componentId: string) {
     const vertexIds = getVertexIds({ name: componentName, id: componentId })
+    componentsToRerender.add(vertexIds.any)
     const vertex = Graph.getVertexValue(vertexIds.any)
 
     if (!vertex) return

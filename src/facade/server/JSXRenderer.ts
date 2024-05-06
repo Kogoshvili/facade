@@ -2,7 +2,7 @@ import { JSXInternal } from 'preact/src/jsx'
 import { isString, isBoolean, isFunction, isObject, isArray } from 'lodash-es'
 import { DiffDOM, stringToObj, nodeToObj } from 'diff-dom'
 import { deepEqual } from 'fast-equals';
-import { rebuildInstance, getComponentNode, makeComponentNode } from './ComponentGraph'
+import { rebuildInstance, getComponentNode, makeComponentNode, getComponentsToRerender } from './ComponentGraph'
 import { IComponentNode } from './Interfaces'
 import { getComponentDeclaration, registerComponent } from './ComponentRegistry'
 import { AComponent } from './Component'
@@ -30,10 +30,11 @@ export async function rerenderModifiedComponents() {
     const graph = getGraph()
     const nodes: IComponentNode[] = []
 
-    graph.forEach((_, node) => {
-        if (node.needsRender && !node.haveRendered) {
-            nodes.push(node)
-        }
+    const components = getComponentsToRerender()
+
+    components.forEach((componentId) => {
+        const vertex = graph.getVertexValue(componentId)
+        if (vertex) nodes.push(vertex)
     })
 
     const nodePromises = nodes.map(async (node) => {
@@ -46,6 +47,8 @@ export async function rerenderModifiedComponents() {
         const declaration = getComponentDeclaration(node.name)
         node.instance ??= rebuildInstance(node).instance
         const result = await renderComponent(node, node.xpath ?? '', declaration)
+
+        node.haveRendered = true
 
         const dd = new DiffDOM()
         const prevBody = stringToObj(oldElement)
