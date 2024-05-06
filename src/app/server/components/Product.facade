@@ -22,7 +22,6 @@ import { inject, signal, prop } from 'facade/server'
     console.log('TEST123')
 
     async function mounted(){
-        console.log('mounted', this.id())
         const result = await fetch(`https://dummyjson.com/products/${this.id()}`)
         const data = await result.json()
         this.product = data

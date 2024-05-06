@@ -25,15 +25,12 @@ export function getElementById(idToFind: string) {
 }
 
 export function appendScripts({ name, url } : { name: string, url: string }, componentNode: IComponentNode) {
-    // scripts += `
-    //     <script type="text/javascript" src="${url}" onload="" defer></script>
-    // `
     scripts += `
         <script type="text/javascript">
             var script = document.createElement('script');
             script.src = '${url}';
             script.onload = function () {
-                console.log('Loaded', '${name}', '${componentNode.name}', '${componentNode.id}')
+                console.debug('Loaded', '${name}', '${componentNode.name}', '${componentNode.id}')
                 if (window.facade) {
                     facade.loaded('${name}', '${componentNode.name}', '${componentNode.id}')
                 }

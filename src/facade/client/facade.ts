@@ -23,7 +23,9 @@ window.fElement = function fFragment(type, props, ...children) {
     }
 }
 
-const facade: any = {}
+if (!window.facade) {
+    window.facade = {} as Facade
+}
 
 facade.config = facade.config || {
     protocol: 'ws', // http or ws
@@ -109,27 +111,27 @@ facade.request = async function (componentName: string, componentId: string, pro
 }
 
 facade.init = function () {
-    if (facade.config.persistence) {
-        const raw = localStorage.getItem('facade-state')
-        if (raw && raw !== '[]') {
-            facade.state = JSON.parse(raw)
-            dispatchEvent(new CustomEvent(facade.events.stateLoaded))
-        }
-    }
+    // if (facade.config.persistence) {
+    //     const raw = localStorage.getItem('facade-state')
+    //     if (raw && raw !== '[]') {
+    //         facade.state = JSON.parse(raw)
+    //         dispatchEvent(new CustomEvent(facade.events.stateLoaded))
+    //     }
+    // }
 
-    this.methods.syncState()
+    // this.methods.syncState()
 
     this.socket = new WebSocket(`ws://${window.location.host}/`)
     this.socket.onopen = () => {
-        console.log('Facade Connected')
+        console.debug('Facade WS Connected')
     }
 
     addEventListener('facade:state:updated', () => {
-        console.log('State Updated')
+        console.debug('Facade State Updated')
     })
 
     addEventListener('facade:dom:updated', () => {
-        console.log('DOM Updated')
+        console.debug('Facade DOM Updated')
     })
 }
 
@@ -183,42 +185,42 @@ facade.methods = {
         this.updateDOM(dom)
         this.updateState(state)
     },
-    syncState() {
-        // check if local storage has state
-        // const state = localStorage.getItem('facade-state')
-        // const persistence = facade.config.persistence
+    // syncState() {
+    //     // check if local storage has state
+    //     // const state = localStorage.getItem('facade-state')
+    //     // const persistence = facade.config.persistence
 
-        // if (persistence && state) {
-        //     facade.state = JSON.parse(state)
-        //     // post request to set state with local storage state //
-        //     fetch(`${facade.config.url}/set-state`, {
-        //         method: 'POST',
-        //         headers: {
-        //             'Content-Type': 'application/json'
-        //         },
-        //         body: state
-        //     })
-        //         .then(res => res.json())
-        //         .then(({ dom, state }) => {
-        //             this.updateDOM(dom)
-        //             this.updateState(state)
-        //             dispatchEvent(new CustomEvent(facade.events.stateLoaded))
-        //             document.body.style.visibility = 'visible'
-        //         })
-        // } else {
-        fetch(`${facade.config.url}/get-state`)
-            .then(res => res.json())
-            .then(state => {
-                facade.state = state
-                document.body.style.visibility = 'visible'
+    //     // if (persistence && state) {
+    //     //     facade.state = JSON.parse(state)
+    //     //     // post request to set state with local storage state //
+    //     //     fetch(`${facade.config.url}/set-state`, {
+    //     //         method: 'POST',
+    //     //         headers: {
+    //     //             'Content-Type': 'application/json'
+    //     //         },
+    //     //         body: state
+    //     //     })
+    //     //         .then(res => res.json())
+    //     //         .then(({ dom, state }) => {
+    //     //             this.updateDOM(dom)
+    //     //             this.updateState(state)
+    //     //             dispatchEvent(new CustomEvent(facade.events.stateLoaded))
+    //     //             document.body.style.visibility = 'visible'
+    //     //         })
+    //     // } else {
+    //     fetch(`${facade.config.url}/get-state`)
+    //         .then(res => res.json())
+    //         .then(state => {
+    //             facade.state = state
+    //             document.body.style.visibility = 'visible'
 
-                if (facade.config.persistence) {
-                    dispatchEvent(new CustomEvent(facade.events.stateUpdated))
-                } else {
-                    dispatchEvent(new CustomEvent(facade.events.stateLoaded))
-                }
-            })
-    },
+    //             if (facade.config.persistence) {
+    //                 dispatchEvent(new CustomEvent(facade.events.stateUpdated))
+    //             } else {
+    //                 dispatchEvent(new CustomEvent(facade.events.stateLoaded))
+    //             }
+    //         })
+    // },
     async handleUpdateHttp(page: string, componentName: string, componentId: string, property: string, parameters: any, event?: string, mode?: string) {
         const responseRaw = await fetch(`${facade.config.url}?page=${page}&component=${componentName}&id=${componentId}&property=${property}&event=${event}&mode=${mode}`, {
             method: 'POST',
@@ -339,13 +341,8 @@ facade.loaded = function (libraryName: string, componentName: string, componentI
     })
 }
 
-export function mountFacade() {
-    if (!window.facade) {
-        window.facade = facade
-        window.facade.init()
-        mountEvents()
-    }
-}
+facade.init()
+mountEvents()
 
 function mountEvents() {
     addEventListener('DOMContentLoaded', () => {
@@ -359,8 +356,7 @@ function mountEvents() {
     })
 
     addEventListener('facade:state:updated', ({ detail }: any) => {
-        if (!detail) return
-        if (!detail.updatedProperties) return
+        if (!detail?.updatedProperties) return
         detail.updatedProperties.forEach(
             ({ componentName, componentId, property, newValue }: IUpdatedProperties) => {
                 const search = `[oninput="facade.event(event, '${componentName}.${componentId}.${property}.input.bind')"]`
@@ -374,10 +370,6 @@ function mountEvents() {
 
     addEventListener('facade:state:updated', () => {
         localStorage.setItem('facade-state', JSON.stringify(facade.state))
-    })
-
-    addEventListener('facade:library:loaded', (...args) => {
-        console.log('Library Loaded', args)
     })
 }
 

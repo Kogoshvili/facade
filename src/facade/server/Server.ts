@@ -29,13 +29,7 @@ function getJSONDiff(oldInstanceTree: any, newInstanceTree: any) {
 }
 
 async function RenderDOM(page: string, props: any = {}) {
-    const rendered = await renderer(fElement(pages[page], props), null, page, null)
-    const scripts = getScripts()
-
-    return rendered.replace(
-        '</body>',
-        `${scripts}</body>`
-    )
+    return await renderer(fElement(pages[page], props), null, page, null)
 }
 
 async function process(session: any, page: string, componentName: string, componentId: string, property: string, parameters: any, mode: string) {
@@ -204,14 +198,31 @@ export function facadeHTTP(app: any) {
         const rendered = await RenderDOM(page, { params: req.params, query: req.query })
 
         session.renderedHtmlBody = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]
-        session.instanceTree = JSON.stringify(serializableGraph())
+        const componentGraph = serializableGraph()
+        session.instanceTree = JSON.stringify(componentGraph)
         session.injectables = JSON.stringify(getJSONableInjectables())
+
+        const scripts = getScripts()
+
+        const withState = rendered.replace(
+            '</body>',
+            `<script type="text/javascript" id="facade-state">
+                if (!window.facade) {
+                    window.facade = {}
+                }
+                console.debug('Setting state')
+                window.facade.state = ${JSON.stringify(componentGraph.vertices)}
+                document.getElementById('facade-state').remove()
+            </script>
+            ${scripts}
+            </body>`
+        )
 
         cleanup()
 
         res.setHeader('Content-Type', 'text/html; charset=utf-8')
         console.timeEnd('Page Render')
-        res.send(rendered)
+        res.send(withState)
     })
 }
 

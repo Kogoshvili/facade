@@ -1,5 +1,5 @@
 import { renderer } from 'facade/server/JSXRenderer'
-import { mountFacade } from './facade';
+import './facade';
 
 const components: any = {}
 
@@ -10,10 +10,8 @@ export function registerComponents(componentsToRegister: any) {
 }
 
 export function initialize() {
-    mountFacade()
     mountComponents()
     addEventListener('DOMContentLoaded', mountComponents)
-    console.log('Client side facade')
 }
 
 function mountComponents() {

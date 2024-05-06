@@ -68,7 +68,6 @@ class Signal {
                 vertices.forEach((vertex) => {
                     if (vertex && vertex.instance) {
                         dependants[d].forEach((i: number) => {
-                            console.log('vertex', vertex.name)
                             vertex.instance!.effects?.[i]?.()
                         })
                     }
