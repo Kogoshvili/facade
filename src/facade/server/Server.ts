@@ -22,8 +22,7 @@ function getJSONDiff(oldInstanceTree: any, newInstanceTree: any) {
 }
 
 async function RenderDOM(page: string, props: any = {}) {
-    const pageJSX = pages[page](props)
-    const rendered = await renderer(pageJSX, null, page, null)
+    const rendered = await renderer(fElement(pages[page], props), null, page, null)
     const scripts = getScripts()
 
     return rendered.replace(
@@ -34,6 +33,7 @@ async function RenderDOM(page: string, props: any = {}) {
 
 async function process(session: any, page: string, componentName: string, componentId: string, property: string, parameters: any, mode: string) {
     console.time('process')
+
     deserializeGraph(session.instanceTree)
     parseInjectables(session.injectables)
 
@@ -112,6 +112,7 @@ export function facadeWS(server: any, sessionParser: any, wssConfig: any = {}) {
         ws.on('message', async (msg: string) => {
             const { page, componentName, componentId, property, parameters, event: _event, mode } = JSON.parse(msg) as any
             const result = await process(session, page, componentName, componentId, property, parameters, mode)
+            session.save((err: any) => console.error(err))
             ws.send(JSON.stringify(result))
         })
     })
@@ -182,6 +183,11 @@ export function facadeHTTP(app: any) {
         }
 
         const session = req.session as any
+
+        if (session.injectables) {
+            parseInjectables(session.injectables)
+        }
+
         const rendered = await RenderDOM(page, { params: req.params, query: req.query })
 
         session.renderedHtmlBody = rendered.match(/(<body[^>]*>([\s\S]*?)<\/body>)/i)?.[0]

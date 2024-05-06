@@ -10,6 +10,8 @@ abstract class FComponent<P = {}, D = any > {
 
     static _anonymous: {[key: string]: ((...args: any) => void)[]} = {}
 
+    effects: any[] = []
+
     parent(): D | null {
         if (!this._parent) {
             return null
@@ -23,34 +25,20 @@ abstract class FComponent<P = {}, D = any > {
         return this._parentInstance as D
     }
 
+    // Executes every time component recieves new props
+    recived(props: P) {}
+
     // Executes every time the component is created
-    recived(props: P) {
-    }
+    callExpressions() {}
 
     // Executes once for every new instance
-    async created() {
-        // Depends on input
-    }
+    async created() {}
 
-    // Executes before render if rendering is needed
-    async mounted() {
-        // Depends on input
-    }
+    // Executes everytime instance is created
+    async mounted() {}
 
-    // Executes after render if rendering was needed
-    async unmounted() {
-        // Depends on input
-    }
-
-    // executes exactly before render if rendering was needed
-    async beforeRender() {
-        // Depends on input
-    }
-
-    // executes exactly after render if rendering was needed
-    async afterRender() {
-        // Depends on input
-    }
+    // Executes everytime instance is destroyed
+    async destroying() {}
 
     // Executes every time the component is rendered
     render(this: any): preact.JSX.Element | null {

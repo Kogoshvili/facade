@@ -10,8 +10,6 @@ module.exports = function (source, map) {
         return source;
     }
 
-    const webpack = this._compiler.webpack;
-
     // Extract the HTML template
     const templateMatch = source.match(/<template>([\s\S]*?)<\/template>/);
     const template = templateMatch ? templateMatch[1] : '';
@@ -44,6 +42,8 @@ module.exports = function (source, map) {
     );
 
     const scriptFunctions = [];
+    const callerStatements = [];
+    const effects = [];
 
     // Visit each node in the AST
     babel.traverse(ast, {
@@ -101,7 +101,46 @@ module.exports = function (source, map) {
                 classDeclaration.body.body.push(method);
             }
         },
+        CallExpression(path) {
+            // Check if the call expression is not inside a function and not part of a variable declaration
+            if (
+                !path.findParent((parent) => parent.isFunction()) &&
+                !path.findParent((parent) => parent.isVariableDeclaration())
+            ) {
+                if (path.node.callee.name === 'effect') {
+                    effects.push(path.node);
+                } else {
+                    callerStatements.push(t.expressionStatement(path.node));
+                }
+                path.remove();
+            }
+        },
     });
+
+    // Add the effects array to the class
+    if (effects.length > 0) {
+        const wrappedEffects = effects.map((effect) =>
+            t.arrowFunctionExpression([], effect)
+        );
+        const effectsProperty = t.classProperty(
+            t.identifier('effects'),
+            t.arrayExpression(wrappedEffects)
+        );
+        classDeclaration.body.body.push(effectsProperty);
+    }
+
+    // Add the caller method to the class if there are caller statements
+    if (callerStatements.length > 0) {
+        const callerMethod = t.classMethod(
+            'method',
+            t.identifier('callExpressions'),
+            [],
+            t.blockStatement(callerStatements),
+            false,
+            false
+        );
+        classDeclaration.body.body.push(callerMethod);
+    }
 
     // Add the static render method to the class with 'this' parameter
     const renderMethod = t.classMethod(

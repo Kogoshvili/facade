@@ -11,7 +11,7 @@ import { Splide } from '@splidejs/splide'
     const cartCount = signal(0)
     const showCart = signal(false)
 
-    async function created() {
+    async function mounted() {
         const { data } = await axios.get('https://dummyjson.com/products/categories')
         this.menu = data.map(item => ({
             title: item.toUpperCase(),
@@ -19,12 +19,12 @@ import { Splide } from '@splidejs/splide'
         }))
     }
 
-    function mounted() {
-        effect(() => {
-            console.log('Navbar Cart')
-            this.cartCount(this.cartService().cart().length)
-        })
-    }
+    effect(() => {
+        console.log('Navbar Cart')
+        const length = this.cartService().cart().length
+        console.log('Cart Length', length)
+        this.cartCount(length)
+    })
 
     function serverTest() {
         console.log('Navbar Server')

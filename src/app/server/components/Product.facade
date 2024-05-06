@@ -1,9 +1,9 @@
 import CartService from 'server/services/CartService'
-import { inject, signal } from 'facade/server'
+import { inject, signal, prop } from 'facade/server'
 
 <script>
     const cartService = inject(CartService)
-    const id = 0
+    const id = prop(p => p.id)
     const product = {
         "id": 1,
         "title": "iPhone 9",
@@ -19,12 +19,11 @@ import { inject, signal } from 'facade/server'
     }
     const showTest = signal(false)
 
-    function recived(props){
-        this.id = props.id
-    }
+    console.log('TEST123')
 
-    async function created(){
-        const result = await fetch(`https://dummyjson.com/products/${this.id}`)
+    async function mounted(){
+        console.log('mounted', this.id())
+        const result = await fetch(`https://dummyjson.com/products/${this.id()}`)
         const data = await result.json()
         this.product = data
     }

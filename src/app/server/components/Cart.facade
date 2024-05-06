@@ -5,11 +5,9 @@ import { inject, effect, signal } from 'facade/server'
     const cartService = inject(CartService)
     const cart = signal([])
 
-    function mounted() {
-        effect(() => {
-            this.cart(this.cartService().cart())
-        })
-    }
+    effect(() => {
+        this.cart(this.cartService().cart())
+    })
 </script>
 <template>
     <div class="absolute top-10 right-0 p-4 bg-white shadow-lg z-10 w-48">

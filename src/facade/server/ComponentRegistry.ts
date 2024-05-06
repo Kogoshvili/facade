@@ -11,8 +11,7 @@ export function getComponentDeclaration(name: string): (new () => FComponent) {
     return Components.get(name)!
 }
 
-export function buildComponent(name: string) {
+export function buildComponent(name: string, id: string) {
     const declaration = getComponentDeclaration(name)
-    return callWithContext(() => new declaration(), name, declaration)
+    return callWithContext(() => new declaration(), { name, declaration, id })
 }
-

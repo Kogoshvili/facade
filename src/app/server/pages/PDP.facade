@@ -1,0 +1,20 @@
+import Header from 'server/layouts/header'
+import Body from 'server/layouts/body'
+import Wrapper from 'server/components/Wrapper'
+import NavBar from 'server/components/NavBar.facade'
+import Product from 'server/components/Product.facade'
+import { prop } from 'facade/server'
+
+<script>
+    const id = prop((r) => r.query.id)
+</script>
+<template>
+    <html>
+        <Header name="Shop - PDP" />
+        <Body>
+            <NavBar />
+            <Product id={this.id} />
+        </Body>
+    </html>
+</template>
+

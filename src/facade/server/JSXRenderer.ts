@@ -224,11 +224,13 @@ async function renderClass(jsx: JSXInternal.Element, parent: IComponentNode | nu
 
     let propsChanged = false
     if (componentNode.needsRender || !prevRender || (propsChanged = !deepEqual(componentNode.props, props))) {
-        componentNode.instance ??= rebuildInstance(componentNode).instance
-        const instance = componentNode.instance as FComponent
-
-        if (propsChanged) {
-            callWithContext(() => populateProps(instance, props), componentNode.name, declaration, instance)
+        if (!componentNode.instance) {
+            componentNode.instance = rebuildInstance(componentNode).instance
+            const instance = componentNode.instance
+            const context = { name: componentNode.name, id: componentNode.id, declaration, instance }
+            callWithContext(() => populateProps(instance, props), context)
+            callWithContext(() => instance?.callExpressions?.(), context)
+            await callWithContextAsync(() => instance!.mounted(), context)
         }
 
         componentNode.haveRendered = true
@@ -251,7 +253,7 @@ async function renderClass(jsx: JSXInternal.Element, parent: IComponentNode | nu
 }
 
 export async function renderComponent(componentNode: IComponentNode, xpath: string, declaration: any): Promise<string> {
-    const template = callWithContext(() => componentNode.instance!.render(), componentNode.name, declaration, componentNode.instance)
+    const template = callWithContext(() => componentNode.instance!.render(), { name: componentNode.name, id: componentNode.id, declaration, instance: componentNode.instance })
     const subResult = await renderer(template, componentNode, xpath) || '<div></div>'
     return subResult.replace(/<(\w+)/, defineComponent(componentNode.name, componentNode.id, componentNode.key))
 }

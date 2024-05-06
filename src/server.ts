@@ -6,7 +6,7 @@ import compression from 'compression'
 import { registerPages, facadeHTTP, facadeWS } from 'facade/server'
 
 import ShopPage from 'server/pages/ShopPage'
-import PDP from 'server/pages/PDP'
+import PDP from 'server/pages/PDP.facade'
 import PLP from 'server/pages/PLP'
 
 globalThis.fFragment = function fFragment(props) {
@@ -33,8 +33,9 @@ app.use(compression())
 app.use('/static', express.static(path.join(__dirname, '..', 'public')))
 const sessionParser = session({
     secret: 'your-secret-key',
-    resave: false,
+    resave: true,
     saveUninitialized: true,
+    rolling: true,
     cookie: { secure: false } // Set secure to true if you're using HTTPS
 })
 app.use(sessionParser)

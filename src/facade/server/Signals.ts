@@ -35,16 +35,11 @@ class Signal {
             : this._value
     }
 
-    addDependant(dep: string) {
+    addDependant(dep: string, index: number) {
         if (this._owner?.declaration) {
-            this._owner.declaration.prototype._dependants ??= new Set()
-            this._owner?.declaration?.prototype._dependants.add(dep)
-        }
-    }
-
-    removeDependant(dep: string) {
-        if (this._owner?.declaration?.prototype._dependants) {
-            this._owner?.declaration?.prototype._dependants.delete(dep)
+            this._owner.declaration.prototype._dependants ??= {}
+            this._owner.declaration.prototype._dependants[dep] ??= new Set()
+            this._owner.declaration.prototype._dependants[dep].add(index)
         }
     }
 
@@ -58,16 +53,27 @@ class Signal {
     }
 
     notify() {
-        if (this._owner?.instance) {
+        if (this._owner?.name && this._owner?.id) {
             if (isClinet) {
-                rerenderComponent(this._owner.instance._name, this._owner.instance._id)
+                rerenderComponent(this._owner.name, this._owner.id)
             } else {
-                markToRender(this._owner?.instance?._name, this._owner?.instance?._id)
+                markToRender(this._owner.name, this._owner?.id)
             }
         }
 
-        if (this._owner?.declaration?.prototype._dependants) {
-            this._owner?.declaration?.prototype._dependants.forEach((d: string) => makeSureInstancesExist(d))
+        if (this._owner?.declaration?.prototype?._dependants) {
+            const dependants = this._owner?.declaration?.prototype._dependants
+            Object.keys(dependants).forEach((d) => {
+                const vertices = makeSureInstancesExist(d)
+                vertices.forEach((vertex) => {
+                    if (vertex && vertex.instance) {
+                        dependants[d].forEach((i: number) => {
+                            console.log('vertex', vertex.name)
+                            vertex.instance!.effects?.[i]?.()
+                        })
+                    }
+                })
+            })
         }
 
         this._subscribers.forEach((fn: any) => fn(this.get()))
@@ -117,22 +123,18 @@ export function effect(fn: (v?: any) => void) {
 
     fn()
 
-    const deps = currentEffectDeps
-
-    deps.forEach((dep) => {
+    currentEffectDeps.forEach((dep) => {
         dep.subscribe(fn)
-        dep.addDependant(component?.name)
+        dep.addDependant(component?.name, component?.index)
     })
 
-    const result = {
-        invoke: fn,
-        deps,
-        destroy: () => deps.forEach((dep) => dep.unsubscribe(fn))
+    currentEffectDeps = []
+
+    return {
+        // invoke: fn,
+        // deps,
+        // destroy: () => deps.forEach((dep) => dep.unsubscribe(fn))
     }
-
-    currentEffectDeps = null
-
-    return result
 }
 
 export function compute(fn: any) {}
@@ -141,7 +143,7 @@ export let PROP_RECIVER: string | null = null
 export function prop<T>(v: string | ((v?: any) => any)): (props: any) => (v?: any) => T {
     function propReciver(props: any): (v?: any) => T {
         const value = typeof v === 'function' ? v(props) : props[v]
-        return signal(value)
+        return propSignal(value)
     }
 
     if (!PROP_RECIVER) {
@@ -149,4 +151,43 @@ export function prop<T>(v: string | ((v?: any) => any)): (props: any) => (v?: an
     }
 
     return propReciver
+}
+
+function propSignal(input: any) {
+    const ref = new Signal(input)
+    ref._owner = getCurrentContext()
+    if (ref._owner) ref._owner.index++
+
+    function propCallback(...args: any) {
+        ref._owner = {
+            index: 0,
+            ...ref._owner,
+            ...getCurrentContext(),
+        }
+
+        if (args.length === 0) {
+            currentEffectDeps?.push(ref)
+            return ref.get()
+        }
+
+        const isSuccessful = ref.set(args[0])
+        if (isSuccessful) ref.notify()
+    }
+
+    propCallback.prototype.toJSON = function() {
+        return {
+            __type: 'prop',
+            value: ref._value,
+        }
+    }
+
+    propCallback.prototype.set = function(v: any) {
+        ref.set(v)
+    }
+
+    if (!SIGNAL_CALLBACK) {
+        SIGNAL_CALLBACK = propCallback.name
+    }
+
+    return propCallback;
 }

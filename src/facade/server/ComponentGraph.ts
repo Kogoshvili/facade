@@ -1,7 +1,7 @@
 import { nanoid } from 'nanoid'
 import GraphConstructor from './Graph'
 import { IComponentNode } from './Interfaces'
-import { PROP_RECIVER, SIGNAL_CALLBACK, signal } from './Signals'
+import { PROP_RECIVER, SIGNAL_CALLBACK, prop, signal } from './Signals'
 import { buildComponent, getComponentDeclaration } from './ComponentRegistry'
 import { callWithContext, callWithContextAsync } from './Context'
 import { getInjectable, inject } from './Injection'
@@ -43,6 +43,10 @@ export function markToRender(componentName: string, componentId: string) {
 
 export function serializableGraph() {
     return Graph.toJSONable((_, value) => {
+        if (value.instance) {
+            value.instance.destroying?.()
+        }
+
         const properties = value.instance ? getProperties(value.instance).properties : value.properties
 
         return {
@@ -61,20 +65,25 @@ export function deserializeGraph(json: string) {
 
 export function rebuildInstance(vertex: IComponentNode) {
     const parent = Graph.getParentVertices(getVertexIds(vertex).any)[0]
-    const instance = buildComponent(vertex.name)
+    const instance = buildComponent(vertex.name, vertex.id)
     const declaration = getComponentDeclaration(vertex.name)
     const propsOverwrites: any = {}
+    const propMethods: any = {}
 
     if (vertex.properties) {
         Object.entries(vertex.properties).forEach(([key, value]) => {
             if (typeof value === 'object' && value !== null) {
                 if (value.__type === 'signal') {
-                    propsOverwrites[key] = callWithContext(() => signal(value.value), vertex.name, declaration, instance)
+                    propsOverwrites[key] = callWithContext(() => signal(value.value), { name: vertex.name, id: vertex.id, declaration, instance})
                     return
                 }
                 if (value.__type === 'inject') {
                     const injectable = getInjectable(value.value)!
-                    propsOverwrites[key] = callWithContext(() => inject(injectable.declaration), vertex.name, declaration, instance)
+                    propsOverwrites[key] = callWithContext(() => inject(injectable.declaration), { name: vertex.name, id: vertex.id, declaration, instance})
+                    return
+                }
+                if (value.__type === 'prop') {
+                    propMethods[key] = value.value
                     return
                 }
             }
@@ -89,8 +98,6 @@ export function rebuildInstance(vertex: IComponentNode) {
     if (parent) {
         vertex.instance!._parent = { name: parent.split('/')[0], id: parent.split('/')[1] }
     }
-
-    callWithContext(() => vertex.instance!.mounted(), vertex.name, declaration, vertex.instance)
 
     return vertex
 }
@@ -116,16 +123,19 @@ export function populateProps(instance: any, props: Record<string, any>) {
 }
 
 export async function makeComponentNode(name: string, xpath: string, props: Record<string, any>, parent?: IComponentNode | null): Promise<IComponentNode> {
-    const instance = buildComponent(name)
+    const id = nanoid(10)
+    const instance = buildComponent(name, id)
     const declaration = getComponentDeclaration(name)
 
-    instance._id = nanoid(10)
+    instance._id = id
     instance._name = name
     instance._key = props.key ?? null
 
-    callWithContext(() => populateProps(instance, props), name, declaration, instance)
-    await callWithContextAsync(() => instance?.created?.(), name, declaration, instance)
-    await callWithContextAsync(() => instance?.mounted?.(), name, declaration, instance)
+    callWithContext(() => populateProps(instance, props), { name, id: instance._id, declaration, instance })
+    await callWithContextAsync(() => instance?.created?.(), { name, id: instance._id, declaration, instance })
+    callWithContext(() => instance?.callExpressions?.(), { name, id: instance._id, declaration, instance })
+    callWithContext(() => instance?.effects.forEach((effect: any) => effect()), { name, id: instance._id, declaration, instance })
+    await callWithContextAsync(() => instance?.mounted?.(), { name, id: instance._id, declaration, instance })
 
     const { properties, methods } = getProperties(instance)
 
@@ -178,12 +188,12 @@ export async function executeOnGraph(componentName: string, componentId: string,
         const stringifiedAnon = component._anonymous[componentName][property]
         const anonToFun = `(function(){(${stringifiedAnon})(...arguments)})`
         result[1] = await callWithContextAsync(() => eval(anonToFun).call(vertex.instance, parameters),
-            componentName, declaration, vertex.instance)
+            { name: componentName, id: componentId, declaration, instance: vertex.instance })
     } else if (typeof vertex.instance[property] !== 'function') {
         vertex.instance[property] = parameters
     } else {
         result[1] = await callWithContextAsync(() => vertex.instance![property](parameters),
-            componentName, declaration, vertex.instance)
+            { name: componentName, id: componentId, declaration, instance: vertex.instance })
     }
 
     result[0] = true
@@ -219,7 +229,7 @@ function getVertexIds({ name, id, xpath }: { name: string | null, id?: string | 
 
 const hiddenProperties = [
     'constructor', 'setState', 'forceUpdate', 'render',
-    'context', 'props', 'state',
+    'context', 'props', 'state', 'effects',
     '_parent', '_parentInstance', '_isMounted',
 ]
 

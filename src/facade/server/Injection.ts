@@ -33,7 +33,7 @@ export function rebuildInjectables(name: string) {
     if (!injectable.instance) {
         injectable.instance = callWithContext(
             () => new injectable.declaration(),
-            injectable?.declaration.name, injectable?.declaration
+            { name: injectable.declaration.name, declaration: injectable.declaration }
         )
 
         if (injectable.properties) {
@@ -44,7 +44,7 @@ export function rebuildInjectables(name: string) {
                     if (oldProperty.__type === 'signal') {
                         injectable.instance[key] = callWithContext(
                             () => signal(oldProperty.value),
-                            injectable?.declaration.name, injectable?.declaration, injectable.instance
+                            { name: injectable.declaration.name, declaration: injectable.declaration, instance: injectable.instance}
                         )
                         return
                     }
@@ -53,7 +53,7 @@ export function rebuildInjectables(name: string) {
                         const injectable = INJECTABLES.get(oldProperty.value)!
                         injectable.instance[key] = callWithContext(
                             () => inject(injectable.declaration),
-                            injectable?.declaration.name, injectable?.declaration, injectable.instance
+                            { name: injectable.declaration.name, declaration: injectable.declaration, instance: injectable.instance}
                         )
                         return
                     }
