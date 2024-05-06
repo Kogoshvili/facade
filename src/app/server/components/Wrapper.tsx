@@ -1,7 +1,7 @@
-import { AComponent } from 'facade/server'
+import { FComponent } from 'facade/server'
 import Modal from './Modal'
 
-class Wrapper extends AComponent<any> {
+class Wrapper extends FComponent<any> {
     render() {
         return (
             <div>

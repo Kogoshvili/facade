@@ -1,9 +1,9 @@
-import { Inject } from 'facade/server'
 import CartService from 'server/services/CartService'
-import { signal } from 'facade/server'
+import { inject, signal } from 'facade/server'
 
 <script>
-    const cartService = Inject(CartService)
+    const cartService = inject(CartService)
+    const id = 0
     const product = {
         "id": 1,
         "title": "iPhone 9",

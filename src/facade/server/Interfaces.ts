@@ -1,8 +1,8 @@
-import { AComponent } from './Component'
+import { FComponent } from './Component'
 
 export interface IComponentDeclaration {
     name: string
-    declaration: (new () => AComponent<any>) & AComponent<any>
+    declaration: (new () => FComponent<any>) & FComponent<any>
 }
 
 export interface IComponentNode {
@@ -10,7 +10,7 @@ export interface IComponentNode {
     id: string
     key: string | number | null
     xpath: string | null
-    instance: AComponent | null
+    instance: FComponent | null
     props: Record<string, any>
     properties: Record<string, any>
     methods: string[]

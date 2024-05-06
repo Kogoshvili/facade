@@ -1,9 +1,8 @@
-import { Inject } from 'facade/server'
 import CartService from 'server/services/CartService'
-import { effect, signal } from 'facade/server'
+import { inject, effect, signal } from 'facade/server'
 
 <script>
-    const cartService = Inject(CartService)
+    const cartService = inject(CartService)
     const cart = signal([])
 
     function mounted() {

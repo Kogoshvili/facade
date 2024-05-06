@@ -2,18 +2,6 @@ import { makeSureInstancesExist, markToRender } from './ComponentGraph'
 import { IContext, getCurrentContext } from './Context';
 import { rerenderComponent } from './JSXRenderer';
 
-export interface ISignal<T> {
-    (v?: T | (() => T)): T;
-    _value: T
-    _subscribers: (() => void)[]
-    _owner: null | IContext
-    set(v: any): boolean
-    get(): any
-    subscribe(fn: (v?: any) => void): void
-    unsubscribe(fn: (v?: any) => void): void
-    notify(): void
-}
-
 const isClinet = !(typeof process === 'object')
 
 class Signal {
@@ -48,7 +36,8 @@ class Signal {
     }
 
     addDependant(dep: string) {
-        if (this._owner?.declaration?.prototype._dependants) {
+        if (this._owner?.declaration) {
+            this._owner.declaration.prototype._dependants ??= new Set()
             this._owner?.declaration?.prototype._dependants.add(dep)
         }
     }
@@ -86,8 +75,7 @@ class Signal {
 }
 
 export let SIGNAL_CALLBACK: string | null = null
-
-export function signal(input: any) {
+export function signal<T>(input: any): (v?: any) => T {
     const ref = new Signal(input)
     ref._owner = getCurrentContext()
     if (ref._owner) ref._owner.index++
@@ -123,7 +111,6 @@ export function signal(input: any) {
 }
 
 let currentEffectDeps: any[] | null = null
-
 export function effect(fn: (v?: any) => void) {
     currentEffectDeps = []
     const component = getCurrentContext()
@@ -149,3 +136,17 @@ export function effect(fn: (v?: any) => void) {
 }
 
 export function compute(fn: any) {}
+
+export let PROP_RECIVER: string | null = null
+export function prop<T>(v: string | ((v?: any) => any)): (props: any) => (v?: any) => T {
+    function propReciver(props: any): (v?: any) => T {
+        const value = typeof v === 'function' ? v(props) : props[v]
+        return signal(value)
+    }
+
+    if (!PROP_RECIVER) {
+        PROP_RECIVER = propReciver.name
+    }
+
+    return propReciver
+}

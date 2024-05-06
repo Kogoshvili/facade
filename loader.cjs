@@ -38,7 +38,7 @@ module.exports = function (source, map) {
     // Create a new class declaration
     const classDeclaration = t.classDeclaration(
         t.identifier(className),
-        t.identifier('AComponent'),
+        t.identifier('FComponent'),
         t.classBody([]),
         []
     );
@@ -152,7 +152,7 @@ module.exports = function (source, map) {
     // Replace the <template> and <script> sections with the compiled code
     const finalCode = source
         .replace(templateMatch[0], '')
-        .replace(scriptMatch[0], `import { AComponent } from 'facade/server';\n\n` + componentCode.code + `\n\nexport default ${className};\n`);
+        .replace(scriptMatch[0], `import { FComponent } from 'facade/server';\n\n` + componentCode.code + `\n\nexport default ${className};\n`);
 
     // Generate the source map
     const sourceMap = componentCode.map;

@@ -1,8 +1,7 @@
-import { signal, ISignal, Injectable } from 'facade/server'
+import { signal } from 'facade/server'
 
-@Injectable()
 class ModalService {
-    modal: ISignal<string|null> = signal(null)
+    modal = signal<string|null>(null)
 
     openModal(data: any) {
         this.modal(data)

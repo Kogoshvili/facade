@@ -1,13 +1,13 @@
-import { AComponent } from './Component'
+import { FComponent } from './Component'
 import { callWithContext } from './Context'
 
-const Components = new Map<string, (new () => AComponent)>()
+const Components = new Map<string, (new () => FComponent)>()
 
 export function registerComponent(name: string, declaration: any) {
     Components.set(name, declaration)
 }
 
-export function getComponentDeclaration(name: string): (new () => AComponent) {
+export function getComponentDeclaration(name: string): (new () => FComponent) {
     return Components.get(name)!
 }
 

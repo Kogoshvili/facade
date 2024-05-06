@@ -1,9 +1,9 @@
-import { AComponent, effect, Inject } from 'facade/server'
+import { FComponent, effect, inject } from 'facade/server'
 import ModalService from 'server/services/ModalService'
 
-class Modal extends AComponent<any> {
+class Modal extends FComponent<any> {
     content: any | null = null
-    modalService = Inject<ModalService>(ModalService)
+    modalService = inject<ModalService>(ModalService)
 
     mounted() {
         effect(() => {

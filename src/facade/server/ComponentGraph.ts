@@ -1,10 +1,10 @@
+import { nanoid } from 'nanoid'
 import GraphConstructor from './Graph'
 import { IComponentNode } from './Interfaces'
-import { nanoid } from 'nanoid'
-import { SIGNAL_CALLBACK, signal } from './Signals'
+import { PROP_RECIVER, SIGNAL_CALLBACK, signal } from './Signals'
 import { buildComponent, getComponentDeclaration } from './ComponentRegistry'
 import { callWithContext, callWithContextAsync } from './Context'
-import { getInjectable, Inject } from './Injection'
+import { getInjectable, inject } from './Injection'
 
 const Graph: GraphConstructor<string, IComponentNode> = new GraphConstructor<string, IComponentNode>()
 const Roots = new Set<string>()
@@ -74,7 +74,7 @@ export function rebuildInstance(vertex: IComponentNode) {
                 }
                 if (value.__type === 'inject') {
                     const injectable = getInjectable(value.value)!
-                    propsOverwrites[key] = callWithContext(() => Inject(injectable.declaration), vertex.name, declaration, instance)
+                    propsOverwrites[key] = callWithContext(() => inject(injectable.declaration), vertex.name, declaration, instance)
                     return
                 }
             }
@@ -106,6 +106,15 @@ export function getComponentNode(name: string, xpath: string): IComponentNode | 
     return vertex || null
 }
 
+export function populateProps(instance: any, props: Record<string, any>) {
+    Object.entries(instance).forEach(([key, value]) => {
+        if (typeof value === 'function' && value.name === PROP_RECIVER) {
+            instance[key] = value(props)
+        }
+    })
+    instance?.recived(props)
+}
+
 export async function makeComponentNode(name: string, xpath: string, props: Record<string, any>, parent?: IComponentNode | null): Promise<IComponentNode> {
     const instance = buildComponent(name)
     const declaration = getComponentDeclaration(name)
@@ -114,8 +123,9 @@ export async function makeComponentNode(name: string, xpath: string, props: Reco
     instance._name = name
     instance._key = props.key ?? null
 
-    callWithContext(() => instance.recived(props), name, declaration, instance)
-    await callWithContextAsync(() => instance.created(), name, declaration, instance)
+    callWithContext(() => populateProps(instance, props), name, declaration, instance)
+    await callWithContextAsync(() => instance?.created?.(), name, declaration, instance)
+    await callWithContextAsync(() => instance?.mounted?.(), name, declaration, instance)
 
     const { properties, methods } = getProperties(instance)
 

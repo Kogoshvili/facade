@@ -1,12 +1,12 @@
 import { getNode, rebuildInstance } from './ComponentGraph'
 
 // eslint-disable-next-line @typescript-eslint/ban-types
-abstract class AComponent<P = {}, D = any > {
+abstract class FComponent<P = {}, D = any > {
     _name: string | null = null
     _id: string | null = null
     _key: string | null = null
     _parent: { name: string, id: string } | null = null
-    _parentInstance: AComponent | null = null
+    _parentInstance: FComponent | null = null
 
     static _anonymous: {[key: string]: ((...args: any) => void)[]} = {}
 
@@ -32,11 +32,8 @@ abstract class AComponent<P = {}, D = any > {
         // Depends on input
     }
 
-    // TODO: Implement?
-    // async propsChanged() {}
-
     // Executes before render if rendering is needed
-    mounted() {
+    async mounted() {
         // Depends on input
     }
 
@@ -55,14 +52,12 @@ abstract class AComponent<P = {}, D = any > {
         // Depends on input
     }
 
-    static clinet() {}
-
     // Executes every time the component is rendered
-    static render(this: any): preact.JSX.Element | null {
+    render(this: any): preact.JSX.Element | null {
         return null
     }
 
     [key: string]: any
 }
 
-export { AComponent }
+export { FComponent }

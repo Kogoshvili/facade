@@ -10,6 +10,7 @@ import ProductCard from './ProductCard'
     }
 
     async function created() {
+        console.log('Created')
         const url = this.query?.category ? `https://dummyjson.com/products/category/${this.query.category}` : 'https://dummyjson.com/products'
         const { data } = await axios.get(url)
         this.products = data.products.slice(0, 12)

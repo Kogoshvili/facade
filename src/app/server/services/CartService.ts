@@ -1,8 +1,7 @@
-import { signal, ISignal, Injectable } from 'facade/server'
+import { signal } from 'facade/server'
 
-@Injectable()
 class CartService {
-    cart: ISignal<[]> = signal([])
+    cart = signal<any[]>([])
 
     addToCart(item: any) {
         // @ts-ignore
