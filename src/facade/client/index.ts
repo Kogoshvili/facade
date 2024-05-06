@@ -1,9 +1,9 @@
 import { DiffDOM } from 'diff-dom'
 import Facade, { IUpdatedProperties } from './interfaces'
 import debounce from 'lodash/debounce'
-import { executeOnGraph } from '../server/ComponentGraph'
-import { rerenderComponent } from '../server/JSXRenderer'
-import { renderer } from '../server/JSXRenderer'
+import { executeOnGraph } from 'facade/server/ComponentGraph'
+import { rerenderComponent } from 'facade/server/JSXRenderer'
+import { renderer } from 'facade/server/JSXRenderer'
 
 window.fFragment = function fFragment(props) {
 	return props.children;

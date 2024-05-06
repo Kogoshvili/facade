@@ -1,26 +1,17 @@
 import { JSXInternal } from 'preact/src/jsx'
-import { rebuildInstance, getComponentNode, makeComponentNode } from './ComponentGraph'
 import { isString, isBoolean, isFunction, isObject, isArray } from 'lodash-es'
+import { DiffDOM, stringToObj, nodeToObj } from 'diff-dom'
+import { deepEqual } from 'fast-equals';
+import { rebuildInstance, getComponentNode, makeComponentNode } from './ComponentGraph'
 import { IComponentNode } from './Interfaces'
 import { getComponentDeclaration, registerComponent } from './ComponentRegistry'
 import { AComponent } from './Component'
-import { parse } from 'node-html-parser'
 import { getGraph, getRoots } from './ComponentGraph'
-import { DiffDOM, stringToObj, nodeToObj } from 'diff-dom'
-import { deepEqual } from 'fast-equals';
 import { callWithContext, callWithContextAsync } from './Context'
-import Facade from './Facade'
+import Facade from 'facade/server/Facade'
+import { appendScripts, getElementById, replaceElementById } from './Dom';
 
 const isClinet = !(typeof process === 'object')
-let scripts: string = ''
-let dom: any | null = null
-
-export function getScripts() { return scripts }
-export function clearScripts() { scripts = '' }
-
-export function getDOM() { return dom }
-export function setDOM(pastDom: string) { dom = parse(pastDom) }
-export function clearDOM() { dom = null }
 
 export async function rerenderComponent(componentName: string, componentId: string) {
     const componentNode = getComponentNode(componentName, componentId)!
@@ -47,7 +38,7 @@ export async function rerenderModifiedComponents() {
 
     const nodePromises = nodes.map(async (node) => {
         const idToFind = `${node.name}.${node.id}`
-        const oldElement = getElementById(idToFind)?.outerHTML
+        const oldElement = isClinet ? null : getElementById(idToFind)?.outerHTML
 
         // element was not rendered before
         if (!oldElement) return { diff: [] }
@@ -61,7 +52,9 @@ export async function rerenderModifiedComponents() {
         const newBody = stringToObj(result!)
         const domDiff = dd.diff(prevBody, newBody)
 
-        replaceElementById(idToFind, result)
+        if (!isClinet) {
+            replaceElementById(idToFind, result)
+        }
 
         return {
             id: node.id,
@@ -224,7 +217,7 @@ async function renderClass(jsx: JSXInternal.Element, parent: IComponentNode | nu
     }
 
     const idToFind = `${componentNode.name}.${componentNode.id}`
-    const prevRender = getElementById(idToFind)
+    const prevRender = isClinet ? null : getElementById(idToFind)
 
     let propsChanged = false
     if (componentNode.needsRender || !prevRender || (propsChanged = !deepEqual(componentNode.props, props))) {
@@ -240,7 +233,9 @@ async function renderClass(jsx: JSXInternal.Element, parent: IComponentNode | nu
         componentNode.haveRendered = true
 
         const result: string = await renderComponent(componentNode, xpath, declaration)
-        replaceElementById(idToFind, result)
+        if (!isClinet) {
+            replaceElementById(idToFind, result)
+        }
         return result
     }
 
@@ -248,25 +243,14 @@ async function renderClass(jsx: JSXInternal.Element, parent: IComponentNode | nu
 }
 
 export async function renderComponent(componentNode: IComponentNode, xpath: string, declaration?: any): Promise<string> {
-    const script = componentNode.instance?.script?.()
-    if (script) appendScripts(script, componentNode)
+    if (!isClinet) {
+        const script = componentNode.instance?.script?.()
+        if (script) appendScripts(script, componentNode)
+    }
 
     const template = callWithContext(() => componentNode.instance!.render(), componentNode.name, declaration, componentNode.instance)
     const subResult = await renderer(template, componentNode, xpath) || '<div></div>'
     return subResult.replace(/<(\w+)/, defineComponent(componentNode.name, componentNode.id, componentNode.key))
-}
-
-export function replaceElementById(idToFind: string, replacement: string) {
-    if (!dom) return
-    const element = dom.getElementById(idToFind)
-    if (element) {
-        element.replaceWith(parse(replacement))
-    }
-}
-
-export function getElementById(idToFind: string) {
-    if (!dom) return
-    return dom.getElementById(idToFind)
 }
 
 async function renderFunction(jsx: any, parent: IComponentNode | null = null, parentXPath: string = '', index: number | null = null): Promise<string> {
@@ -449,42 +433,3 @@ function cleanDiff(diff: {action: string, name?: string, value?: string, newValu
     return result;
 }
 
-function appendScripts({ name, url } : { name: string, url: string }, componentNode: IComponentNode) {
-    const wrapperd = `
-        <script type="module" src="${url}" id="${name}.${componentNode.id}"></script>
-        <script type="text/javascript">
-            addEventListener('facade:state:updated', ({
-                detail: { updatedProperties }
-            }) => {
-                const component = facade.state.find(
-                    s => s.key === '${componentNode.name}/${componentNode.id}'
-                ).value
-
-                const methods = component.methods.reduce((acc, method) => {
-                    acc[method] = async function() {
-                        return await facade.request(
-                            '${componentNode.name}',
-                            '${componentNode.id}',
-                            method,
-                            arguments
-                        )
-                    }
-                    return acc
-                }, {})
-
-                const thisMock = {
-                    ...component.properties,
-                    ...methods
-                }
-
-                const element = document.getElementById('${componentNode.name}.${componentNode.id}')
-
-                if (updatedProperties === null || updatedProperties.some(i => i.componentName === '${componentNode.name}' && i.componentId === '${componentNode.id}'))
-                {
-                    FScripts['${name}'].script.call(thisMock, element)
-                }
-            })
-        </script>
-    `
-    scripts += wrapperd
-}

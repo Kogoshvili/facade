@@ -17,7 +17,8 @@
     "serve": "nodemon ./dist/server.js --watch ./dist",
     "lint": "eslint . --ext .ts --fix",
     "postinstall": "patch-package",
-    "build:analyze": "webpack --config-name client --mode production --analyze"
+    "build:analyze": "webpack --config-name client --analyze",
+    "build:prod:analyze": "webpack --config-name client --mode production --analyze"
   },
   "keywords": [],
   "author": "",
@@ -53,6 +54,7 @@
     "@types/express": "^4.17.21",
     "@types/express-session": "^1.18.0",
     "@types/lodash": "^4.17.0",
+    "@types/lodash-es": "^4.17.12",
     "@types/node": "^20.12.5",
     "@types/ws": "^8.5.10",
     "@typescript-eslint/eslint-plugin": "^7.5.0",

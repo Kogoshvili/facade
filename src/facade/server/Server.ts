@@ -1,7 +1,8 @@
 import { diff, flattenChangeset } from 'json-diff-ts'
 import { WebSocketServer } from 'ws'
 import { clearInjectables, getJSONableInjectables, parseInjectables } from './Injection'
-import { clearDOM, clearScripts, getDOM, getScripts, renderer, setDOM, rerenderModifiedComponents } from './JSXRenderer'
+import { clearDOM, clearScripts, getDOM, getScripts, setDOM } from './Dom'
+import { renderer, rerenderModifiedComponents } from './JSXRenderer'
 import { clearComponentGraph, deserializeGraph, serializableGraph, executeOnGraph } from './ComponentGraph'
 
 const pages: Record<string, any> = {}

@@ -78,7 +78,22 @@ module.exports = (env, argv) => {
                     analyzerMode: 'static',
                 })] : [])
             ],
+            externals: {
+                './Dom': 'facade/server/Dom',
+                'facade/server/Facade': 'facade/server/Facade',
+                'json-diff-ts': 'json-diff-ts',
+            },
+            resolve: {
+                ...sharedConfig.resolve,
+                alias: {
+                    ...sharedConfig.resolve.alias,
+                    'diff-dom': 'diff-dom/dist/index.min.js',
+                }
+            },
             optimization: {
+                splitChunks: {
+                    // chunks: 'all',
+                },
                 minimizer: [new TerserPlugin()],
             }
         },
