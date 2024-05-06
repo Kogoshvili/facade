@@ -1,6 +1,3 @@
-
-`<([a-z]+)([^>]*?)id=["']${idToFind}["'](.*?)>(.*?)</\\1>`, 'is'
-
 features:
 
 webTransport
@@ -8,19 +5,16 @@ bun
 
 recived and input()?
 
-multiple pages (instance tree per page?? probably not)
+share instances between pages,
+page switching as alternative for new page
 
-do I event need this? or I can just user inline events?
-better event listener handling, write some custom helper for it
-
-???:
 post render method that modifies render dom before it is send using jsdom to make do
 
 
 future:
 gziping ws sending data as blob achivable with configuration of ws npm
 fork dom-diff or write more efficient one that will produce smaller diffs
- reasoing: something wierd with dom diff, works but unnecesery updates
+reasoing: something wierd with dom diff, works but unnecesery updates
 
 
 
