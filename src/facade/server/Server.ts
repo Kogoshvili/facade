@@ -210,7 +210,7 @@ export function facadeHTTP(app: any) {
                 if (!window.facade) {
                     window.facade = {}
                 }
-                console.debug('Setting state')
+                console.debug('Facade Setting state')
                 window.facade.state = ${JSON.stringify(componentGraph.vertices)}
                 document.getElementById('facade-state').remove()
             </script>
