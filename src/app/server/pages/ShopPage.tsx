@@ -8,7 +8,7 @@ import NavBar from 'server/components/NavBar.facade'
 function ShopPage() {
     return (
         <html>
-            <Header name="Shop" />
+            <Header name="Shop - Home" />
             <Body>
                 <NavBar />
                 <Wrapper />

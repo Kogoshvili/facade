@@ -8,7 +8,7 @@ import NavBar from 'server/components/NavBar.facade'
 function PLP(req) {
     return (
         <html>
-            <Header name="Shop" />
+            <Header name="Shop - PLP" />
             <Body>
                 <NavBar />
                 <div class="flex flex-row justify-between gap-5">
