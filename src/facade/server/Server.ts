@@ -69,8 +69,8 @@ async function process(session: any, page: string, componentName: string, compon
 
     const scripts = getScripts()
     const oldScripts = session.head.match(/<script[^>]*>[\s\S]*?<\/script>/g) ?? []
-    // find scripts that aren not in the old scripts
     const newScripts = scripts.filter((s) => !oldScripts.includes(s))
+
     session.head = session.head.replace('</head>', `${newScripts.join('\n')}</head>`)
     session.body = getDOM().toString()
     session.instanceTree = JSON.stringify(newInstanceTree)
@@ -135,7 +135,6 @@ export function facadeHTTP(app: any) {
         res.send(JSON.stringify(result))
     })
 
-
     app.post('/facade/http/set-state', async (req: any, res: any) => {
         // const session = req.session as any
         // const { page, state } = req.body
@@ -183,16 +182,21 @@ export function facadeHTTP(app: any) {
     app.post('/facade/page/:page', async (req: any, res: any) => {
         console.time('SPA Render')
 
-        requestType = 'page'
-
         const page = req.params.page
+
+        if (!pages[page]) {
+            res.status(404).send('Page not found')
+            return
+        }
+
         const session = req.session as any
 
-        // if (session.dom) setDOM(session.dom)
+        requestType = 'page'
         if (session.injectables) parseInjectables(session.injectables)
         if (session.instanceTree) deserializeGraph(session.instanceTree)
 
         const rendered = await RenderDOM(page, { params: req.params, query: req.query })
+
         const scripts = getScripts()
         const withScripts = rendered.replace('</head>',`${scripts.join('\n')}</head>`)
 
@@ -200,17 +204,20 @@ export function facadeHTTP(app: any) {
 
         const dd = new DiffDOM()
 
+        const newBody = getBody(rendered)
+        const newHead = getHead(withScripts)
+
         response.diffs = {
-            head: dd.diff(getHead(session.head), getHead(withScripts)),
-            body: dd.diff(getBody(session.body), getBody(rendered))
+            head: dd.diff(session.head, newHead),
+            body: dd.diff(session.body, newBody)
         }
 
         const newInstanceTree = serializableGraph()
         const oldInstanceTree = JSON.parse(session.instanceTree)
         response.state = getJSONDiff(oldInstanceTree.vertices, newInstanceTree.vertices)
 
-        session.head = getHead(withScripts)
-        session.body = getBody(rendered)
+        session.head = newHead
+        session.body = newBody
         session.instanceTree = JSON.stringify(newInstanceTree)
         session.injectables = JSON.stringify(getJSONableInjectables())
 
@@ -231,18 +238,14 @@ export function facadeHTTP(app: any) {
             return
         }
 
-        requestType = 'page'
         const session = req.session as any
 
-        if (session.injectables) {
-            parseInjectables(session.injectables)
-        }
-
-        if (session.instanceTree) {
-            deserializeGraph(session.instanceTree)
-        }
+        requestType = 'page'
+        if (session.injectables) parseInjectables(session.injectables)
+        if (session.instanceTree) deserializeGraph(session.instanceTree)
 
         const rendered = await RenderDOM(page, { params: req.params, query: req.query })
+
         const componentGraph = serializableGraph()
 
         const scripts = getScripts()
@@ -261,14 +264,14 @@ export function facadeHTTP(app: any) {
         )
 
         session.head = getHead(withScripts)
-        session.body = getBody(rendered)
+        session.body = getBody(withScripts)
         session.instanceTree = JSON.stringify(componentGraph)
         session.injectables = JSON.stringify(getJSONableInjectables())
 
         cleanup()
 
-        res.setHeader('Content-Type', 'text/html; charset=utf-8')
         console.timeEnd('Page Render')
+        res.setHeader('Content-Type', 'text/html; charset=utf-8')
         res.send(withScriptsAndState)
     })
 }

@@ -388,7 +388,6 @@ function mountEvents() {
     })
 
     addEventListener('popstate', (event) => {
-        console.log('Popstate', event)
         if (window.facade && event.state?.page) {
             console.log('Poping to', event.state.page)
             window.facade.link(event.state.page, true)
