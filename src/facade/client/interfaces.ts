@@ -11,7 +11,7 @@ interface Facade {
     request: (componentName: string, componentId: string, property: string, parameters: any, event?: string, mode?: string) => void
     callback: (path: string, parameters: any) => void
     init: () => void
-    link: (path: string) => void
+    link: (path: string, popState?: boolean) => void
     mount: () => void
     execute: (componentName: string, componentId: string, method: string, args: any) => void
     rendered: () => void

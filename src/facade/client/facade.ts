@@ -121,6 +121,9 @@ facade.init = function () {
     // }
 
     // this.methods.syncState()
+    window.history.replaceState({
+        page: window.location.pathname + window.location.search
+    }, '')
 
     this.socket = new WebSocket(`ws://${window.location.host}/`)
     this.socket.onopen = () => {
@@ -338,7 +341,9 @@ facade.methods = {
 }
 
 facade.loaded = function (libraryName: string, componentName: string, componentId: string) {
-    facade.execute(libraryName, componentName, componentId, 'script')
+    if (facade.state?.length > 0) {
+        facade.execute(libraryName, componentName, componentId, 'script')
+    }
 
     addEventListener('facade:state:updated', function ({ detail }: any) {
         if (!detail?.updatedProperties) return
@@ -348,18 +353,13 @@ facade.loaded = function (libraryName: string, componentName: string, componentI
     })
 }
 
-facade.link = async function (href: string) {
+facade.link = async function (href: string, popState = false) {
     console.log('Linking to', href)
     const pageURL = href === '/' ? '/index' : href
 
     const responseRaw = await fetch(`${facade.config.url}/page/${pageURL.startsWith('/') ? pageURL.slice(1) : pageURL}`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        // body: JSON.stringify({
-        //     dom: document.documentElement.outerHTML
-        // })
+        headers: {'Content-Type': 'application/json'}
     })
 
     const { diffs, state } = await responseRaw.json()
@@ -369,6 +369,13 @@ facade.link = async function (href: string) {
     dd.apply(document.head, head)
     dd.apply(document.body, body)
     facade.methods.updateState(state)
+
+    if (!popState) {
+        console.log('Pushing state', pageURL)
+        window.history.pushState({
+            page: pageURL
+        }, '', href)
+    }
 }
 
 facade.init()
@@ -378,6 +385,14 @@ function mountEvents() {
     addEventListener('DOMContentLoaded', () => {
         if (!window.facade) return
         window.facade.mount()
+    })
+
+    addEventListener('popstate', (event) => {
+        console.log('Popstate', event)
+        if (window.facade && event.state?.page) {
+            console.log('Poping to', event.state.page)
+            window.facade.link(event.state.page, true)
+        }
     })
 
     addEventListener('beforeunload', (_event) => {
