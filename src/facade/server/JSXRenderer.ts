@@ -9,7 +9,7 @@ import { FComponent } from './Component'
 import { getGraph, getRoots } from './ComponentGraph'
 import { callWithContext, callWithContextAsync } from './Context'
 import { Facade } from 'facade/server'
-import { appendScripts, getElementById, replaceElementById } from './Dom';
+import { appendScripts, appendStyles, getElementById, replaceElementById } from './Dom';
 import { getRequestType } from './Server';
 
 const isClinet = !(typeof process === 'object')
@@ -249,6 +249,9 @@ async function renderClass(jsx: JSXInternal.Element, parent: IComponentNode | nu
             if (!prevRender) {
                 const script = componentNode.instance?.script?.()
                 if (script) appendScripts(script, componentNode)
+
+                const style = componentNode.instance?.style?.()
+                if (style) appendStyles(style)
             }
         }
 

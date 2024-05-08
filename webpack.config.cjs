@@ -4,6 +4,7 @@ const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPl
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
 const ProgressPlugin = require('progress-webpack-plugin')
 const fs = require('fs');
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 
 module.exports = (env, argv) => {
     const configName = argv.configName[0]
@@ -23,9 +24,17 @@ module.exports = (env, argv) => {
             },
             plugins: [new TsconfigPathsPlugin()],
         },
-        plugins: [new ProgressPlugin(true)],
+        plugins: [new ProgressPlugin(true), new MiniCssExtractPlugin()],
         module: {
             rules: [
+                {
+                    test: /\.s[ac]ss$/i,
+                    use: [
+                        MiniCssExtractPlugin.loader,
+                        'css-loader',
+                        'sass-loader',
+                    ],
+                },
                 {
                     test: /\.([cm]?ts|tsx)$/,
                     loader: 'ts-loader',

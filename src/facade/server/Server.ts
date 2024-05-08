@@ -1,7 +1,7 @@
 import { diff, flattenChangeset } from 'json-diff-ts'
 import { WebSocketServer } from 'ws'
 import { clearInjectables, getJSONableInjectables, parseInjectables } from './Injection'
-import { clearDOM, clearScripts, getDOM, getScripts, setDOM } from './Dom'
+import { clearDOM, clearScripts, clearStyles, getDOM, getScripts, getStyles, setDOM } from './Dom'
 import { renderer, rerenderModifiedComponents } from './JSXRenderer'
 import { clearComponentGraph, deserializeGraph, serializableGraph, executeOnGraph, clearComponentsToRerender } from './ComponentGraph'
 import { DiffDOM, stringToObj, nodeToObj } from 'diff-dom'
@@ -71,7 +71,11 @@ async function process(session: any, page: string, componentName: string, compon
     const oldScripts = session.head.match(/<script[^>]*>[\s\S]*?<\/script>/g) ?? []
     const newScripts = scripts.filter((s) => !oldScripts.includes(s))
 
-    session.head = session.head.replace('</head>', `${newScripts.join('\n')}</head>`)
+    const styles = getStyles()
+    const oldStyles = session.head.match(/<link[^>]*>[\s\S]*?<\/link>/g) ?? []
+    const newStyles = styles.filter((s) => !oldStyles.includes(s))
+
+    session.head = session.head.replace('</head>', `${newScripts.join('\n')}</head>`).replace('</head>', `${newStyles.join('\n')}</head>`)
     session.body = getDOM().toString()
     session.instanceTree = JSON.stringify(newInstanceTree)
     session.injectables = JSON.stringify(getJSONableInjectables())
@@ -199,13 +203,14 @@ export function facadeHTTP(app: any) {
 
         const scripts = getScripts()
         const withScripts = rendered.replace('</head>',`${scripts.join('\n')}</head>`)
+        const withStyles = withScripts.replace('</head>', `${getStyles().join('\n')}</head>`)
 
         const response: any = {}
 
         const dd = new DiffDOM()
 
         const newBody = getBody(rendered)
-        const newHead = getHead(withScripts)
+        const newHead = getHead(withStyles)
 
         response.diffs = {
             head: dd.diff(session.head, newHead),
@@ -248,9 +253,15 @@ export function facadeHTTP(app: any) {
 
         const componentGraph = serializableGraph()
 
-        const scripts = getScripts()
-        const withScripts = rendered.replace('</head>',`${scripts.join('\n')}</head>`)
-        const withScriptsAndState = withScripts.replace(
+        const withScripts = rendered.replace('</head>',`${getScripts().join('\n')}</head>`)
+        const withStyles = withScripts.replace('</head>', `${getStyles().join('\n')}</head>`)
+
+        session.head = getHead(withStyles)
+        session.body = getBody(withStyles)
+        session.instanceTree = JSON.stringify(componentGraph)
+        session.injectables = JSON.stringify(getJSONableInjectables())
+
+        const withScriptsAndState = withStyles.replace(
             '</body>',
             `<script type="text/javascript" id="facade-state">
                 if (!window.facade) {
@@ -262,11 +273,6 @@ export function facadeHTTP(app: any) {
             </script>
             </body>`
         )
-
-        session.head = getHead(withScripts)
-        session.body = getBody(withScripts)
-        session.instanceTree = JSON.stringify(componentGraph)
-        session.injectables = JSON.stringify(getJSONableInjectables())
 
         cleanup()
 
@@ -290,4 +296,5 @@ function cleanup() {
     clearComponentsToRerender()
     clearDOM()
     clearScripts()
+    clearStyles()
 }

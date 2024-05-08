@@ -56,7 +56,7 @@ import { Facade, Link } from 'facade/server'
     }
 </script>
 <template>
-    <nav class="">
+    <nav class="navbar">
         <div class="bg-blue-600 p-4 flex justify-between items-center">
             <div class="flex items-center">
                 <img src="https://via.placeholder.com/50" alt="Logo" class="h-8 w-8 mr-2" />
@@ -94,3 +94,8 @@ import { Facade, Link } from 'facade/server'
         </div>
     </nav>
 </template>
+<style>
+    .navbar {
+        position: absolute;
+    }
+</style>

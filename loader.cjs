@@ -18,6 +18,10 @@ module.exports = function (source, map) {
     const scriptMatch = source.match(/<script>([\s\S]*?)<\/script>/);
     const scriptContent = scriptMatch ? scriptMatch[1] : '';
 
+    // Extract the style content
+    const styleMatch = source.match(/<style>([\s\S]*?)<\/style>/);
+    const styleContent = styleMatch ? styleMatch[1] : '';
+
     // Check if the script is TypeScript or JavaScript
     // path.extname(this.resourcePath).includes('ts')
     //scriptMatch[0].includes('lang="ts"');
@@ -142,6 +146,33 @@ module.exports = function (source, map) {
         classDeclaration.body.body.push(callerMethod);
     }
 
+    if (styleContent) {
+        // add style method
+        const styleMethod = t.classMethod(
+            'method',
+            t.identifier('style'),
+            [],
+            t.blockStatement([
+                t.returnStatement(
+                    t.objectExpression([
+                        t.objectProperty(
+                            t.identifier('name'),
+                            t.stringLiteral(filename)
+                        ),
+                        t.objectProperty(
+                            t.identifier('url'),
+                            t.stringLiteral('./static/' + filename + '.css')
+                        )
+                    ])
+                )
+            ]),
+            false,
+            false
+        );
+
+        classDeclaration.body.body.push(styleMethod);
+    }
+
     // Add the static render method to the class with 'this' parameter
     const renderMethod = t.classMethod(
         'method',
@@ -170,7 +201,27 @@ module.exports = function (source, map) {
         }
     );
 
-    if (scriptFunctions.length > 0) {
+    if (scriptFunctions.length > 0 || styleContent) {
+        // make function for style
+        scriptFunctions.push(t.functionDeclaration(
+            t.identifier('style'),
+            [],
+            t.blockStatement([
+                t.returnStatement(
+                    t.objectExpression(styleContent ? [
+                        t.objectProperty(
+                            t.identifier('name'),
+                            t.stringLiteral(filename)
+                        ),
+                        t.objectProperty(
+                            t.identifier('url'),
+                            t.stringLiteral('./static/' + filename + '.css')
+                        )
+                    ] : [])
+                )
+            ])
+        ));
+
         const exportedStatements = scriptFunctions.map((scriptFunction) => {
             return t.exportNamedDeclaration(scriptFunction);
         });
@@ -180,17 +231,25 @@ module.exports = function (source, map) {
         // Emit the script function as a separate file
         const originalFileName = path.basename(this.resourcePath, path.extname(this.resourcePath));
         const scriptFilePath = `${originalFileName}.scripts.ts`;
-        const finalScriptCode = source
-            .replace(templateMatch[0], '')
+        let finalScriptCode = source
+            .replace(templateMatch?.[0] || '', '')
             .replace(scriptMatch[0], scriptFunctionCode);
-        // console.log(scriptFile, finalScriptCode)
+
+        if (styleContent) {
+            this.emitFile(path.join('styles', `${filename}.scss`), styleContent);
+            finalScriptCode = finalScriptCode.replace(styleMatch[0], `import '${path.join(__dirname, 'dist', 'styles', `${filename}.scss`).replace(/\\/g, '/')}';\n`)
+        } else {
+            finalScriptCode = finalScriptCode.replace(styleMatch?.[0] ?? '', '');
+        }
+
+        // console.log(styleContent[0], finalScriptCode)
         this.emitFile(path.join('web', scriptFilePath), finalScriptCode);
-        // console.log('scriptFilePath', finalScriptCode)
     }
 
-    // Replace the <template> and <script> sections with the compiled code
+        // Replace the <template> and <script> sections with the compiled code
     const finalCode = source
-        .replace(templateMatch[0], '')
+        .replace(templateMatch?.[0] || '', '')
+        .replace(styleMatch?.[0] || '', '')
         .replace(scriptMatch[0], `import { FComponent } from 'facade/server';\n\n` + componentCode.code + `\n\nexport default ${className};\n`);
 
     // Generate the source map
