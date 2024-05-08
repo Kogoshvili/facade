@@ -10,6 +10,7 @@ declare global {
     var FScripts: any
     function fElement(type: any, props: any, ...children: any): any
     function fFragment(props: any): any
+    var loadedModules: any[]
 }
 
 window.fFragment = function fFragment(props) {
@@ -30,7 +31,7 @@ if (!window.facade) {
 facade.config = facade.config || {
     protocol: 'ws', // http or ws
     persistence: true,
-    url: `${window.location.origin}/facade/http`
+    url: `${window.location.origin}/facade`
 }
 
 facade.state = facade.state || {}
@@ -124,6 +125,12 @@ facade.init = function () {
     this.socket = new WebSocket(`ws://${window.location.host}/`)
     this.socket.onopen = () => {
         console.debug('Facade WS Connected')
+    }
+
+    if (window.loadedModules && window.loadedModules.length) {
+        window.loadedModules.forEach((module: any) => {
+            facade.loaded(module.name, module.componentName, module.componentId)
+        })
     }
 
     addEventListener('facade:state:updated', () => {
@@ -339,6 +346,29 @@ facade.loaded = function (libraryName: string, componentName: string, componentI
             facade.execute(libraryName, componentName, componentId, 'scriptOnState')
         }
     })
+}
+
+facade.link = async function (href: string) {
+    console.log('Linking to', href)
+    const pageURL = href === '/' ? '/index' : href
+
+    const responseRaw = await fetch(`${facade.config.url}/page/${pageURL.startsWith('/') ? pageURL.slice(1) : pageURL}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        // body: JSON.stringify({
+        //     dom: document.documentElement.outerHTML
+        // })
+    })
+
+    const { diffs, state } = await responseRaw.json()
+    const { head, body } = diffs
+
+    const dd = new DiffDOM()
+    dd.apply(document.head, head)
+    dd.apply(document.body, body)
+    facade.methods.updateState(state)
 }
 
 facade.init()

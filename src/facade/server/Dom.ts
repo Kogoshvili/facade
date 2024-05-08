@@ -2,14 +2,14 @@ import { parse } from 'node-html-parser'
 import { IComponentNode } from './Interfaces'
 
 let dom: any | null = null
-let scripts: string = ''
+let scripts: string[] = []
 
 export function getDOM() { return dom }
 export function setDOM(pastDom: string) { dom = parse(pastDom) }
 export function clearDOM() { dom = null }
 
 export function getScripts() { return scripts }
-export function clearScripts() { scripts = '' }
+export function clearScripts() { scripts = [] }
 
 export function replaceElementById(idToFind: string, replacement: string) {
     if (!dom) return
@@ -25,17 +25,11 @@ export function getElementById(idToFind: string) {
 }
 
 export function appendScripts({ name, url } : { name: string, url: string }, componentNode: IComponentNode) {
-    scripts += `
-        <script type="text/javascript">
-            var script = document.createElement('script');
-            script.src = '${url}';
-            script.onload = function () {
-                console.debug('Loaded', '${name}', '${componentNode.name}', '${componentNode.id}')
-                if (window.facade) {
-                    facade.loaded('${name}', '${componentNode.name}', '${componentNode.id}')
-                }
-            };
-            document.head.appendChild(script);
-        </script>
-    `
+    scripts.push(`
+        <script
+            type="text/javascript"
+            src="${url}"
+            onload="loaded('${name}', '${componentNode.name}', '${componentNode.id}')"
+        ></script>
+    `)
 }

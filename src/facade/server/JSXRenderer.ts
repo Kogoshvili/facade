@@ -8,7 +8,7 @@ import { getComponentDeclaration, registerComponent } from './ComponentRegistry'
 import { FComponent } from './Component'
 import { getGraph, getRoots } from './ComponentGraph'
 import { callWithContext, callWithContextAsync } from './Context'
-import Facade from 'facade/server/Facade'
+import { Facade } from 'facade/server'
 import { appendScripts, getElementById, replaceElementById } from './Dom';
 import { getRequestType } from './Server';
 
@@ -254,6 +254,8 @@ async function renderClass(jsx: JSXInternal.Element, parent: IComponentNode | nu
 
         return result
     }
+
+    componentNode.haveRendered = true
 
     return prevRender
 }

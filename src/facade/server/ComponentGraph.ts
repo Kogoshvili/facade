@@ -5,6 +5,7 @@ import { PROP_RECIVER, SIGNAL_CALLBACK, prop, signal } from './Signals'
 import { buildComponent, getComponentDeclaration } from './ComponentRegistry'
 import { callWithContext, callWithContextAsync } from './Context'
 import { getInjectable, inject } from './Injection'
+import { getRequestType } from './Server'
 
 const Graph: GraphConstructor<string, IComponentNode> = new GraphConstructor<string, IComponentNode>()
 const Roots = new Set<string>()
@@ -110,7 +111,14 @@ export function getNode({ name, id, xpath }: { name: string | null, id?: string 
 export function getComponentNode(name: string, xpath: string): IComponentNode | null {
     const vertexIds = getVertexIds({ name, xpath })
     const vertex = Graph.getVertexValue(vertexIds.any)
-    return vertex || null
+
+    if (!vertex && getRequestType() === 'page') {
+        const vertecis = Graph.getComponentVertices(name)
+        const freeVertex = vertecis.find(v => v.haveRendered === false && v.needsRender === false)
+        return freeVertex ?? null
+    }
+
+    return vertex ?? null
 }
 
 export function populateProps(instance: any, props: Record<string, any>) {

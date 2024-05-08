@@ -1,9 +1,9 @@
 import axios from 'axios'
-import Facade from 'facade/server/Facade'
 import CartService from 'server/services/CartService'
 import { inject, effect, signal } from 'facade/server'
 import Cart from '../components/Cart.facade'
 import { Splide } from '@splidejs/splide'
+import { Facade, Link } from 'facade/server'
 
 <script>
     const cartService = inject(CartService)
@@ -60,7 +60,7 @@ import { Splide } from '@splidejs/splide'
         <div class="bg-blue-600 p-4 flex justify-between items-center">
             <div class="flex items-center">
                 <img src="https://via.placeholder.com/50" alt="Logo" class="h-8 w-8 mr-2" />
-                <a href="/" class="text-white font-bold">Brand</a>
+                <Link href={`/`} class="text-white font-bold">Brand</Link>
             </div>
             <div class="flex-1 mx-4">
                 <Facade component="Search" />
@@ -85,7 +85,7 @@ import { Splide } from '@splidejs/splide'
                 {
                     this.menu.map(item => (
                         <li class="splide__slide">
-                            <a href={`/products?category=${item.value}`} class="text-black">{item.title}</a>
+                            <Link href={`/products?category=${item.value}`} class="text-black">{item.title}</Link>
                         </li>
                     ))
                 }
