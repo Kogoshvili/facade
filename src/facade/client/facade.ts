@@ -152,7 +152,7 @@ facade.execute = function(libraryName: string, componentName: string, componentI
 
     const element = document.getElementById(componentName + '.' + componentId)
 
-    const component = facade.state.find((s: any) => s.key === (componentName + '/' + componentId)).value
+    const component = facade.state.find((s: any) => s.key === (componentName + '.' + componentId)).value
 
     const methods = component.methods.reduce((acc: any, m: any) => {
         if (m.startsWith('script'))  {
@@ -163,7 +163,8 @@ facade.execute = function(libraryName: string, componentName: string, componentI
                     componentName,
                     componentId,
                     m,
-                    arguments
+                    // @ts-ignore
+                    ...arguments
                 )
             }
         }

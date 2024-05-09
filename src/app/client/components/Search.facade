@@ -20,6 +20,14 @@ import { signal } from 'app/facade/server/Signals'
             this.showResults(false)
         }
     }
+
+    function renderd(element) {
+        document.addEventListener("mousedown", (event) => {
+            if (element && !element.contains(event.target)) {
+                this.showResults(false)
+            }
+        });
+    }
 </script>
 <template>
     <div class="relative">

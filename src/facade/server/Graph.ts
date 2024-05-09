@@ -53,7 +53,7 @@ class Graph<K = string, V = any> extends BaseGraph<string | number, V> {
             })
         }
 
-        const [name] = realKey.toString().split('/')
+        const [name] = realKey.toString().split('.')
         this.addComponentVertex(name, realKey)
 
         this._vertices.set(realKey, value)
@@ -115,6 +115,12 @@ class Graph<K = string, V = any> extends BaseGraph<string | number, V> {
             }
         })
         return result
+    }
+
+    executeOnChildren(key: K, callback: (key: K, value: V) => void) {
+        this.getChildVertices(key).forEach(k => {
+            callback(k, this.getVertexValue(k)!)
+        })
     }
 
     getConnectedVertices(key: K) {

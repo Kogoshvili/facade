@@ -25,6 +25,10 @@ abstract class FComponent<P = {}, D = any > {
         return this._parentInstance as D
     }
 
+    getElement() {
+        return document.getElementById(`${this._name}.${this._id}`)
+    }
+
     // Executes every time component recieves new props
     recived(props: P) {}
 
@@ -36,6 +40,9 @@ abstract class FComponent<P = {}, D = any > {
 
     // Executes everytime instance is created
     async mounted() {}
+
+    // Client side only, executes everytime the component is rendered
+    renderd(element: Element) {}
 
     // Executes everytime instance is destroyed
     async destroying() {}

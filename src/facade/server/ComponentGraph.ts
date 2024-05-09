@@ -97,7 +97,7 @@ export function rebuildInstance(vertex: IComponentNode) {
     vertex.instance = instance
 
     if (parent) {
-        vertex.instance!._parent = { name: parent.split('/')[0], id: parent.split('/')[1] }
+        vertex.instance!._parent = { name: parent.split('.')[0], id: parent.split('.')[1] }
     }
 
     return vertex
@@ -225,8 +225,8 @@ export function makeSureInstancesExist(componentName: string) {
 
 function getVertexIds({ name, id, xpath }: { name: string | null, id?: string | null, xpath?: string | null }) {
     const keys = {
-        id: id ? `${name}/${id}` : null,
-        xpath: xpath ? `${name}/${xpath}` : null,
+        id: id ? `${name}.${id}` : null,
+        xpath: xpath ? `${name}.${xpath}` : null,
     }
 
     return {

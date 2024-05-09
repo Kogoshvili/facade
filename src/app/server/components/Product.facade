@@ -4,22 +4,7 @@ import { inject, signal, prop } from 'facade/server'
 <script>
     const cartService = inject(CartService)
     const id = prop(p => p.id)
-    const product = {
-        "id": 1,
-        "title": "iPhone 9",
-        "description": "An apple mobile which is nothing like apple",
-        "price": 549,
-        "discountPercentage": 12.96,
-        "rating": 4.69,
-        "stock": 94,
-        "brand": "Apple",
-        "category": "smartphones",
-        "thumbnail": "...",
-        "images": ["...", "...", "..."]
-    }
-    const showTest = signal(false)
-
-    console.log('TEST123')
+    const product = null
 
     async function mounted(){
         const result = await fetch(`https://dummyjson.com/products/${this.id()}`)
@@ -28,7 +13,6 @@ import { inject, signal, prop } from 'facade/server'
     }
 
     function handleAddToCart(){
-        this.showTest(true)
         this.cartService().addToCart(this.product)
     }
 </script>
@@ -36,7 +20,6 @@ import { inject, signal, prop } from 'facade/server'
 <template>
     <div class="py-2 mt-5">
         <div class="flex flex-wrap bg-white shadow-md rounded-lg p-6">
-            { this.showTest() && <h1>Test</h1>}
             <img class="w-1/2 h-64 object-cover" src={this.product.images[0]} alt="Product image" />
             <div class="w-1/2 px-6">
                 <h2 class="text-xl font-semibold mb-2">{ this.product.title }</h2>

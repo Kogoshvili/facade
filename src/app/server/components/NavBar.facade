@@ -49,10 +49,16 @@ import { Facade, Link } from 'facade/server'
         this.script_test()
         const w = await this.serverTest();
         console.log('response', w)
+        const element = document.getElementById(`${this._name}.${this._id}`)
+        document.addEventListener("mousedown", (event) => {
+            if (element && !element.contains(event.target)) {
+                this.handleClick(false)
+            }
+        });
     }
 
-    function handleClick() {
-        this.showCart((v) => !v)
+    function handleClick(show?: boolean) {
+        this.showCart((v) => show ?? !v)
     }
 </script>
 <template>
@@ -94,8 +100,3 @@ import { Facade, Link } from 'facade/server'
         </div>
     </nav>
 </template>
-<style>
-    .navbar {
-        position: absolute;
-    }
-</style>
