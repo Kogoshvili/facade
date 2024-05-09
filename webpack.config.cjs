@@ -94,6 +94,7 @@ module.exports = (env, argv) => {
                 './Facade',
                 'facade/server/Facade',
                 'json-diff-ts',
+                'html-entities'
             ],
             optimization: {
                 minimizer: [new TerserPlugin()],

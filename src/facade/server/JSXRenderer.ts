@@ -274,7 +274,7 @@ async function renderFunction(jsx: any, parent: IComponentNode | null = null, pa
         return await renderFragment(jsx, parent, parentXPath, index)
     }
 
-    if (isFacade(jsx)) {
+    if (!isClinet && isFacade(jsx)) {
         return await renderFacade(jsx, parent, parentXPath, index)
     }
 
