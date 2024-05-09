@@ -22,4 +22,11 @@ How it works:
 4. Component on the server is triggered by the event, if there are UI or State changes, server sends diff object describing the changes to the client.
 5. Client side facade code applies the changes to the page.
 
-Demo: http://164.90.235.40/
+# Demo
+URL: http://164.90.235.40/
+
+To demonstate different approaches when working with Facade:
+Switching between home and product list pages is done in SPA style.
+Switching to product details page is done in MPA style.
+Search suggestion modal is done using client side component.
+Cart modal is done using server side component.
