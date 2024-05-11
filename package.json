@@ -1,7 +1,7 @@
 {
   "name": "facade",
   "version": "0.0.1",
-  "description": "",
+  "description": "facade framework",
   "exports": {
     "./server": "./src/server/index.ts",
     "./client": "./src/client/index.ts",
@@ -11,8 +11,10 @@
   },
   "types": "./src/index.d.ts",
   "scripts": {},
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "framework"
+  ],
+  "author": "Andrian Kogoshvili",
   "license": "ISC",
   "dependencies": {
     "@babel/core": "^7.24.5",
