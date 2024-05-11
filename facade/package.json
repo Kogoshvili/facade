@@ -4,8 +4,8 @@
   "description": "",
   "exports": {
     "./loader": "./loader.cjs",
-    "./server": "./server/index.ts",
-    "./client": "./client/index.ts"
+    "./server": "./src/server/index.ts",
+    "./client": "./src/client/index.ts"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
