@@ -53,7 +53,7 @@ module.exports = (env, argv) => {
                             },
                         },
                         {
-                            loader: path.resolve('./loader.cjs'),
+                            loader: 'facade/loader'
                         },
                     ],
                 },
@@ -70,7 +70,7 @@ module.exports = (env, argv) => {
             name: 'client',
             target: 'web',
             entry: {
-                'client' : './src/app/client/index.ts',
+                'client' : './src/client.ts',
                 ...fileNames
             },
             output: {

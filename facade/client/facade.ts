@@ -1,8 +1,8 @@
 import { DiffDOM } from 'diff-dom'
 import Facade, { IUpdatedProperties } from './interfaces'
 import { debounce } from 'lodash-es'
-import { executeOnGraph } from 'facade/server/ComponentGraph'
-import { rerenderComponent } from 'facade/server/JSXRenderer'
+import { executeOnGraph } from '../server/ComponentGraph'
+import { rerenderComponent } from '../server/JSXRenderer'
 
 declare global {
     // eslint-disable-next-line no-var

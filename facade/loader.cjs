@@ -3,7 +3,6 @@ const t = require('@babel/types');
 const generate = require('@babel/generator').default;
 const path = require('path');
 
-
 module.exports = function (source, map) {
     // if there is no <script> tag, return the source as is
     if (!source.includes('<script>') && !source.includes('<template>')) {

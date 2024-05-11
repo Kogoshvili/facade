@@ -1,4 +1,4 @@
-import { renderer } from 'facade/server/JSXRenderer'
+import { renderer } from '../server/JSXRenderer'
 import './facade';
 import { getGraph } from '../server/ComponentGraph';
 

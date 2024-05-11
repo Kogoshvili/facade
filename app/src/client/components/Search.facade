@@ -1,4 +1,4 @@
-import { signal } from 'app/facade/server/Signals'
+import { signal } from 'facade/server'
 
 <script>
     const value: string = ''

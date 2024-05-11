@@ -1,9 +1,8 @@
 import axios from 'axios'
-import CartService from 'server/services/CartService'
-import { inject, effect, signal } from 'facade/server'
-import Cart from '../components/Cart.facade'
 import { Splide } from '@splidejs/splide'
-import { Facade, Link } from 'facade/server'
+import { inject, effect, signal, Facade, Link } from 'facade/server'
+import CartService from 'server/services/CartService'
+import Cart from './Cart.facade'
 
 <script>
     const cartService = inject(CartService)

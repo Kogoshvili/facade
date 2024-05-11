@@ -10,10 +10,8 @@
     "baseUrl": "./src",
     "outDir": "./dist",
     "paths": {
-      "app/*": ["./*"],
-      "facade/*": ["./facade/*"],
-      "client/*": ["./app/client/*"],
-      "server/*": ["./app/server/*"],
+      "server/*": ["./src/server/*"],
+      "client/*": ["./src/client/*"],
     },
     "moduleResolution": "Node",
     "experimentalDecorators": true,
