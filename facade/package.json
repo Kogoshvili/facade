@@ -9,7 +9,7 @@
     "./loader": "./loader.cjs",
     "./webpack": "./webpack-config.cjs"
   },
-  "types": "./src/types/index.d.ts",
+  "types": "./src/index.d.ts",
   "scripts": {},
   "keywords": [],
   "author": "",
