@@ -1,4 +1,4 @@
-export {}
+export { }
 
 declare module 'diff-json' {
     const applyChanges: (object: any, changes: any) => void
@@ -14,12 +14,21 @@ declare module 'json-diff-ts' {
 
 export namespace JSXInternal {
     export interface HTMLAttributes<RefType extends EventTarget = EventTarget>
-            extends ClassAttributes<RefType>,
-                DOMAttributes<RefType>,
-                AriaAttributes {
-                    [key: string]: any;
-                }
+        extends ClassAttributes<RefType>,
+        DOMAttributes<RefType>,
+        AriaAttributes {
+        [key: string]: any;
+    }
 }
+
+declare global {
+    namespace JSX {
+        interface IntrinsicElements {
+            [elemName: string]: any;
+        }
+    }
+}
+
 
 declare global {
     interface globalThis {
