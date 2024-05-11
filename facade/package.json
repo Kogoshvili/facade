@@ -7,6 +7,7 @@
     "./server": "./src/server/index.ts",
     "./client": "./src/client/index.ts"
   },
+  "types": "./src/types/index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

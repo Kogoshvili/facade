@@ -12,15 +12,6 @@ declare module 'json-diff-ts' {
     export { diff, flattenChangeset }
 }
 
-export namespace JSXInternal {
-    export interface HTMLAttributes<RefType extends EventTarget = EventTarget>
-        extends ClassAttributes<RefType>,
-        DOMAttributes<RefType>,
-        AriaAttributes {
-        [key: string]: any;
-    }
-}
-
 declare global {
     namespace JSX {
         interface IntrinsicElements {
@@ -28,7 +19,6 @@ declare global {
         }
     }
 }
-
 
 declare global {
     interface globalThis {
