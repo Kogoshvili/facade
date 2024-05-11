@@ -1,6 +1,6 @@
 # Facade - Server-side frontend framework (WIP, ALPHA)
 
-Facade is a server-side frontend framework, that takes idea of SSR to the extrime by making frontend code run on the server, and rendering on a server not only pages but UI component changes as well.
+Facade is a server-side frontend framework, that takes idea of SSR to the extrime by making frontend code run on the server, so that all logic, page rendering, UI changes, and state management is done on the server, and not on the client.
 
 Advantages of this technic are:
  - better SEO, since all content is rendered on the server (same as in SSR)
