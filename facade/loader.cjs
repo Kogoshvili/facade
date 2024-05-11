@@ -241,8 +241,12 @@ module.exports = function (source, map) {
             finalScriptCode = finalScriptCode.replace(styleMatch?.[0] ?? '', '');
         }
 
+        const result = babel.transformSync(finalScriptCode, {
+            plugins: ['@babel/plugin-syntax-typescript', 'babel-plugin-remove-unused-import']
+        });
+
         // console.log(styleContent[0], finalScriptCode)
-        this.emitFile(path.join('web', scriptFilePath), finalScriptCode);
+        this.emitFile(path.join('web', scriptFilePath), result.code);
     }
 
         // Replace the <template> and <script> sections with the compiled code
