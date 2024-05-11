@@ -2,6 +2,8 @@ const babel = require('@babel/core');
 const t = require('@babel/types');
 const generate = require('@babel/generator').default;
 const path = require('path');
+const tsPlugin = require.resolve('@babel/plugin-syntax-typescript');
+const importPlugin = require.resolve('babel-plugin-remove-unused-import');
 
 module.exports = function (source, map) {
     // if there is no <script> tag, return the source as is
@@ -29,7 +31,7 @@ module.exports = function (source, map) {
     // Parse the script content into an AST
     const ast = babel.parseSync(scriptContent, {
         sourceType: 'module',
-        plugins: ['@babel/plugin-syntax-typescript'],
+        plugins: [tsPlugin],
     });
 
     // Get the filename and class name
@@ -242,7 +244,7 @@ module.exports = function (source, map) {
         }
 
         const result = babel.transformSync(finalScriptCode, {
-            plugins: ['@babel/plugin-syntax-typescript', 'babel-plugin-remove-unused-import']
+            plugins: [tsPlugin, importPlugin]
         });
 
         // console.log(styleContent[0], finalScriptCode)
@@ -253,7 +255,7 @@ module.exports = function (source, map) {
     const finalCode = source
         .replace(templateMatch?.[0] || '', '')
         .replace(styleMatch?.[0] || '', '')
-        .replace(scriptMatch[0], `import { FComponent } from 'facade/server';\n\n` + componentCode.code + `\n\nexport default ${className};\n`);
+        .replace(scriptMatch[0], `import { FComponent } from 'facade/component';\n\n` + componentCode.code + `\n\nexport default ${className};\n`);
 
     // Generate the source map
     const sourceMap = componentCode.map;

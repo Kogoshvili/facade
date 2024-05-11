@@ -3,14 +3,14 @@
   "version": "0.0.1",
   "description": "",
   "exports": {
-    "./loader": "./loader.cjs",
     "./server": "./src/server/index.ts",
-    "./client": "./src/client/index.ts"
+    "./client": "./src/client/index.ts",
+    "./component": "./src/component/index.ts",
+    "./loader": "./loader.cjs",
+    "./webpack": "./webpack-config.cjs"
   },
   "types": "./src/types/index.d.ts",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "scripts": {},
   "keywords": [],
   "author": "",
   "license": "ISC",

@@ -179,10 +179,6 @@ export function facadeHTTP(app: any) {
         res.send(instanceTree.vertices)
     })
 
-    app.get('/', async (_req: any, res: any) => {
-        res.redirect('/index')
-    })
-
     app.post('/facade/page/:page', async (req: any, res: any) => {
         console.time('SPA Render')
 
@@ -279,6 +275,10 @@ export function facadeHTTP(app: any) {
         console.timeEnd('Page Render')
         res.setHeader('Content-Type', 'text/html; charset=utf-8')
         res.send(withScriptsAndState)
+    })
+
+    app.get('/', async (_req: any, res: any) => {
+        res.redirect('/index')
     })
 }
 

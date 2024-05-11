@@ -1,4 +1,4 @@
-import { FComponent } from './Component'
+import FComponent from '../components/Component'
 import { callWithContext } from './Context'
 
 const Components = new Map<string, (new () => FComponent)>()

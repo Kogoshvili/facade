@@ -1,4 +1,4 @@
-import { signal } from 'facade/server'
+import { signal } from 'facade/client'
 
 <script>
     const value: string = ''

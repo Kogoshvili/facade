@@ -1,4 +1,4 @@
-import { getNode, rebuildInstance } from './ComponentGraph'
+import { getNode, rebuildInstance } from 'ComponentGraph'
 
 // eslint-disable-next-line @typescript-eslint/ban-types
 abstract class FComponent<P = {}, D = any > {
@@ -55,4 +55,4 @@ abstract class FComponent<P = {}, D = any > {
     [key: string]: any
 }
 
-export { FComponent }
+export default FComponent

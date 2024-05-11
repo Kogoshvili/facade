@@ -1,14 +1,13 @@
 import { JSXInternal } from 'preact/src/jsx'
 import { isString, isBoolean, isFunction, isObject, isArray } from 'lodash-es'
-import { DiffDOM, stringToObj, nodeToObj } from 'diff-dom'
+import { DiffDOM, stringToObj } from 'diff-dom'
 import { deepEqual } from 'fast-equals';
 import { rebuildInstance, getComponentNode, makeComponentNode, getComponentsToRerender, populateProps } from './ComponentGraph'
 import { IComponentNode } from './Interfaces'
 import { getComponentDeclaration, registerComponent } from './ComponentRegistry'
-import { FComponent } from './Component'
 import { getGraph, getRoots } from './ComponentGraph'
 import { callWithContext, callWithContextAsync } from './Context'
-import { Facade } from 'facade/server'
+import Facade from '../components/Facade'
 import { appendScripts, appendStyles, getElementById, replaceElementById } from './Dom';
 import { getRequestType } from './Server';
 
