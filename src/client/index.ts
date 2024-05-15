@@ -1,6 +1,6 @@
 export { initialize, registerComponents, getState, setState } from './entry'
 export { effect, signal, prop } from '../server/Signals'
-export { default as FComponent } from '../components/Component'
+export { Component } from '../components/Component'
 export { inject } from '../server/Injection'
 export { default as Link } from '../components/Link'
 export * from '../server/Interfaces'

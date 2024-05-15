@@ -28,11 +28,14 @@ function webConfig(env, argv, sharedConfig, { root, clientEntry, clientOutput, s
         fs.mkdirSync(clientFiles, { recursive: true });
     }
 
-    const fileNames = configName === 'client'
+    const scriptFiles = configName === 'client'
         ? fs.readdirSync(clientFiles)
             .reduce((acc, v) => ({
                 ...acc,
-                [v.split('.')[0]]: path.join(clientFiles, v)
+                [v.split('.')[0]]: {
+                    import: path.join(clientFiles, v),
+                    filename: `scripts/[name].js`
+                },
             }), {})
         : {}
 
@@ -41,16 +44,19 @@ function webConfig(env, argv, sharedConfig, { root, clientEntry, clientOutput, s
         name: 'client',
         target: 'web',
         entry: {
-            'client' : clientEntry,
-            ...fileNames
+            'client' : {
+                import: clientEntry,
+                filename: '[name].js'
+            },
+            ...scriptFiles
         },
         output: {
             path: path.join(root, clientOutput),
             library: {
                 name: ['FScripts', '[name]'],
                 type: 'umd',
+                export: 'default',
             },
-            filename: '[name].js',
         },
         plugins: [
             ...sharedConfig.plugins,

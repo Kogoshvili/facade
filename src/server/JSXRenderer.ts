@@ -234,7 +234,7 @@ async function renderClass(jsx: JSXInternal.Element, parent: IComponentNode | nu
             const instance = componentNode.instance
             const context = { name: componentNode.name, id: componentNode.id, declaration, instance }
             callWithContext(() => populateProps(instance, props), context)
-            callWithContext(() => instance?.callExpressions?.(), context)
+            // callWithContext(() => instance?.callExpressions?.(), context)
             await callWithContextAsync(() => instance!.mounted(), context)
         }
 
@@ -246,11 +246,11 @@ async function renderClass(jsx: JSXInternal.Element, parent: IComponentNode | nu
             replaceElementById(idToFind, result)
 
             if (!prevRender) {
-                const script = componentNode.instance?.script?.()
+                const script = await componentNode.instance!.script?.()
                 if (script) appendScripts(script, componentNode)
 
-                const style = componentNode.instance?.style?.()
-                if (style) appendStyles(style)
+                // const style = componentNode.instance?.style?.()
+                // if (style) appendStyles(style)
             }
         }
 

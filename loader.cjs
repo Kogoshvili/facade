@@ -1,19 +1,26 @@
 const babel = require('@babel/core');
 const t = require('@babel/types');
+const { cloneDeep } = require('lodash');
 const generate = require('@babel/generator').default;
 const path = require('path');
 const tsPlugin = require.resolve('@babel/plugin-syntax-typescript');
 const importPlugin = require.resolve('babel-plugin-remove-unused-import');
 
 module.exports = function (source, map) {
-    if (!path.extname(this.resourcePath).includes('facade')) {
-        return handleClass.call(this, source, map);
+    if (this.resourcePath.includes('.script.')) {
+        return source;
     }
 
-    return handleFacade.call(this, source, map);
+    if (path.extname(this.resourcePath) === '.facade') {
+        return handleFacade.call(this, source, map);
+    }
+
+    return handleClass.call(this, source, map);
 };
 
 function handleClass(source, map) {
+    const filename = path.basename(this.resourcePath, path.extname(this.resourcePath));
+
     // Parse the source code into an AST
     const ast = babel.parseSync(source, {
         sourceType: 'module',
@@ -40,8 +47,26 @@ function handleClass(source, map) {
             path.traverse({
                 ClassMethod(path) {
                     if (path.node.key.name.startsWith('script')) {
-                        scriptMethods.push(path.node);
-                        path.remove();
+                        scriptMethods.push(cloneDeep(path.node));
+
+                        if (path.node.key.name === 'script') {
+                            path.node.body = t.blockStatement([
+                                t.returnStatement(
+                                    t.objectExpression([
+                                        t.objectProperty(
+                                            t.identifier('name'),
+                                            t.stringLiteral(className)
+                                        ),
+                                        t.objectProperty(
+                                            t.identifier('url'),
+                                            t.stringLiteral('./static/scripts/' + filename + '.js')
+                                        )
+                                    ])
+                                )
+                            ])
+                        } else {
+                            path.node.body = t.blockStatement([]);
+                        }
                     }
                 }
             });
@@ -50,7 +75,7 @@ function handleClass(source, map) {
 
     if (scriptMethods.length > 0) {
         const originalFileName = path.basename(this.resourcePath, path.extname(this.resourcePath));
-        const scriptFilePath = `${originalFileName}.scripts.ts`;
+        const scriptFilePath = `${originalFileName}.script.ts`;
 
         // Create a new class declaration
         const classDeclaration = t.classDeclaration(

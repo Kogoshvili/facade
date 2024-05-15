@@ -50,8 +50,8 @@ type effect = (() => void) | [() => void, signal[]]
 export interface Component<P = {}> {
     _name: string
     _id: string
-    _key: string | Nil
-    _parent: { name: string, id: string } | Nil
+    _key: string | null | undefined
+    _parent: { name: string, id: string } | null | undefined
     _parentInstance: Component | null
 
     effects: effect[]
@@ -64,6 +64,8 @@ export interface Component<P = {}> {
     mounted(): Promise<void> | void
     destroying(): Promise<void> | void
     renderd(element: Element): Promise<void> | void
+
+    script?: () => Promise<void> | void
 
     render(): any
 }

@@ -147,8 +147,16 @@ facade.init = function () {
 
 facade.mount = function () {}
 
+facade.scripts = new Map<string, any>()
+
 facade.execute = function(libraryName: string, componentName: string, componentId: string, method: string, args: any = []) {
-    if (!FScripts[libraryName] || !FScripts[libraryName][method]) return
+    if (!FScripts[libraryName]) return
+
+    if (!facade.scripts.has(libraryName)) {
+        facade.scripts.set(libraryName, new FScripts[libraryName]() as any)
+    }
+
+    const instance = facade.scripts.get(libraryName)
 
     const element = document.getElementById(componentName + '.' + componentId)
 
@@ -171,12 +179,23 @@ facade.execute = function(libraryName: string, componentName: string, componentI
         return acc
     }, {} as any)
 
-    const thisMock = {
+    const remoteThis = {
         ...component.properties,
         ...methods
     }
 
-    FScripts[libraryName][method].call(thisMock, element, ...args)
+    const thisMock = new Proxy(instance, {
+        // if exists in instance return it else check in component
+        get: function(target, prop, receiver) {
+            if (prop in target) {
+                return target[prop]
+            } else {
+                return remoteThis[prop]
+            }
+        }
+    })
+
+    instance[method].call(thisMock, element, ...args)
 }
 
 facade.methods = {

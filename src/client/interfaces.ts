@@ -1,5 +1,6 @@
 interface Facade {
     state: any
+    scripts: Record<string, any>,
     socket: WebSocket,
     requests: Record<string, any>
     config: {
@@ -19,7 +20,7 @@ interface Facade {
     event: (e: any, path: string, isClient?: boolean) => void
     methods: {
         pushState: (state: any) => Promise<void>
-        syncState: () => void
+        // syncState: () => void
         handleUpdateHttp: (componentName: string, componentId: string, method: string, parameters: any, event?: string, mode?: string) => void
         updateElement: (diff: any) => void
         updateDOM: (domDiff: any) => void
