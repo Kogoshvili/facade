@@ -6,7 +6,81 @@ const tsPlugin = require.resolve('@babel/plugin-syntax-typescript');
 const importPlugin = require.resolve('babel-plugin-remove-unused-import');
 
 module.exports = function (source, map) {
-    // if there is no <script> tag, return the source as is
+    if (!path.extname(this.resourcePath).includes('facade')) {
+        return handleClass.call(this, source, map);
+    }
+
+    return handleFacade.call(this, source, map);
+};
+
+function handleClass(source, map) {
+    // Parse the source code into an AST
+    const ast = babel.parseSync(source, {
+        sourceType: 'module',
+        plugins: [[tsPlugin, { isTSX: true, disallowAmbiguousJSXLike: false }]],
+    });
+
+    const importStatements = [
+        // t.importDeclaration(
+        //     [t.importSpecifier(t.identifier('FComponent'), t.identifier('FComponent'))],
+        //     t.stringLiteral('facade/component')
+        // )
+    ];
+
+    const scriptMethods = [];
+    let className = null;
+
+    // Visit each node in the AST
+    babel.traverse(ast, {
+        ImportDeclaration(path) {
+            importStatements.push(path.node);
+        },
+        ClassDeclaration(path) {
+            className = path.node.id.name;
+            path.traverse({
+                ClassMethod(path) {
+                    if (path.node.key.name.startsWith('script')) {
+                        scriptMethods.push(path.node);
+                        path.remove();
+                    }
+                }
+            });
+        }
+    });
+
+    if (scriptMethods.length > 0) {
+        const originalFileName = path.basename(this.resourcePath, path.extname(this.resourcePath));
+        const scriptFilePath = `${originalFileName}.scripts.ts`;
+
+        // Create a new class declaration
+        const classDeclaration = t.classDeclaration(
+            t.identifier(className),
+            null,
+            t.classBody(scriptMethods),
+            []
+        );
+
+        const { code: scriptFunctionCode } = generate(
+            t.program([...importStatements, classDeclaration, t.exportDefaultDeclaration(t.identifier(className))])
+        );
+
+        const { code } = babel.transformSync(scriptFunctionCode, {
+            plugins: [tsPlugin, importPlugin]
+        });
+
+        this.emitFile(path.join('web', scriptFilePath), code);
+    }
+
+    // Generate the source map
+    const result = babel.transformFromAstSync(ast, source, {
+        sourceMaps: true,
+        sourceFileName: this.resourcePath,
+    });
+
+    return this.callback(null, result.code, result.map);
+}
+
+function handleFacade(source, map) {
     if (!source.includes('<script>') && !source.includes('<template>')) {
         return source;
     }
@@ -265,4 +339,4 @@ module.exports = function (source, map) {
     // console.log('finalCode', finalCode)
     // Pass the generated JavaScript code and source map to the next loader
     this.callback(null, finalCode, sourceMap);
-};
+}

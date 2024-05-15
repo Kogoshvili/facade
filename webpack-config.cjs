@@ -22,11 +22,17 @@ function webConfig(env, argv, sharedConfig, { root, clientEntry, clientOutput, s
     const configName = argv.configName[0]
     const isAnalyze = !!argv.analyze
 
+    const clientFiles = path.join(root, serverOutput, 'web');
+
+    if (!fs.existsSync(clientFiles)) {
+        fs.mkdirSync(clientFiles, { recursive: true });
+    }
+
     const fileNames = configName === 'client'
-        ? fs.readdirSync(path.join(root, serverOutput, 'web'))
+        ? fs.readdirSync(clientFiles)
             .reduce((acc, v) => ({
                 ...acc,
-                [v.split('.')[0]]: path.join(root, serverOutput, 'web', v)
+                [v.split('.')[0]]: path.join(clientFiles, v)
             }), {})
         : {}
 
@@ -140,10 +146,17 @@ function getBaseConfig(env, argv) {
                 },
                 {
                     test: /\.([cm]?ts|tsx)$/,
-                    loader: require.resolve('ts-loader'),
-                    options: {
-                        transpileOnly: true,
-                    }
+                    use: [
+                        {
+                            loader: require.resolve('ts-loader'),
+                            options: {
+                                transpileOnly: true,
+                            }
+                        },
+                        {
+                            loader: require.resolve('facade/loader'),
+                        },
+                    ]
                 },
                 {
                     test: /\.(facade)$/,

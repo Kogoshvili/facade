@@ -1,6 +1,6 @@
 export interface IContext {
-    name?: string
-    id?: string
+    name: string
+    id?: string | null
     instance?: any
     declaration?: any
     index: number
@@ -14,7 +14,7 @@ export function getCurrentContext() {
 
 function setContext(
     {name, id, instance, declaration}:
-        { name?: string, id?: string, declaration?: any, instance?: any }
+    { name: string, id?: string | null, declaration?: any, instance?: any }
 ) {
     currentContext = {
         name,
@@ -29,22 +29,22 @@ function clearContext() {
     currentContext = null
 }
 
-export async function callWithContextAsync(
+export async function callWithContextAsync<T>(
     f: any,
     { name, id, declaration, instance }:
-        { name?: string, id?: string, declaration?: any, instance?: any }
-) {
+    { name: string, id?: string | null, declaration?: any, instance?: any }
+): Promise<T> {
     setContext({ name, id, declaration, instance })
     const result = await f()
     clearContext()
     return result
 }
 
-export function callWithContext(
+export function callWithContext<T>(
     f: any,
     { name, id, declaration, instance }:
-        { name?: string, id?: string, declaration?: any, instance?: any }
-) {
+    { name: string, id?: string | null, declaration?: any, instance?: any }
+): T {
     setContext({ name, id, declaration, instance })
     const result = f()
     clearContext()

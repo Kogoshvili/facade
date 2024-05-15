@@ -1,3 +1,16 @@
+use graph for rerendering remove childs that weren't rendered
+
+figure out how to do effects better
+
+anonimous execution without eval
+
+ref ish something parent to call child?
+
+passing function of parent to child
+
+brake server and client code better
+
+
 features?:
 webTransport
 jsless mode

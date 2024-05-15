@@ -30,7 +30,7 @@ function getJSONDiff(oldInstanceTree: any, newInstanceTree: any) {
 }
 
 async function RenderDOM(page: string, props: any = {}) {
-    return await renderer(fElement(pages[page], props), null, page, null)
+    return await renderer(globalThis.fElement(pages[page], props), null, page, null)
 }
 
 async function process(session: any, page: string, componentName: string, componentId: string, property: string, parameters: any, mode: string) {

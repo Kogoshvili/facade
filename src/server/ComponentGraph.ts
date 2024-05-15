@@ -6,9 +6,11 @@ import { buildComponent, getComponentDeclaration } from './ComponentRegistry'
 import { callWithContext, callWithContextAsync } from './Context'
 import { getInjectable, inject } from './Injection'
 import { getRequestType } from './Server'
+import { isEmpty } from 'lodash'
 
-const Graph: GraphConstructor<string, IComponentNode> = new GraphConstructor<string, IComponentNode>()
+const Graph = new GraphConstructor<string, IComponentNode>()
 const Roots = new Set<string>()
+const anonymousMethods = new Map<string, string>()
 
 const componentsToRerender = new Set<string>()
 
@@ -65,7 +67,7 @@ export function deserializeGraph(json: string) {
 }
 
 export function rebuildInstance(vertex: IComponentNode) {
-    const parent = Graph.getParentVertices(getVertexIds(vertex).any)[0]
+    const parent = Graph.getParentVertices(getVertexIds(vertex).any)
     const instance = buildComponent(vertex.name, vertex.id)
     const declaration = getComponentDeclaration(vertex.name)
     const propsOverwrites: any = {}
@@ -96,8 +98,8 @@ export function rebuildInstance(vertex: IComponentNode) {
 
     vertex.instance = instance
 
-    if (parent) {
-        vertex.instance!._parent = { name: parent.split('.')[0], id: parent.split('.')[1] }
+    if (!isEmpty(parent)) {
+        vertex.instance._parent = { name: parent[0].split('.')[0], id: parent[0].split('.')[1] }
     }
 
     return vertex
@@ -135,21 +137,20 @@ export async function makeComponentNode(name: string, xpath: string, props: Reco
     const instance = buildComponent(name, id)
     const declaration = getComponentDeclaration(name)
 
-    instance._id = id
-    instance._name = name
     instance._key = props.key ?? null
 
-    callWithContext(() => populateProps(instance, props), { name, id: instance._id, declaration, instance })
-    await callWithContextAsync(() => instance?.created?.(), { name, id: instance._id, declaration, instance })
-    callWithContext(() => instance?.callExpressions?.(), { name, id: instance._id, declaration, instance })
-    callWithContext(() => instance?.effects.forEach((effect: any) => effect()), { name, id: instance._id, declaration, instance })
-    await callWithContextAsync(() => instance?.mounted?.(), { name, id: instance._id, declaration, instance })
+    const context = { name, id, declaration, instance };
+    callWithContext(() => populateProps(instance, props), context)
+    await callWithContextAsync(() => instance.created(), context)
+    // TODO: effect function or array
+    callWithContext(() => instance.effects.forEach((effect: any) => effect()), context)
+    await callWithContextAsync(() => instance.mounted(), context)
 
     const { properties, methods } = getProperties(instance)
 
     const vertex: IComponentNode = {
         name,
-        id: instance._id,
+        id,
         key: props.key ?? null,
         xpath,
         instance,
@@ -192,9 +193,14 @@ export async function executeOnGraph(componentName: string, componentId: string,
 
     // check if it is an anonymous function
     if (!isNaN(property as any)) {
-        const component = getComponentDeclaration(componentName) as any
-        const stringifiedAnon = component._anonymous[componentName][property]
-        const anonToFun = `(function(){(${stringifiedAnon})(...arguments)})`
+        const anonFunctions = anonymousMethods.get(componentName)
+
+        if (!anonFunctions || !anonFunctions[property]) {
+            throw new Error(`Anonymous function not found for ${componentName}`)
+        }
+
+        const anonFunction = anonFunctions[property]
+        const anonToFun = `(function(){(${anonFunction})(...arguments)})`
         result[1] = await callWithContextAsync(() => eval(anonToFun).call(vertex.instance, parameters),
             { name: componentName, id: componentId, declaration, instance: vertex.instance })
     } else if (typeof vertex.instance[property] !== 'function') {

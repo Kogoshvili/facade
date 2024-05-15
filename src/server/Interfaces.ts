@@ -1,8 +1,8 @@
-import FComponent from '../components/Component'
+import { Component } from "../components/Component"
 
 export interface IComponentDeclaration {
     name: string
-    declaration: (new () => FComponent<any>) & FComponent<any>
+    declaration: (new () => Component<any>) & Component<any>
 }
 
 export interface IComponentNode {
@@ -10,7 +10,7 @@ export interface IComponentNode {
     id: string
     key: string | number | null
     xpath: string | null
-    instance: FComponent | null
+    instance: Component | null
     props: Record<string, any>
     properties: Record<string, any>
     methods: string[]

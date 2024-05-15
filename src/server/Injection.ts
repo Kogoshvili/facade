@@ -40,7 +40,7 @@ export function rebuildInjectables(name: string) {
             Object.keys(injectable.properties).forEach((key) => {
                 const oldProperty = injectable.properties[key]
 
-                if (isObject(oldProperty)) {
+                if (isObject(oldProperty) as any) {
                     if (oldProperty.__type === 'signal') {
                         injectable.instance[key] = callWithContext(
                             () => signal(oldProperty.value),

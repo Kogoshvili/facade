@@ -91,7 +91,7 @@ class Graph<K = string, V = any> extends BaseGraph<string | number, V> {
         return this
     }
 
-    getParentVertices(key: K) {
+    getParentVertices(key: K): K[] {
         const realKey = this.getRealKey(key) ?? key
         if (!this._edges.has(realKey)) return []
 
@@ -114,7 +114,7 @@ class Graph<K = string, V = any> extends BaseGraph<string | number, V> {
                 result.push(k)
             }
         })
-        return result
+        return result as Map<K, V>
     }
 
     executeOnChildren(key: K, callback: (key: K, value: V) => void) {
