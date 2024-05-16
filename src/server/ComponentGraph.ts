@@ -2,7 +2,7 @@ import { nanoid } from 'nanoid'
 import GraphConstructor from './Graph'
 import { IComponentNode } from './Interfaces'
 import { PROP_RECIVER, SIGNAL_CALLBACK, prop, signal } from './Signals'
-import { buildComponent, getComponentDeclaration } from './ComponentRegistry'
+import { buildComponent, getAnonymousMethod, getComponentDeclaration } from './ComponentRegistry'
 import { callWithContext, callWithContextAsync } from './Context'
 import { getInjectable, inject } from './Injection'
 import { getRequestType } from './Server'
@@ -10,7 +10,6 @@ import { isEmpty } from 'lodash'
 
 const Graph = new GraphConstructor<string, IComponentNode>()
 const Roots = new Set<string>()
-const anonymousMethods = new Map<string, string>()
 
 const componentsToRerender = new Set<string>()
 
@@ -193,13 +192,7 @@ export async function executeOnGraph(componentName: string, componentId: string,
 
     // check if it is an anonymous function
     if (!isNaN(property as any)) {
-        const anonFunctions = anonymousMethods.get(componentName)
-
-        if (!anonFunctions || !anonFunctions[property]) {
-            throw new Error(`Anonymous function not found for ${componentName}`)
-        }
-
-        const anonFunction = anonFunctions[property]
+        const anonFunction = getAnonymousMethod(componentName, Number(property))
         const anonToFun = `(function(){(${anonFunction})(...arguments)})`
         result[1] = await callWithContextAsync(() => eval(anonToFun).call(vertex.instance, parameters),
             { name: componentName, id: componentId, declaration, instance: vertex.instance })

@@ -1,12 +1,12 @@
-use graph for rerendering remove childs that weren't rendered
+anonimous execution without eval
 
 figure out how to do effects better
 
-anonimous execution without eval
-
-ref ish something parent to call child?
+use graph for rerendering remove childs that weren't rendered
 
 passing function of parent to child
+
+ref ish something parent to call child?
 
 brake server and client code better
 

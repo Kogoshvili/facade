@@ -4,7 +4,7 @@ import { DiffDOM, stringToObj } from 'diff-dom'
 import { deepEqual } from 'fast-equals';
 import { rebuildInstance, getComponentNode, makeComponentNode, getComponentsToRerender, populateProps } from './ComponentGraph'
 import { IComponentNode } from './Interfaces'
-import { getComponentDeclaration, registerComponent } from './ComponentRegistry'
+import { getComponentDeclaration, registerAnonymousMethod, registerComponent } from './ComponentRegistry'
 import { getGraph, getRoots } from './ComponentGraph'
 import { callWithContext, callWithContextAsync } from './Context'
 import Facade from '../components/Facade'
@@ -142,17 +142,8 @@ function renderAttribute(key: any, value: any, parent: IComponentNode | null) {
 
         if (isArrow) {
             const parentNode = parent as IComponentNode
-            const component = getComponentDeclaration(parentNode.name) as any
-            component._anonymous[parentNode.name] ??= []
-            const anonymousMethods = component._anonymous[parentNode.name]
-            const index = anonymousMethods.findIndex((i: string) => i === stringified)
-
-            if (index === -1) {
-                const length = anonymousMethods.push(stringified)
-                functionName = `${length! - 1}`
-            } else {
-                functionName = `${index}`
-            }
+            const index = registerAnonymousMethod(parentNode!.name, stringified)
+            functionName = `${index}`
         }
 
         // Event handler
@@ -304,17 +295,8 @@ async function renderFacade(jsx: any, parent: IComponentNode | null = null, pare
 
             if (isArrow) {
                 const parentNode = parent as IComponentNode
-                const component = getComponentDeclaration(parentNode.name) as any
-                component._anonymous[parentNode.name] = component._anonymous[parentNode.name] || []
-                const anonymousMethods = component._anonymous[parentNode.name]
-                const index = anonymousMethods.findIndex((i: string) => i === stringified)
-
-                if (index === -1) {
-                    const length = anonymousMethods.push(stringified)
-                    functionName = `${length! - 1}`
-                } else {
-                    functionName = `${index}`
-                }
+                const index = registerAnonymousMethod(parentNode!.name, stringified)
+                functionName = `${index}`
             }
 
             // Event handler
