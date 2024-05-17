@@ -58,7 +58,7 @@ facade.event = async function (e: any, path: string, isClient = false) {
     const [componentName, componentId, property, event, mode] = path.split('.')
 
     if (!isClient) {
-        const parameters = mode === 'bind' ? e.target.value : { value: e.target.value }
+        const parameters = e.type === 'click' ? undefined : (mode === 'bind' ? e.target.value : { value: e.target.value })
         debouncedRequest(componentName, componentId, property, parameters, event, mode)
     } else {
         const [successful, result] = await executeOnGraph(componentName, componentId, property, e, mode)

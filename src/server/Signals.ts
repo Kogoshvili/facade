@@ -5,6 +5,7 @@ import { rerenderComponent } from './JSXRenderer';
 const isClinet = !(typeof process === 'object')
 
 class Signal {
+    __type: string = 'signal'
     _value: any
     _subscribers: (() => void)[] = []
     _owner: null | IContext = null
@@ -68,7 +69,7 @@ class Signal {
                 vertices.forEach((vertex) => {
                     if (vertex && vertex.instance) {
                         dependants[d].forEach((i: number) => {
-                            vertex.instance!.effects?.[i]?.()
+                            (vertex.instance!.effects as any)?.[i]?.()
                         })
                     }
                 })
@@ -83,9 +84,11 @@ export let SIGNAL_CALLBACK: string | null = null
 export function signal<T>(input: any): (v?: any) => T {
     const ref = new Signal(input)
     ref._owner = getCurrentContext()
+    ref.__type = 'signal'
     if (ref._owner) ref._owner.index++
 
     function signalCallback(...args: any) {
+        // @ts-ignore
         ref._owner = {
             index: 0,
             ...ref._owner,
@@ -103,20 +106,38 @@ export function signal<T>(input: any): (v?: any) => T {
 
     signalCallback.prototype.toJSON = function() {
         return {
-            __type: 'signal',
+            __type: ref.__type,
             value: ref._value,
         }
     }
 
-    if (!SIGNAL_CALLBACK) {
-        SIGNAL_CALLBACK = signalCallback.name
+    signalCallback.prototype.set = ref.set
+
+    signalCallback.prototype.setType = function(type: string) {
+        ref.__type = type
     }
 
-    return signalCallback;
+    SIGNAL_CALLBACK = signalCallback.name
+
+    return signalCallback
+}
+
+export let PROP_RECIVER: string | null = null
+export function prop<T>(v: string | ((v?: any) => any)): (props: any) => (v?: any) => T {
+    function propReciver(props: any): (v?: any) => T {
+        const value = typeof v === 'function' ? v(props) : props[v]
+        const res = signal<T>(value)
+        res.prototype.setType('prop')
+        return res
+    }
+
+    PROP_RECIVER ??= propReciver.name
+
+    return propReciver
 }
 
 let currentEffectDeps: any[] | null = null
-export function effect(fn: (v?: any) => void) {
+export function executeEffect(fn: (v?: any) => void) {
     currentEffectDeps = []
     const component = getCurrentContext()
 
@@ -128,65 +149,6 @@ export function effect(fn: (v?: any) => void) {
     })
 
     currentEffectDeps = []
-
-    return {
-        // invoke: fn,
-        // deps,
-        // destroy: () => deps.forEach((dep) => dep.unsubscribe(fn))
-    }
 }
 
 export function compute(fn: any) {}
-
-export let PROP_RECIVER: string | null = null
-export function prop<T>(v: string | ((v?: any) => any)): (props: any) => (v?: any) => T {
-    function propReciver(props: any): (v?: any) => T {
-        const value = typeof v === 'function' ? v(props) : props[v]
-        return propSignal(value)
-    }
-
-    if (!PROP_RECIVER) {
-        PROP_RECIVER = propReciver.name
-    }
-
-    return propReciver
-}
-
-function propSignal(input: any) {
-    const ref = new Signal(input)
-    ref._owner = getCurrentContext()
-    if (ref._owner) ref._owner.index++
-
-    function propCallback(...args: any) {
-        ref._owner = {
-            index: 0,
-            ...ref._owner,
-            ...getCurrentContext(),
-        }
-
-        if (args.length === 0) {
-            currentEffectDeps?.push(ref)
-            return ref.get()
-        }
-
-        const isSuccessful = ref.set(args[0])
-        if (isSuccessful) ref.notify()
-    }
-
-    propCallback.prototype.toJSON = function() {
-        return {
-            __type: 'prop',
-            value: ref._value,
-        }
-    }
-
-    propCallback.prototype.set = function(v: any) {
-        ref.set(v)
-    }
-
-    if (!SIGNAL_CALLBACK) {
-        SIGNAL_CALLBACK = propCallback.name
-    }
-
-    return propCallback;
-}

@@ -17,9 +17,9 @@ export function clearInjectables() {
 }
 
 export function parseInjectables(json: string) {
-    const oldMap = JSON.parse(json)
+    const oldMap = JSON.parse(json) ?? {}
     INJECTABLES.forEach((value, key) => {
-        value.properties = oldMap[key].properties
+        value.properties = oldMap[key]?.properties ?? null
     })
 }
 

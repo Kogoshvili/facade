@@ -1,6 +1,6 @@
 export { registerPages, facadeHTTP, facadeWS } from './Server'
-export { effect, signal, prop } from './Signals'
-export { Component } from '../components/Component'
+export { signal, prop } from './Signals'
+export { type Component } from '../components/Component'
 export { inject } from './Injection'
 export { default as Link } from '../components/Link'
 export { default as Facade } from '../components/Facade'

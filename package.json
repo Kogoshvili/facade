@@ -2,6 +2,7 @@
   "name": "facade",
   "version": "0.0.1",
   "description": "facade framework",
+  "type": "module",
   "exports": {
     "./server": "./src/server/index.ts",
     "./client": "./src/client/index.ts",

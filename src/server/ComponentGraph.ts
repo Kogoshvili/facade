@@ -1,7 +1,7 @@
 import { nanoid } from 'nanoid'
 import GraphConstructor from './Graph'
 import { IComponentNode } from './Interfaces'
-import { PROP_RECIVER, SIGNAL_CALLBACK, prop, signal } from './Signals'
+import { PROP_RECIVER, SIGNAL_CALLBACK, executeEffect, prop, signal } from './Signals'
 import { buildComponent, getAnonymousMethod, getComponentDeclaration } from './ComponentRegistry'
 import { callWithContext, callWithContextAsync } from './Context'
 import { getInjectable, inject } from './Injection'
@@ -142,7 +142,7 @@ export async function makeComponentNode(name: string, xpath: string, props: Reco
     callWithContext(() => populateProps(instance, props), context)
     await callWithContextAsync(() => instance.created(), context)
     // TODO: effect function or array
-    callWithContext(() => instance.effects.forEach((effect: any) => effect()), context)
+    callWithContext(() => instance.effects.forEach((effect: any) => executeEffect(effect)), context)
     await callWithContextAsync(() => instance.mounted(), context)
 
     const { properties, methods } = getProperties(instance)
