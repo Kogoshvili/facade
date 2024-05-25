@@ -1,5 +1,3 @@
-figure out how to do effects better
-
 use graph for rerendering remove childs that weren't rendered
 
 passing function of parent to child
@@ -9,6 +7,9 @@ ref ish something parent to call child?
 brake server and client code better
 
 anonimous execution without eval???
+
+features:
+effects as tuplet of function and dependencies
 
 features?:
 webTransport

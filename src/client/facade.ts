@@ -8,8 +8,8 @@ declare global {
     // eslint-disable-next-line no-var
     var facade: Facade
     var FScripts: any
-    function fElement(type: any, props: any, ...children: any): any
-    function fFragment(props: any): any
+    var fElement: (type: any, props: any, ...children: any) => any
+    var fFragment: (props: any) => any
     var loadedModules: any[]
 }
 
@@ -21,6 +21,7 @@ window.fElement = function fFragment(type, props, ...children) {
     return {
         type,
         props: { ...props, children },
+        key: props?.key ?? null
     }
 }
 

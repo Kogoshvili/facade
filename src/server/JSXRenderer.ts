@@ -1,9 +1,8 @@
-import { JSXInternal } from 'preact/src/jsx'
 import { isString, isBoolean, isFunction, isObject, isArray } from 'lodash-es'
 import { DiffDOM, stringToObj } from 'diff-dom'
 import { deepEqual } from 'fast-equals';
 import { rebuildInstance, getComponentNode, makeComponentNode, getComponentsToRerender, populateProps } from './ComponentGraph'
-import { IComponentNode } from './Interfaces'
+import { IComponentNode, JSXObject } from './Interfaces'
 import { getComponentDeclaration, registerAnonymousMethod, registerComponent } from './ComponentRegistry'
 import { getGraph, getRoots } from './ComponentGraph'
 import { callWithContext, callWithContextAsync } from './Context'
@@ -28,48 +27,37 @@ export async function rerenderComponent(componentName: string, componentId: stri
 
 export async function rerenderModifiedComponents() {
     const graph = getGraph()
-    const nodes: IComponentNode[] = []
+    const results: any[] = []
+    const roots = getRoots()
+    // const renderedComponents = getComponentsToRerender()
 
-    const components = getComponentsToRerender()
+    for (const root of roots) {
+        await graph.traverseDfsAsync(root, async (key, node) => {
+            if (node.needsRender) {
+                const declaration = getComponentDeclaration(node.name)
+                node.instance ??= rebuildInstance(node).instance
+                const result = await renderComponent(node, node.xpath ?? '', declaration)
+                node.haveRendered = true
 
-    components.forEach((componentId) => {
-        const vertex = graph.getVertexValue(componentId)
-        if (vertex) nodes.push(vertex)
-    })
+                const dd = new DiffDOM()
+                const prevBody = stringToObj(getElementById(`${node.name}.${node.id}`)!.outerHTML)
+                const newBody = stringToObj(result!)
+                const domDiff = dd.diff(prevBody, newBody)
 
-    const nodePromises = nodes.map(async (node) => {
-        const idToFind = `${node.name}.${node.id}`
-        const oldElement = isClinet ? null : getElementById(idToFind)?.outerHTML
+                replaceElementById(`${node.name}.${node.id}`, result)
+                results.push({
+                    id: node.id,
+                    name: node.name,
+                    diff: domDiff
+                });
+            }
+        })
+    }
 
-        // element was not rendered before
-        if (!oldElement) return { diff: [] }
-
-        const declaration = getComponentDeclaration(node.name)
-        node.instance ??= rebuildInstance(node).instance
-        const result = await renderComponent(node, node.xpath ?? '', declaration)
-
-        node.haveRendered = true
-
-        const dd = new DiffDOM()
-        const prevBody = stringToObj(oldElement)
-        const newBody = stringToObj(result!)
-        const domDiff = dd.diff(prevBody, newBody)
-
-        if (!isClinet) {
-            replaceElementById(idToFind, result)
-        }
-
-        return {
-            id: node.id,
-            name: node.name,
-            diff: domDiff
-        }
-    })
-
-    return (await Promise.all(nodePromises)).filter(i => i.diff.length > 0)
+    return results.filter(i => i.diff.length > 0)
 }
 
-export async function renderer(jsx: any, parent: IComponentNode | null = null, parentXPath: string = '', index: number | null = null) {
+export async function renderer(jsx: JSXObject, parent: IComponentNode | null = null, parentXPath: string = '', index: number | null = null) {
     if (shouldIgnore(jsx)) return ''
     if (isPrimitive(jsx))  return jsx as any
 
@@ -84,7 +72,7 @@ export async function renderer(jsx: any, parent: IComponentNode | null = null, p
     return await renderHTML(jsx, parent, parentXPath, index)
 }
 
-async function renderHTML(jsx: JSXInternal.Element, parent: IComponentNode | null, parentXPath: string, index: number | null = null) {
+async function renderHTML(jsx: JSXObject, parent: IComponentNode | null, parentXPath: string, index: number | null = null) {
     let result = `<${jsx.type}`
 
     if (jsx.key) {
@@ -192,7 +180,7 @@ function renderAttribute(key: any, value: any, parent: IComponentNode | null) {
     return ` ${attribute}="${value}"`
 }
 
-async function renderClass(jsx: JSXInternal.Element, parent: IComponentNode | null, parentXPath: string, index: number | null = null) {
+async function renderClass(jsx: JSXObject, parent: IComponentNode | null, parentXPath: string, index: number | null = null) {
     if (parent) parent.hasChildren = true
 
     const declaration = jsx.type as any
@@ -237,7 +225,7 @@ async function renderClass(jsx: JSXInternal.Element, parent: IComponentNode | nu
             replaceElementById(idToFind, result)
 
             if (!prevRender) {
-                const script = await componentNode.instance!.script?.()
+                const script = await componentNode.instance!.script?.() as any
                 if (script) appendScripts(script, componentNode)
 
                 // const style = componentNode.instance?.style?.()
@@ -259,7 +247,7 @@ export async function renderComponent(componentNode: IComponentNode, xpath: stri
     return subResult.replace(/<(\w+)/, defineComponent(componentNode.name, componentNode.id, componentNode.key))
 }
 
-async function renderFunction(jsx: any, parent: IComponentNode | null = null, parentXPath: string = '', index: number | null = null): Promise<string> {
+async function renderFunction(jsx: JSXObject, parent: IComponentNode | null = null, parentXPath: string = '', index: number | null = null): Promise<string> {
     if (isFragment(jsx)) {
         return await renderFragment(jsx, parent, parentXPath, index)
     }
@@ -270,12 +258,12 @@ async function renderFunction(jsx: any, parent: IComponentNode | null = null, pa
 
     if (parent) parent.hasChildren = true
 
-    const functionResult = callWithContext(() => jsx.type(jsx.props), jsx.type.name)
+    const functionResult = callWithContext(() => jsx.type(jsx.props), jsx.type.name) as any
     const xpath = `${parentXPath}/${jsx.type.name}`
     return await renderer(functionResult, parent, xpath, index)
 }
 
-async function renderFacade(jsx: any, parent: IComponentNode | null = null, parentXPath: string = '', index: number | null = null): Promise<string> {
+async function renderFacade(jsx: JSXObject, parent: IComponentNode | null = null, parentXPath: string = '', index: number | null = null): Promise<string> {
     const { props } = jsx
 
     const properties: any = {
@@ -306,12 +294,12 @@ async function renderFacade(jsx: any, parent: IComponentNode | null = null, pare
         }
     })
 
-    const functionResult = callWithContext(() => jsx.type(properties), jsx.type.name)
+    const functionResult = callWithContext(() => jsx.type(properties), jsx.type.name) as any
     const xpath = `${parentXPath}/${jsx.type.name}`
     return await renderer(functionResult, parent, xpath, index)
 }
 
-async function renderFragment(jsx: any, parent: IComponentNode | null = null, parentXPath: string = '', index: number | null = null): Promise<string> {
+async function renderFragment(jsx: JSXObject, parent: IComponentNode | null = null, parentXPath: string = '', index: number | null = null): Promise<string> {
     const functionResult = jsx.type(jsx.props)
     let xpath = `${parentXPath}/fragment`
 
@@ -334,7 +322,7 @@ const defineComponent = (name: string | null, id: string | null, key?: string | 
     return definition
 }
 
-function isPrimitive(jsx: any) {
+function isPrimitive(jsx: JSXObject) {
     return (
         typeof jsx === 'string' ||
         typeof jsx === 'number' ||
@@ -348,27 +336,27 @@ function shouldIgnore(jsx: any) {
     return (jsx === null || jsx === false || jsx === true || jsx === undefined)
 }
 
-function isHTML(jsx: any) {
+function isHTML(jsx: JSXObject) {
     return isString(jsx.type)
 }
 
-function isClass(jsx: any) {
+function isClass(jsx: JSXObject) {
     return (
         isFunction(jsx.type) &&
         Object.getOwnPropertyDescriptor(jsx.type, 'prototype')?.writable === false
     )
 }
 
-function hasChildren(jsx: JSXInternal.Element) {
+function hasChildren(jsx: JSXObject) {
     const { children } = jsx.props ?? {}
     return (children && Array.isArray(children) && children.length > 0)
 }
 
-function isFragment(jsx: any) {
+function isFragment(jsx: JSXObject) {
     return (isFunction(jsx.type) && jsx.type.name === globalThis.fFragment.name)
 }
 
-function isFacade(jsx: any) {
+function isFacade(jsx: JSXObject) {
     return (isFunction(jsx.type) && jsx.type.name === Facade.name)
 }
 

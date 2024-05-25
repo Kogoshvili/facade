@@ -18,3 +18,9 @@ export interface IComponentNode {
     haveRendered: boolean
     hasChildren: boolean
 }
+
+export interface JSXObject {
+    type: any
+    props: Record<string, any>
+    key: string | number | null
+}

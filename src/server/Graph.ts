@@ -17,6 +17,27 @@ class Graph<K = string, V = any> extends BaseGraph<string | number, V> {
         this._componentVertices = new Map<string, Set<string>>()
     }
 
+    traverseDfsAsync(startKey: K, callback: (key: K, value: V) => Promise<void>) {
+        const visited = new Set<K>()
+        const realKey = this.getRealKey(startKey) ?? startKey
+
+        const dfs = async (key: K) => {
+            if (visited.has(key)) return
+            visited.add(key)
+
+            await callback(key, this.getVertexValue(key)!)
+
+            const children = this.getChildVertices(key)
+            for (const child of children) {
+                await dfs(child)
+            }
+        }
+
+        return new Promise<void>((resolve, reject) => {
+            dfs(realKey).then(() => resolve()).catch(reject)
+        })
+    }
+
     setKeyAliases(aliases: Map<string, string>) {
         this._keyAliases = aliases
     }

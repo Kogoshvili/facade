@@ -13,6 +13,7 @@ globalThis.fElement = function fElement(type, props, ...children) {
     return {
         type,
         props: { ...props, children },
+        key: props?.key ?? null
     }
 }
 
