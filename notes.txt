@@ -1,3 +1,6 @@
+rerenderComponents brakes if working with page
+page switching SPA mode is buggy
+
 use graph for rerendering remove childs that weren't rendered
 
 passing function of parent to child

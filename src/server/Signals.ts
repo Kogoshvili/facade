@@ -92,7 +92,7 @@ export function signal<T>(input: any): (v?: any) => T {
         ref._owner = {
             index: 0,
             ...ref._owner,
-            ...getCurrentContext(),
+            // ...getCurrentContext(),
         }
 
         if (args.length === 0) {

@@ -7,7 +7,7 @@ import { getComponentDeclaration, registerAnonymousMethod, registerComponent } f
 import { getGraph, getRoots } from './ComponentGraph'
 import { callWithContext, callWithContextAsync } from './Context'
 import Facade from '../components/Facade'
-import { appendScripts, appendStyles, getElementById, replaceElementById } from './Dom';
+import { appendScripts, appendStyles, getDOM, getElementById, replaceElementById } from './Dom';
 import { getRequestType } from './Server';
 
 const isClinet = !(typeof process === 'object')
@@ -28,7 +28,14 @@ export async function rerenderComponent(componentName: string, componentId: stri
 export async function rerenderModifiedComponents() {
     const graph = getGraph()
     const results: any[] = []
-    const renderedComponents = getComponentsToRerender()
+    const roots = getRoots()
+    const renderedComponents = getComponentsToRerender()//
+
+    // const renderOrder = [...renderedComponents].sort((a, b) => {
+    //     if (roots.has(a)) return 1
+    //     if (roots.has(b)) return -1
+    //     return 0
+    // })
 
     for (const componentId of renderedComponents) {
         const node = graph.getVertexValue(componentId)!
@@ -39,6 +46,14 @@ export async function rerenderModifiedComponents() {
         const result = await renderComponent(node, node.xpath ?? '', declaration)
         node.haveRendered = true
 
+        let newBody = stringToObj(result!)
+        // let isPage = false
+
+        // if (newBody.nodeName === 'HTML') {
+        //     isPage = true
+        //     newBody = newBody.childNodes[1]
+        // }
+        //
         const prevElement = getElementById(`${node.name}.${node.id}`);
 
         if (!prevElement) {
@@ -47,7 +62,8 @@ export async function rerenderModifiedComponents() {
         }
 
         const prevBody = stringToObj(prevElement.outerHTML)
-        const newBody = stringToObj(result!)
+
+
         const dd = new DiffDOM()
         const domDiff = dd.diff(prevBody, newBody)
 
