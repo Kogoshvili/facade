@@ -6,7 +6,7 @@ import { buildComponent, getAnonymousMethod, getComponentDeclaration } from './C
 import { callWithContext, callWithContextAsync } from './Context'
 import { getInjectable, inject } from './Injection'
 import { getRequestType } from './Server'
-import { isEmpty } from 'lodash'
+import { isArray, isEmpty } from 'lodash-es'
 
 const Graph = new GraphConstructor<string, IComponentNode>()
 const Roots = new Set<string>()
@@ -141,8 +141,9 @@ export async function makeComponentNode(name: string, xpath: string, props: Reco
     const context = { name, id, declaration, instance };
     callWithContext(() => populateProps(instance, props), context)
     await callWithContextAsync(() => instance.created(), context)
-    // TODO: effect function or array
-    callWithContext(() => instance.effects.forEach((effect: any) => executeEffect(effect)), context)
+    callWithContext(() => instance.effects.forEach((effect) =>
+        isArray(effect) ? executeEffect(...effect) : executeEffect(effect)
+    ), context)
     await callWithContextAsync(() => instance.mounted(), context)
 
     const { properties, methods } = getProperties(instance)
@@ -175,7 +176,7 @@ export async function makeComponentNode(name: string, xpath: string, props: Reco
     return vertex
 }
 
-export async function executeOnGraph(componentName: string, componentId: string, property: string, parameters: any, mode: string) {
+export async function executeOnGraph(componentName: string, componentId: string, property: string, parameters: any[], mode: string) {
     const vertexIds = getVertexIds({ name: componentName, id: componentId })
     const vertex = Graph.getVertexValue(vertexIds.any)
     const declaration = getComponentDeclaration(componentName)
@@ -194,12 +195,12 @@ export async function executeOnGraph(componentName: string, componentId: string,
     if (!isNaN(property as any)) {
         const anonFunction = getAnonymousMethod(componentName, Number(property))
         const anonToFun = `(function(){(${anonFunction})(...arguments)})`
-        result[1] = await callWithContextAsync(() => eval(anonToFun).call(vertex.instance, parameters),
+        result[1] = await callWithContextAsync(() => eval(anonToFun).call(vertex.instance, ...parameters),
             { name: componentName, id: componentId, declaration, instance: vertex.instance })
     } else if (typeof vertex.instance[property] !== 'function') {
-        vertex.instance[property] = parameters
+        vertex.instance[property] = parameters[0]
     } else {
-        result[1] = await callWithContextAsync(() => vertex.instance![property](parameters),
+        result[1] = await callWithContextAsync(() => vertex.instance![property](...parameters),
             { name: componentName, id: componentId, declaration, instance: vertex.instance })
     }
 

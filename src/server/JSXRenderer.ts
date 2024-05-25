@@ -28,30 +28,35 @@ export async function rerenderComponent(componentName: string, componentId: stri
 export async function rerenderModifiedComponents() {
     const graph = getGraph()
     const results: any[] = []
-    const roots = getRoots()
-    // const renderedComponents = getComponentsToRerender()
+    const renderedComponents = getComponentsToRerender()
 
-    for (const root of roots) {
-        await graph.traverseDfsAsync(root, async (key, node) => {
-            if (node.needsRender) {
-                const declaration = getComponentDeclaration(node.name)
-                node.instance ??= rebuildInstance(node).instance
-                const result = await renderComponent(node, node.xpath ?? '', declaration)
-                node.haveRendered = true
+    for (const componentId of renderedComponents) {
+        const node = graph.getVertexValue(componentId)!
+        if (!node.needsRender) continue
 
-                const dd = new DiffDOM()
-                const prevBody = stringToObj(getElementById(`${node.name}.${node.id}`)!.outerHTML)
-                const newBody = stringToObj(result!)
-                const domDiff = dd.diff(prevBody, newBody)
+        const declaration = getComponentDeclaration(node.name)
+        node.instance ??= rebuildInstance(node).instance
+        const result = await renderComponent(node, node.xpath ?? '', declaration)
+        node.haveRendered = true
 
-                replaceElementById(`${node.name}.${node.id}`, result)
-                results.push({
-                    id: node.id,
-                    name: node.name,
-                    diff: domDiff
-                });
-            }
-        })
+        const prevElement = getElementById(`${node.name}.${node.id}`);
+
+        if (!prevElement) {
+            node.needsRender = false
+            continue
+        }
+
+        const prevBody = stringToObj(prevElement.outerHTML)
+        const newBody = stringToObj(result!)
+        const dd = new DiffDOM()
+        const domDiff = dd.diff(prevBody, newBody)
+
+        replaceElementById(`${node.name}.${node.id}`, result)
+        results.push({
+            id: node.id,
+            name: node.name,
+            diff: domDiff
+        });
     }
 
     return results.filter(i => i.diff.length > 0)

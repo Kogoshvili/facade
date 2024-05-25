@@ -13,10 +13,6 @@ function parent() {
     return this._parentInstance
 }
 
-function getElement() {
-    return document.getElementById(`${this._name}.${this._id}`) ?? null
-}
-
 function render() {
     return null
 }
@@ -28,7 +24,6 @@ export function toComponent(instance: any, { name, id, key }: { name: string, id
     instance._parent = { name, id }
 
     instance.parent = parent.bind(instance)
-    instance.getElement = getElement.bind(instance)
 
     instance.effects ??= []
     instance.render ??= render.bind(instance)

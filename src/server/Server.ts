@@ -33,7 +33,7 @@ async function RenderDOM(page: string, props: any = {}) {
     return await renderer(globalThis.fElement(pages[page], props), null, page, null)
 }
 
-async function process(session: any, page: string, componentName: string, componentId: string, property: string, parameters: any, mode: string) {
+async function process(session: any, page: string, componentName: string, componentId: string, property: string, parameters: any[], mode: string) {
     requestType = 'component'
     console.time('process')
 
@@ -116,7 +116,7 @@ export function facadeWS(server: any, sessionParser: any, wssConfig: any = {}) {
     })
 
     wss.on('connection', async (ws: any, request: any) => {
-        ws.on('error', console.error)
+        ws.on('error', (err: any) => err && console.error(err))
         ws.on('close', () => console.log('Client disconnected'))
         ws.on('open', () => console.log('Client connected'))
         const session = request.session as any
@@ -124,7 +124,7 @@ export function facadeWS(server: any, sessionParser: any, wssConfig: any = {}) {
         ws.on('message', async (msg: string) => {
             const { page, componentName, componentId, property, parameters, event: _event, mode } = JSON.parse(msg) as any
             const result = await process(session, page, componentName, componentId, property, parameters, mode)
-            session.save((err: any) => console.error(err))
+            session.save((err: any) => err && console.error(err))
             ws.send(JSON.stringify(result))
         })
     })

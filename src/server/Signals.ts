@@ -123,7 +123,8 @@ export function signal<T>(input: any): (v?: any) => T {
 }
 
 export let PROP_RECIVER: string | null = null
-export function prop<T>(v: string | ((v?: any) => any)): (props: any) => (v?: any) => T {
+// return type is a lie actual is (props: any) => (v?: any) => T
+export function prop<T>(v: string | ((v?: any) => any)): (v?: any) => T {
     function propReciver(props: any): (v?: any) => T {
         const value = typeof v === 'function' ? v(props) : props[v]
         const res = signal<T>(value)
@@ -133,15 +134,19 @@ export function prop<T>(v: string | ((v?: any) => any)): (props: any) => (v?: an
 
     PROP_RECIVER ??= propReciver.name
 
-    return propReciver
+    return propReciver as any
 }
 
 let currentEffectDeps: any[] | null = null
-export function executeEffect(fn: (v?: any) => void) {
+export function executeEffect(fn: (v?: any) => void, depOverrides?: Signal[]) {
     currentEffectDeps = []
     const component = getCurrentContext()
 
     fn()
+
+    if (depOverrides) {
+        currentEffectDeps = depOverrides
+    }
 
     currentEffectDeps.forEach((dep) => {
         dep.subscribe(fn)

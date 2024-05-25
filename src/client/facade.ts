@@ -3,6 +3,7 @@ import Facade, { IUpdatedProperties } from './interfaces'
 import { debounce } from 'lodash-es'
 import { executeOnGraph } from '../server/ComponentGraph'
 import { rerenderComponent } from '../server/JSXRenderer'
+import { access } from 'fs'
 
 declare global {
     // eslint-disable-next-line no-var
@@ -44,7 +45,7 @@ facade.events = facade.events || {
 
 facade.requests = facade.requests || {}
 
-function debouncedRequest(componentName: string, componentId: string, property: string, parameters: any, event?: string, mode?: string) {
+function debouncedRequest(componentName: string, componentId: string, property: string, parameters: any[], event?: string, mode?: string) {
     const timeout = getTimeout(mode, event)
     const key = `${componentName}.${componentId}.${property}.${event}.${mode}`
 
@@ -60,9 +61,9 @@ facade.event = async function (e: any, path: string, isClient = false) {
 
     if (!isClient) {
         const parameters = e.type === 'click' ? undefined : (mode === 'bind' ? e.target.value : { value: e.target.value })
-        debouncedRequest(componentName, componentId, property, parameters, event, mode)
+        debouncedRequest(componentName, componentId, property, [parameters], event, mode)
     } else {
-        const [successful, result] = await executeOnGraph(componentName, componentId, property, e, mode)
+        const [successful, result] = await executeOnGraph(componentName, componentId, property, [e], mode)
         if (successful && mode !== 'defer') {
             rerenderComponent(componentName, componentId)
         }
@@ -71,10 +72,10 @@ facade.event = async function (e: any, path: string, isClient = false) {
 
 facade.callback = async function (path: string, parameters: any) {
     const [componentName, componentId, property, event, mode] = path.split('.')
-    debouncedRequest(componentName, componentId, property, parameters, event, mode)
+    debouncedRequest(componentName, componentId, property, [parameters], event, mode)
 }
 
-facade.request = async function (componentName: string, componentId: string, property: string, parameters: any, event?: string, mode?: string) {
+facade.request = async function (componentName: string, componentId: string, property: string, parameters: any[], event?: string, mode?: string) {
     const page = window.location.pathname.split('/').pop()
 
     if (facade.config.protocol === 'http') {
@@ -157,23 +158,47 @@ facade.execute = function(libraryName: string, componentName: string, componentI
         facade.scripts.set(libraryName, new FScripts[libraryName]() as any)
     }
 
+    const getState = () => {
+        return facade.state.find((s: any) => s.key === (componentName + '.' + componentId)).value
+    }
+
     const instance = facade.scripts.get(libraryName)
 
     const element = document.getElementById(componentName + '.' + componentId)
 
-    const component = facade.state.find((s: any) => s.key === (componentName + '.' + componentId)).value
+    const component = getState()
 
     const methods = component.methods.reduce((acc: any, m: any) => {
         if (m.startsWith('script'))  {
             acc[m] = FScripts[libraryName][m]
         } else {
-            acc[m] = async function() {
+            acc[m] = async function(...args: any) {
                 return await facade.request(
                     componentName,
                     componentId,
                     m,
-                    // @ts-ignore
-                    ...arguments
+                    args
+                )
+            }
+        }
+        return acc
+    }, {} as any)
+
+    const signals = Object.keys(component.properties).reduce((acc: any, key: any) => {
+        const p = component.properties[key]
+        if (!p) return acc
+        if (p.__type === 'signal' || p.__type === 'prop') {
+            acc[key] = async function(...args: any) {
+                if (args.length === 0) {
+                    const state = getState()
+                    return state.properties[key].value
+                }
+
+                return await facade.request(
+                    componentName,
+                    componentId,
+                    key,
+                    args
                 )
             }
         }
@@ -182,6 +207,7 @@ facade.execute = function(libraryName: string, componentName: string, componentI
 
     const remoteThis = {
         ...component.properties,
+        ...signals,
         ...methods
     }
 
@@ -196,6 +222,7 @@ facade.execute = function(libraryName: string, componentName: string, componentI
         }
     })
 
+    if (!instance[method]) return
     instance[method].call(thisMock, element, ...args)
 }
 
@@ -252,7 +279,7 @@ facade.methods = {
     //             }
     //         })
     // },
-    async handleUpdateHttp(page: string, componentName: string, componentId: string, property: string, parameters: any, event?: string, mode?: string) {
+    async handleUpdateHttp(page: string, componentName: string, componentId: string, property: string, parameters: any[], event?: string, mode?: string) {
         const responseRaw = await fetch(`${facade.config.url}?page=${page}&component=${componentName}&id=${componentId}&property=${property}&event=${event}&mode=${mode}`, {
             method: 'POST',
             headers: {

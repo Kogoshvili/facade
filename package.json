@@ -1,11 +1,12 @@
 {
-  "name": "facade-framework",
+  "name": "facade",
   "version": "0.0.1",
   "description": "facade framework",
   "type": "module",
   "exports": {
     "./server": "./src/server/index.ts",
     "./client": "./src/client/index.ts",
+    "./client/utils": "./src/client/utils.ts",
     "./component": "./src/component/index.ts",
     "./loader": "./loader.cjs",
     "./webpack": "./webpack-config.cjs"
