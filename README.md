@@ -30,3 +30,7 @@ Switching between home and product list pages is done in SPA style.
 Switching to product details page is done in MPA style.
 Search suggestion modal is done using client side component.
 Cart modal is done using server side component.
+
+# Setup
+npm i -g facade-js-make
+facade-js-make ./my-app
