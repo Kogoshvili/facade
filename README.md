@@ -32,5 +32,5 @@ Search suggestion modal is done using client side component.
 Cart modal is done using server side component.
 
 # Setup
-npm i -g facade-js-make
-facade-js-make ./my-app
+npm i -g @kogoshvili/facade-make
+@kogoshvili/facade-make ./my-app

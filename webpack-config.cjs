@@ -67,9 +67,9 @@ function webConfig(env, argv, sharedConfig, { root, clientEntry, clientOutput, s
         externals: [
             // removing server dependencies
             './Dom',
-            'facade-js/server/Dom',
+            '@kogoshvili/facade/server/Dom',
             './Facade',
-            'facade-js/server/Facade',
+            '@kogoshvili/facade/server/Facade',
             'json-diff-ts',
             'html-entities',
         ],
@@ -79,8 +79,8 @@ function webConfig(env, argv, sharedConfig, { root, clientEntry, clientOutput, s
         resolve: {
             ...sharedConfig.resolve,
             alias: {
-                'facade-js/component': 'facade-js/client',
-                'ComponentGraph': 'facade-js/client'
+                '@kogoshvili/facade/component': '@kogoshvili/facade/client',
+                'ComponentGraph': '@kogoshvili/facade/client'
             }
         }
     };
@@ -116,8 +116,8 @@ function serverConfig(env, argv, sharedConfig, { root, serverEntry, serverOutput
         resolve: {
             ...sharedConfig.resolve,
             alias: {
-                'facade-js/component': 'facade-js/server',
-                'ComponentGraph': 'facade-js/server'
+                '@kogoshvili/facade/component': '@kogoshvili/facade/server',
+                'ComponentGraph': '@kogoshvili/facade/server'
             }
         }
     }
@@ -160,7 +160,7 @@ function getBaseConfig(env, argv) {
                             }
                         },
                         {
-                            loader: require.resolve('facade-js/loader'),
+                            loader: require.resolve('@kogoshvili/facade/loader'),
                         },
                     ]
                 },
@@ -175,7 +175,7 @@ function getBaseConfig(env, argv) {
                             },
                         },
                         {
-                            loader: require.resolve('facade-js/loader'),
+                            loader: require.resolve('@kogoshvili/facade/loader'),
                         },
                     ],
                 },
