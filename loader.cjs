@@ -354,7 +354,7 @@ function handleFacade(source, map) {
     const finalCode = source
         .replace(templateMatch?.[0] || '', '')
         .replace(styleMatch?.[0] || '', '')
-        .replace(scriptMatch[0], `import { FComponent } from 'facade/component';\n\n` + componentCode.code + `\n\nexport default ${className};\n`);
+        .replace(scriptMatch[0], `import { FComponent } from 'facade-js/component';\n\n` + componentCode.code + `\n\nexport default ${className};\n`);
 
     // Generate the source map
     const sourceMap = componentCode.map;

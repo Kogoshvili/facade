@@ -67,9 +67,9 @@ function webConfig(env, argv, sharedConfig, { root, clientEntry, clientOutput, s
         externals: [
             // removing server dependencies
             './Dom',
-            'facade/server/Dom',
+            'facade-js/server/Dom',
             './Facade',
-            'facade/server/Facade',
+            'facade-js/server/Facade',
             'json-diff-ts',
             'html-entities',
         ],
@@ -79,8 +79,8 @@ function webConfig(env, argv, sharedConfig, { root, clientEntry, clientOutput, s
         resolve: {
             ...sharedConfig.resolve,
             alias: {
-                'facade/component': 'facade/client',
-                'ComponentGraph': 'facade/client'
+                'facade-js/component': 'facade-js/client',
+                'ComponentGraph': 'facade-js/client'
             }
         }
     };
@@ -116,8 +116,8 @@ function serverConfig(env, argv, sharedConfig, { root, serverEntry, serverOutput
         resolve: {
             ...sharedConfig.resolve,
             alias: {
-                'facade/component': 'facade/server',
-                'ComponentGraph': 'facade/server'
+                'facade-js/component': 'facade-js/server',
+                'ComponentGraph': 'facade-js/server'
             }
         }
     }
@@ -160,7 +160,7 @@ function getBaseConfig(env, argv) {
                             }
                         },
                         {
-                            loader: require.resolve('facade/loader'),
+                            loader: require.resolve('facade-js/loader'),
                         },
                     ]
                 },
@@ -175,7 +175,7 @@ function getBaseConfig(env, argv) {
                             },
                         },
                         {
-                            loader: require.resolve('facade/loader'),
+                            loader: require.resolve('facade-js/loader'),
                         },
                     ],
                 },
