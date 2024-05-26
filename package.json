@@ -3,6 +3,10 @@
   "version": "0.0.1",
   "description": "facade framework",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Kogoshvili/facade.git"
+  },
   "exports": {
     "./server": "./src/server/index.ts",
     "./client": "./src/client/index.ts",
