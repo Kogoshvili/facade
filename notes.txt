@@ -9,7 +9,10 @@ ref ish something parent to call child?
 
 brake server and client code better
 
-anonimous execution without eval???
+anonimous execution without eval??? maybe using new Function()
+const fun = new Function('', "console.log('test'); return () => console.log(this)");
+fun.call({ a: 1 })()
+
 
 features:
 effects as tuplet of function and dependencies
